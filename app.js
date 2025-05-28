@@ -49,8 +49,16 @@ class ElectricalCADApp {
         // Make drawing engine globally accessible for property panel
         window.drawingEngine = this.drawingEngine;
         
+        // Set up callback for status bar updates
+        this.drawingEngine.onElementsChanged = () => {
+            this.updateStatusBar();
+        };
+        
         // Setup event listeners
         this.setupEventListeners();
+        
+        // Initialize status bar
+        this.updateStatusBar();
         
         console.log('Electrical CAD Application initialized successfully');
     }
@@ -397,12 +405,28 @@ class ElectricalCADApp {
             this.currentProject.name = `GPX Import - ${new Date().toLocaleDateString()}`;
             this.currentProject.modified = new Date();
             
-            // Show success message
+            // Show success message with distance information
             const totalElements = elements.poles.length + elements.lines.length;
+            const distanceInfo = elements.metadata && elements.metadata.totalDistance > 0 
+                ? ` | Total distance: ${elements.metadata.totalDistance}m (${(elements.metadata.totalDistance / 1000).toFixed(3)}km)`
+                : '';
+            
             this.showNotification(
-                `GPX loaded successfully: ${elements.poles.length} poles, ${elements.lines.length} lines`,
+                `GPX loaded successfully: ${elements.poles.length} poles, ${elements.lines.length} lines${distanceInfo}`,
                 'success'
             );
+            
+            // Log coordinate system information
+            if (elements.metadata && elements.metadata.coordinateSystem === 'UTM') {
+                console.log('GPX imported with UTM coordinate system:', {
+                    metersPerPixel: elements.metadata.metersPerPixel,
+                    totalDistance: elements.metadata.totalDistance,
+                    coordinateSystem: elements.metadata.coordinateSystem
+                });
+            }
+            
+            // Update status bar
+            this.updateStatusBar();
             
             // Reset view to fit content
             this.drawingEngine.resetView();
@@ -410,6 +434,47 @@ class ElectricalCADApp {
         } catch (error) {
             console.error('Error processing GPX:', error);
             this.showNotification('Error processing GPX file: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * Update status bar with current project information
+     */
+    updateStatusBar() {
+        const metadata = this.drawingEngine.metadata || {};
+        const elements = this.drawingEngine.elements || { poles: [], lines: [] };
+        
+        // Update coordinate system
+        const coordSystemEl = document.getElementById('coordinateSystem');
+        if (coordSystemEl) {
+            const system = metadata.coordinateSystem || 'Canvas';
+            coordSystemEl.textContent = `Coordinate System: ${system}`;
+        }
+        
+        // Update total distance
+        const totalDistanceEl = document.getElementById('totalDistance');
+        if (totalDistanceEl) {
+            const distance = metadata.totalDistance || 0;
+            const distanceText = distance > 0 
+                ? `Total Distance: ${distance}m (${(distance / 1000).toFixed(3)}km)`
+                : 'Total Distance: 0m';
+            totalDistanceEl.textContent = distanceText;
+        }
+        
+        // Update scale info
+        const scaleInfoEl = document.getElementById('scaleInfo');
+        if (scaleInfoEl) {
+            const metersPerPixel = metadata.metersPerPixel || 1;
+            const scale = metersPerPixel > 0 ? `1:${Math.round(metersPerPixel)}` : '1:1';
+            scaleInfoEl.textContent = `Scale: ${scale}`;
+        }
+        
+        // Update element count
+        const elementCountEl = document.getElementById('elementCount');
+        if (elementCountEl) {
+            const poleCount = elements.poles ? elements.poles.length : 0;
+            const lineCount = elements.lines ? elements.lines.length : 0;
+            elementCountEl.textContent = `Elements: ${poleCount} poles, ${lineCount} lines`;
         }
     }
 

@@ -290,7 +290,61 @@ class GPXParser {
     }
 
     /**
-     * Convert GPS coordinates to canvas coordinates
+     * Convert GPS coordinates to UTM coordinates (metric)
+     * @param {number} lat - Latitude in decimal degrees
+     * @param {number} lon - Longitude in decimal degrees
+     * @returns {Object} UTM coordinates {x, y, zone}
+     */
+    latLonToUTM(lat, lon) {
+        const a = 6378137; // WGS84 semi-major axis
+        const e = 0.0818191908426; // WGS84 eccentricity
+        const k0 = 0.9996; // UTM scale factor
+        
+        const latRad = lat * Math.PI / 180;
+        const lonRad = lon * Math.PI / 180;
+        
+        // Determine UTM zone
+        const zone = Math.floor((lon + 180) / 6) + 1;
+        const lonOrigin = (zone - 1) * 6 - 180 + 3; // Central meridian
+        const lonOriginRad = lonOrigin * Math.PI / 180;
+        
+        const N = a / Math.sqrt(1 - e * e * Math.sin(latRad) * Math.sin(latRad));
+        const T = Math.tan(latRad) * Math.tan(latRad);
+        const C = (e * e / (1 - e * e)) * Math.cos(latRad) * Math.cos(latRad);
+        const A = Math.cos(latRad) * (lonRad - lonOriginRad);
+        
+        const M = a * ((1 - e * e / 4 - 3 * e * e * e * e / 64 - 5 * e * e * e * e * e * e / 256) * latRad
+                    - (3 * e * e / 8 + 3 * e * e * e * e / 32 + 45 * e * e * e * e * e * e / 1024) * Math.sin(2 * latRad)
+                    + (15 * e * e * e * e / 256 + 45 * e * e * e * e * e * e / 1024) * Math.sin(4 * latRad)
+                    - (35 * e * e * e * e * e * e / 3072) * Math.sin(6 * latRad));
+        
+        const x = k0 * N * (A + (1 - T + C) * A * A * A / 6
+                           + (5 - 18 * T + T * T + 72 * C - 58 * (e * e / (1 - e * e))) * A * A * A * A * A / 120) + 500000;
+        
+        const y = k0 * (M + N * Math.tan(latRad) * (A * A / 2 + (5 - T + 9 * C + 4 * C * C) * A * A * A * A / 24
+                       + (61 - 58 * T + T * T + 600 * C - 330 * (e * e / (1 - e * e))) * A * A * A * A * A * A / 720));
+        
+        return {
+            x: x,
+            y: lat >= 0 ? y : y + 10000000, // Add false northing for southern hemisphere
+            zone: zone
+        };
+    }
+    
+    /**
+     * Calculate distance between two points in meters
+     * @param {number} x1 - First point X coordinate (UTM)
+     * @param {number} y1 - First point Y coordinate (UTM)
+     * @param {number} x2 - Second point X coordinate (UTM)
+     * @param {number} y2 - Second point Y coordinate (UTM)
+     * @returns {number} Distance in meters
+     */
+    calculateDistance(x1, y1, x2, y2) {
+        return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    }
+
+    /**
+     * Convert GPS coordinates to canvas coordinates using real metric projection
      * @param {Object} bounds - GPS bounds
      * @param {number} canvasWidth - Canvas width
      * @param {number} canvasHeight - Canvas height
@@ -300,51 +354,101 @@ class GPXParser {
         const drawWidth = canvasWidth - (padding * 2);
         const drawHeight = canvasHeight - (padding * 2);
         
-        const latRange = bounds.maxLat - bounds.minLat;
-        const lonRange = bounds.maxLon - bounds.minLon;
+        // Convert all coordinates to UTM first
+        const utmCoords = [];
         
-        // Calculate scale to fit both dimensions
-        const latScale = drawHeight / latRange;
-        const lonScale = drawWidth / lonRange;
-        const scale = Math.min(latScale, lonScale);
-        
-        // Calculate center offset
-        const centerLat = (bounds.minLat + bounds.maxLat) / 2;
-        const centerLon = (bounds.minLon + bounds.maxLon) / 2;
-        const centerX = canvasWidth / 2;
-        const centerY = canvasHeight / 2;
-        
-        // Project waypoints
+        // Convert waypoints to UTM
         this.waypoints.forEach(wpt => {
-            wpt.x = centerX + (wpt.lon - centerLon) * scale;
-            wpt.y = centerY - (wpt.lat - centerLat) * scale; // Flip Y axis
+            const utm = this.latLonToUTM(wpt.lat, wpt.lon);
+            wpt.utmX = utm.x;
+            wpt.utmY = utm.y;
+            wpt.utmZone = utm.zone;
+            utmCoords.push({x: utm.x, y: utm.y});
         });
         
-        // Project track points
+        // Convert track points to UTM
         this.tracks.forEach(track => {
             track.points.forEach(pt => {
-                pt.x = centerX + (pt.lon - centerLon) * scale;
-                pt.y = centerY - (pt.lat - centerLat) * scale; // Flip Y axis
+                const utm = this.latLonToUTM(pt.lat, pt.lon);
+                pt.utmX = utm.x;
+                pt.utmY = utm.y;
+                pt.utmZone = utm.zone;
+                utmCoords.push({x: utm.x, y: utm.y});
             });
         });
         
-        // Project route points
+        // Convert route points to UTM
         this.routes.forEach(route => {
             route.points.forEach(pt => {
-                pt.x = centerX + (pt.lon - centerLon) * scale;
-                pt.y = centerY - (pt.lat - centerLat) * scale; // Flip Y axis
+                const utm = this.latLonToUTM(pt.lat, pt.lon);
+                pt.utmX = utm.x;
+                pt.utmY = utm.y;
+                pt.utmZone = utm.zone;
+                utmCoords.push({x: utm.x, y: utm.y});
+            });
+        });
+        
+        if (utmCoords.length === 0) return;
+        
+        // Calculate UTM bounds
+        const minX = Math.min(...utmCoords.map(c => c.x));
+        const maxX = Math.max(...utmCoords.map(c => c.x));
+        const minY = Math.min(...utmCoords.map(c => c.y));
+        const maxY = Math.max(...utmCoords.map(c => c.y));
+        
+        const utmWidth = maxX - minX;
+        const utmHeight = maxY - minY;
+        
+        // Calculate scale to maintain real proportions
+        const scaleX = drawWidth / utmWidth;
+        const scaleY = drawHeight / utmHeight;
+        const scale = Math.min(scaleX, scaleY);
+        
+        // Store scale for distance calculations
+        this.metersPerPixel = 1 / scale;
+        
+        // Calculate center offset
+        const centerUtmX = (minX + maxX) / 2;
+        const centerUtmY = (minY + maxY) / 2;
+        const centerCanvasX = canvasWidth / 2;
+        const centerCanvasY = canvasHeight / 2;
+        
+        // Project waypoints to canvas
+        this.waypoints.forEach(wpt => {
+            wpt.x = centerCanvasX + (wpt.utmX - centerUtmX) * scale;
+            wpt.y = centerCanvasY - (wpt.utmY - centerUtmY) * scale; // Flip Y axis
+        });
+        
+        // Project track points to canvas
+        this.tracks.forEach(track => {
+            track.points.forEach(pt => {
+                pt.x = centerCanvasX + (pt.utmX - centerUtmX) * scale;
+                pt.y = centerCanvasY - (pt.utmY - centerUtmY) * scale; // Flip Y axis
+            });
+        });
+        
+        // Project route points to canvas
+        this.routes.forEach(route => {
+            route.points.forEach(pt => {
+                pt.x = centerCanvasX + (pt.utmX - centerUtmX) * scale;
+                pt.y = centerCanvasY - (pt.utmY - centerUtmY) * scale; // Flip Y axis
             });
         });
     }
 
     /**
-     * Convert GPX data to electrical drawing elements
-     * @returns {Object} Drawing elements
+     * Convert GPX data to electrical drawing elements with real metric coordinates
+     * @returns {Object} Drawing elements with distance information
      */
     toDrawingElements() {
         const elements = {
             poles: [],
-            lines: []
+            lines: [],
+            metadata: {
+                metersPerPixel: this.metersPerPixel || 1,
+                coordinateSystem: 'UTM',
+                totalDistance: 0
+            }
         };
         
         // Convert waypoints to poles
@@ -360,16 +464,29 @@ class GPXParser {
                 hasGrounding: wpt.hasGrounding,
                 hasGuywire: wpt.hasGuywire,
                 originalLat: wpt.lat,
-                originalLon: wpt.lon
+                originalLon: wpt.lon,
+                utmX: wpt.utmX,
+                utmY: wpt.utmY,
+                utmZone: wpt.utmZone
             });
         });
         
-        // Convert tracks to lines
+        let totalDistance = 0;
+        
+        // Convert tracks to lines with real distance calculations
         this.tracks.forEach(track => {
             if (track.points.length > 1) {
                 for (let i = 0; i < track.points.length - 1; i++) {
                     const startPt = track.points[i];
                     const endPt = track.points[i + 1];
+                    
+                    // Calculate real distance in meters
+                    const distanceMeters = this.calculateDistance(
+                        startPt.utmX, startPt.utmY,
+                        endPt.utmX, endPt.utmY
+                    );
+                    
+                    totalDistance += distanceMeters;
                     
                     elements.lines.push({
                         id: `${track.id}_line_${i}`,
@@ -379,18 +496,29 @@ class GPXParser {
                         endY: endPt.y,
                         type: track.type,
                         name: `${track.name} - Segment ${i + 1}`,
-                        trackId: track.id
+                        trackId: track.id,
+                        distanceMeters: Math.round(distanceMeters * 100) / 100, // Round to cm
+                        startUtm: { x: startPt.utmX, y: startPt.utmY, zone: startPt.utmZone },
+                        endUtm: { x: endPt.utmX, y: endPt.utmY, zone: endPt.utmZone }
                     });
                 }
             }
         });
         
-        // Convert routes to lines
+        // Convert routes to lines with real distance calculations
         this.routes.forEach(route => {
             if (route.points.length > 1) {
                 for (let i = 0; i < route.points.length - 1; i++) {
                     const startPt = route.points[i];
                     const endPt = route.points[i + 1];
+                    
+                    // Calculate real distance in meters
+                    const distanceMeters = this.calculateDistance(
+                        startPt.utmX, startPt.utmY,
+                        endPt.utmX, endPt.utmY
+                    );
+                    
+                    totalDistance += distanceMeters;
                     
                     elements.lines.push({
                         id: `${route.id}_line_${i}`,
@@ -400,11 +528,16 @@ class GPXParser {
                         endY: endPt.y,
                         type: route.type,
                         name: `${route.name} - Segment ${i + 1}`,
-                        routeId: route.id
+                        routeId: route.id,
+                        distanceMeters: Math.round(distanceMeters * 100) / 100, // Round to cm
+                        startUtm: { x: startPt.utmX, y: startPt.utmY, zone: startPt.utmZone },
+                        endUtm: { x: endPt.utmX, y: endPt.utmY, zone: endPt.utmZone }
                     });
                 }
             }
         });
+        
+        elements.metadata.totalDistance = Math.round(totalDistance * 100) / 100;
         
         return elements;
     }

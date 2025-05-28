@@ -11,6 +11,11 @@ class DrawingEngine {
             poles: [],
             lines: []
         };
+        this.metadata = {
+            metersPerPixel: 1,
+            coordinateSystem: 'Canvas',
+            totalDistance: 0
+        };
         this.selectedElement = null;
         this.currentTool = 'select';
         this.currentPoleType = 'tiang-baja-existing';
@@ -26,6 +31,7 @@ class DrawingEngine {
         this.gridSize = 20;
         this.showGrid = true;
         this.showNameLabels = true;
+        this.onElementsChanged = null; // Callback for when elements change
         
         this.setupEventListeners();
         this.render();
@@ -338,12 +344,26 @@ class DrawingEngine {
     }
 
     /**
-     * Load elements from GPX data
+     * Load elements from GPX data with metadata
      */
     loadFromGPX(elements) {
-        this.elements = elements;
+        this.elements = {
+            poles: elements.poles || [],
+            lines: elements.lines || []
+        };
+        this.metadata = elements.metadata || {
+            metersPerPixel: 1,
+            coordinateSystem: 'Canvas',
+            totalDistance: 0
+        };
         this.selectedElement = null;
         this.updatePropertiesPanel(null);
+        
+        // Trigger callback if set
+        if (this.onElementsChanged) {
+            this.onElementsChanged();
+        }
+        
         this.render();
     }
 
@@ -722,7 +742,9 @@ class DrawingEngine {
                 </div>
                 <div class="property-group">
                     <label>Position:</label>
-                    <div>X: ${Math.round(element.x)}, Y: ${Math.round(element.y)}</div>
+                    <div>Canvas: X: ${Math.round(element.x)}, Y: ${Math.round(element.y)}</div>
+                    ${element.utmX ? `<div>UTM: ${Math.round(element.utmX)}, ${Math.round(element.utmY)} (Zone ${element.utmZone})</div>` : ''}
+                    ${element.originalLat ? `<div>GPS: ${element.originalLat.toFixed(6)}, ${element.originalLon.toFixed(6)}</div>` : ''}
                 </div>
             `;
         } else {
@@ -743,8 +765,18 @@ class DrawingEngine {
                 </div>
                 <div class="property-group">
                     <label>Length:</label>
-                    <div>${Math.round(Math.sqrt((element.endX - element.startX) ** 2 + (element.endY - element.startY) ** 2))} units</div>
+                    <div>Canvas: ${Math.round(Math.sqrt((element.endX - element.startX) ** 2 + (element.endY - element.startY) ** 2))} pixels</div>
+                    ${element.distanceMeters ? `<div>Real: ${element.distanceMeters} meters (${(element.distanceMeters / 1000).toFixed(3)} km)</div>` : ''}
                 </div>
+                ${element.startUtm ? `
+                <div class="property-group">
+                    <label>Start UTM:</label>
+                    <div>${Math.round(element.startUtm.x)}, ${Math.round(element.startUtm.y)} (Zone ${element.startUtm.zone})</div>
+                </div>
+                <div class="property-group">
+                    <label>End UTM:</label>
+                    <div>${Math.round(element.endUtm.x)}, ${Math.round(element.endUtm.y)} (Zone ${element.endUtm.zone})</div>
+                </div>` : ''}
             `;
         }
         
