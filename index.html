@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electrical CAD Drawing - GPX Tech</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1><i class="fas fa-bolt"></i> Electrical CAD Drawing</h1>
+            </div>
+            <div class="header-right">
+                <button id="newProject" class="btn btn-primary">
+                    <i class="fas fa-file"></i> New Project
+                </button>
+                <button id="saveProject" class="btn btn-secondary">
+                    <i class="fas fa-save"></i> Save
+                </button>
+                <input type="file" id="gpxFileInput" accept=".gpx" style="display: none;">
+                <button id="loadGpx" class="btn btn-success">
+                    <i class="fas fa-upload"></i> Load GPX
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="tool-section">
+                    <h3>Drawing Tools</h3>
+                    <button id="selectTool" class="tool-btn active" data-tool="select">
+                        <i class="fas fa-mouse-pointer"></i>
+                        <span>Select</span>
+                    </button>
+                    <button id="panTool" class="tool-btn" data-tool="pan">
+                        <i class="fas fa-hand-paper"></i>
+                        <span>Pan</span>
+                    </button>
+                    <button id="lineTool" class="tool-btn" data-tool="line">
+                        <i class="fas fa-minus"></i>
+                        <span>Line</span>
+                    </button>
+                    <button id="poleTool" class="tool-btn" data-tool="pole">
+                        <i class="fas fa-circle"></i>
+                        <span>Pole</span>
+                    </button>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Pole Types</h3>
+                    <div class="symbol-grid">
+                        <button class="symbol-btn" data-type="tiang-baja-existing">
+                            <div class="symbol-icon tiang-baja-existing"></div>
+                            <span>Tiang Baja Existing</span>
+                        </button>
+                        <button class="symbol-btn" data-type="tiang-baja-rencana">
+                            <div class="symbol-icon tiang-baja-rencana"></div>
+                            <span>Tiang Baja Rencana</span>
+                        </button>
+                        <button class="symbol-btn" data-type="tiang-beton-existing">
+                            <div class="symbol-icon tiang-beton-existing"></div>
+                            <span>Tiang Beton Existing</span>
+                        </button>
+                        <button class="symbol-btn" data-type="tiang-beton-rencana">
+                            <div class="symbol-icon tiang-beton-rencana"></div>
+                            <span>Tiang Beton Rencana</span>
+                        </button>
+                        <button class="symbol-btn" data-type="gardu-portal">
+                            <div class="symbol-icon gardu-portal"></div>
+                            <span>Gardu Portal Rencana</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Line Types</h3>
+                    <div class="line-types">
+                        <button class="line-type-btn" data-type="sutm-rencana">
+                            <div class="line-sample sutm-rencana"></div>
+                            <span>SUTM Rencana</span>
+                        </button>
+                        <button class="line-type-btn" data-type="sutm-existing">
+                            <div class="line-sample sutm-existing"></div>
+                            <span>SUTM Existing</span>
+                        </button>
+                        <button class="line-type-btn" data-type="sutr-rencana">
+                            <div class="line-sample sutr-rencana"></div>
+                            <span>SUTR Rencana</span>
+                        </button>
+                        <button class="line-type-btn" data-type="sutr-existing">
+                            <div class="line-sample sutr-existing"></div>
+                            <span>SUTR Existing</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Accessories</h3>
+                    <div class="accessories">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="addGrounding">
+                            <span>Add Grounding</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="addGuywire">
+                            <span>Add Guy Wire</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Display Options</h3>
+                    <div class="display-options">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="showNameLabels" checked>
+                            <span>Show Name Labels</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas Area -->
+            <div class="canvas-container">
+                <canvas id="drawingCanvas" width="1200" height="800"></canvas>
+                <div class="canvas-controls">
+                    <button id="zoomIn" class="control-btn">
+                        <i class="fas fa-search-plus"></i>
+                    </button>
+                    <button id="zoomOut" class="control-btn">
+                        <i class="fas fa-search-minus"></i>
+                    </button>
+                    <button id="resetView" class="control-btn">
+                        <i class="fas fa-home"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Properties Panel -->
+            <div class="properties-panel">
+                <h3>Properties</h3>
+                <div id="propertiesContent">
+                    <p>Select an element to view properties</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend" id="legend">
+            <div class="legend-header">
+                <h3>Legend</h3>
+                <div class="legend-controls">
+                    <button id="legendMinimize" class="legend-control-btn">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="legend-content" id="legendContent">
+                <div class="legend-section">
+                    <h4>Poles</h4>
+                    <div class="legend-item">
+                        <div class="legend-symbol tiang-baja-existing"></div>
+                        <span>TIANG BAJA EKSISTING</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-symbol tiang-baja-rencana"></div>
+                        <span>TIANG BAJA RENCANA</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-symbol tiang-beton-existing"></div>
+                        <span>TIANG BETON EKSISTING</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-symbol tiang-beton-rencana"></div>
+                        <span>TIANG BETON RENCANA</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-symbol gardu-portal"></div>
+                        <span>GARDU PORTAL RENCANA</span>
+                    </div>
+                </div>
+                
+                <div class="legend-section">
+                    <h4>Lines</h4>
+                    <div class="legend-item">
+                        <div class="legend-line sutm-rencana"></div>
+                        <span>SUTM RENCANA</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line sutm-existing"></div>
+                        <span>SUTM EKSISTING</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line sutr-rencana"></div>
+                        <span>SUTR RENCANA</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line sutr-existing"></div>
+                        <span>SUTR EKSISTING</span>
+                    </div>
+                </div>
+                
+                <div class="legend-section">
+                    <h4>Accessories</h4>
+                    <div class="legend-item">
+                        <div class="legend-symbol grounding"></div>
+                        <span>GROUNDING</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-symbol guywire"></div>
+                        <span>GUY WIRE</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="gpx-parser.js"></script>
+    <script src="drawing-engine.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
