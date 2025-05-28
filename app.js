@@ -86,6 +86,19 @@ class ElectricalCADApp {
         document.getElementById('saveProject')?.addEventListener('click', () => this.saveProject());
         document.getElementById('loadGpx')?.addEventListener('click', () => this.loadGPXFile());
         
+        // Add button to enable real coordinates for manual drawing
+        const enableRealCoordsBtn = document.createElement('button');
+        enableRealCoordsBtn.textContent = 'Enable Real Coordinates';
+        enableRealCoordsBtn.className = 'btn btn-secondary';
+        enableRealCoordsBtn.title = 'Enable real coordinate system and metric calculations for manual drawing';
+        enableRealCoordsBtn.addEventListener('click', () => this.enableRealCoordinatesForDrawing());
+        
+        // Add to header right section
+        const headerRight = document.querySelector('.header-right');
+        if (headerRight) {
+            headerRight.appendChild(enableRealCoordsBtn);
+        }
+        
         // GPX file input
         document.getElementById('gpxFileInput')?.addEventListener('change', (e) => this.handleGPXFile(e));
         
@@ -401,6 +414,17 @@ class ElectricalCADApp {
             // Load into drawing engine
             this.drawingEngine.loadFromGPX(elements);
             
+            // Enable real coordinates for manual drawing using GPX reference
+            if (elements.poles.length > 0 || elements.lines.length > 0) {
+                const referencePoint = {
+                    utmX: this.drawingEngine.coordinateSystem.centerUtmX,
+                    utmY: this.drawingEngine.coordinateSystem.centerUtmY,
+                    utmZone: this.drawingEngine.coordinateSystem.utmZone,
+                    scale: this.drawingEngine.coordinateSystem.scale
+                };
+                this.drawingEngine.enableRealCoordinates(referencePoint);
+            }
+            
             // Update project info
             this.currentProject.name = `GPX Import - ${new Date().toLocaleDateString()}`;
             this.currentProject.modified = new Date();
@@ -434,6 +458,19 @@ class ElectricalCADApp {
         } catch (error) {
             console.error('Error processing GPX:', error);
             this.showNotification('Error processing GPX file: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * Enable real coordinates for manual drawing
+     */
+    enableRealCoordinatesForDrawing() {
+        if (!this.drawingEngine.coordinateSystem.isRealCoordinates) {
+            this.drawingEngine.enableRealCoordinates();
+            this.showNotification('Real coordinate system enabled! Manual drawing will now use UTM coordinates and metric calculations.', 'success');
+            this.updateStatusBar();
+        } else {
+            this.showNotification('Real coordinate system is already enabled.', 'info');
         }
     }
 
@@ -474,7 +511,8 @@ class ElectricalCADApp {
         if (elementCountEl) {
             const poleCount = elements.poles ? elements.poles.length : 0;
             const lineCount = elements.lines ? elements.lines.length : 0;
-            elementCountEl.textContent = `Elements: ${poleCount} poles, ${lineCount} lines`;
+            const realCoords = this.drawingEngine.coordinateSystem && this.drawingEngine.coordinateSystem.isRealCoordinates ? 'Enabled' : 'Disabled';
+            elementCountEl.textContent = `Elements: ${poleCount} poles, ${lineCount} lines | Real Coordinates: ${realCoords}`;
         }
     }
 

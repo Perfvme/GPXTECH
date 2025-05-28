@@ -16,6 +16,16 @@ class DrawingEngine {
             coordinateSystem: 'Canvas',
             totalDistance: 0
         };
+        // Real coordinate system properties
+        this.coordinateSystem = {
+            isRealCoordinates: false,
+            utmZone: null,
+            centerUtmX: 0,
+            centerUtmY: 0,
+            centerCanvasX: 0,
+            centerCanvasY: 0,
+            scale: 1
+        };
         this.selectedElement = null;
         this.currentTool = 'select';
         this.currentPoleType = 'tiang-baja-existing';
@@ -220,6 +230,19 @@ class DrawingEngine {
             hasGuywire: this.addGuywire
         };
         
+        // Add real coordinate information if using real coordinate system
+        if (this.coordinateSystem.isRealCoordinates) {
+            const utmCoords = this.canvasToUTM(x, y);
+            pole.utmX = utmCoords.x;
+            pole.utmY = utmCoords.y;
+            pole.utmZone = this.coordinateSystem.utmZone;
+            
+            // Convert UTM back to lat/lon for reference
+            const latLon = this.utmToLatLon(utmCoords.x, utmCoords.y, this.coordinateSystem.utmZone);
+            pole.originalLat = latLon.lat;
+            pole.originalLon = latLon.lon;
+        }
+        
         this.elements.poles.push(pole);
         this.selectedElement = pole;
         this.updatePropertiesPanel(pole);
@@ -253,6 +276,19 @@ class DrawingEngine {
                 type: this.currentLineType,
                 name: `Line ${this.elements.lines.length + 1}`
             };
+            
+            // Add real coordinate information and distance calculation if using real coordinate system
+            if (this.coordinateSystem.isRealCoordinates) {
+                const startUtm = this.canvasToUTM(line.startX, line.startY);
+                const endUtm = this.canvasToUTM(line.endX, line.endY);
+                
+                line.startUtm = { x: startUtm.x, y: startUtm.y, zone: this.coordinateSystem.utmZone };
+                line.endUtm = { x: endUtm.x, y: endUtm.y, zone: this.coordinateSystem.utmZone };
+                
+                // Calculate real distance in meters
+                line.distanceMeters = this.calculateDistance(startUtm.x, startUtm.y, endUtm.x, endUtm.y);
+                line.distanceMeters = Math.round(line.distanceMeters * 100) / 100; // Round to cm
+            }
             
             this.elements.lines.push(line);
             this.selectedElement = line;
@@ -356,6 +392,18 @@ class DrawingEngine {
             coordinateSystem: 'Canvas',
             totalDistance: 0
         };
+        
+        // Set up real coordinate system if loading from GPX
+        if (elements.metadata && elements.metadata.coordinateSystem === 'UTM') {
+            this.coordinateSystem.isRealCoordinates = true;
+            this.coordinateSystem.scale = 1 / elements.metadata.metersPerPixel;
+            
+            // Calculate coordinate system center from existing elements
+            if (this.elements.poles.length > 0 || this.elements.lines.length > 0) {
+                this.calculateCoordinateSystemCenter();
+            }
+        }
+        
         this.selectedElement = null;
         this.updatePropertiesPanel(null);
         
@@ -383,6 +431,149 @@ class DrawingEngine {
             this.updatePropertiesPanel(null);
             this.render();
         }
+    }
+
+    /**
+     * Calculate coordinate system center from existing elements
+     */
+    calculateCoordinateSystemCenter() {
+        const allUtmCoords = [];
+        
+        // Collect UTM coordinates from poles
+        this.elements.poles.forEach(pole => {
+            if (pole.utmX !== undefined && pole.utmY !== undefined) {
+                allUtmCoords.push({ x: pole.utmX, y: pole.utmY });
+                if (pole.utmZone && !this.coordinateSystem.utmZone) {
+                    this.coordinateSystem.utmZone = pole.utmZone;
+                }
+            }
+        });
+        
+        // Collect UTM coordinates from lines
+        this.elements.lines.forEach(line => {
+            if (line.startUtm) {
+                allUtmCoords.push({ x: line.startUtm.x, y: line.startUtm.y });
+                if (line.startUtm.zone && !this.coordinateSystem.utmZone) {
+                    this.coordinateSystem.utmZone = line.startUtm.zone;
+                }
+            }
+            if (line.endUtm) {
+                allUtmCoords.push({ x: line.endUtm.x, y: line.endUtm.y });
+            }
+        });
+        
+        if (allUtmCoords.length > 0) {
+            // Calculate center of UTM coordinates
+            const sumX = allUtmCoords.reduce((sum, coord) => sum + coord.x, 0);
+            const sumY = allUtmCoords.reduce((sum, coord) => sum + coord.y, 0);
+            
+            this.coordinateSystem.centerUtmX = sumX / allUtmCoords.length;
+            this.coordinateSystem.centerUtmY = sumY / allUtmCoords.length;
+            this.coordinateSystem.centerCanvasX = this.canvas.width / 2;
+            this.coordinateSystem.centerCanvasY = this.canvas.height / 2;
+        }
+    }
+
+    /**
+     * Convert canvas coordinates to UTM coordinates
+     */
+    canvasToUTM(canvasX, canvasY) {
+        if (!this.coordinateSystem.isRealCoordinates) {
+            return { x: canvasX, y: canvasY };
+        }
+        
+        const utmX = this.coordinateSystem.centerUtmX + (canvasX - this.coordinateSystem.centerCanvasX) / this.coordinateSystem.scale;
+        const utmY = this.coordinateSystem.centerUtmY - (canvasY - this.coordinateSystem.centerCanvasY) / this.coordinateSystem.scale;
+        
+        return { x: utmX, y: utmY };
+    }
+
+    /**
+     * Convert UTM coordinates to canvas coordinates
+     */
+    utmToCanvas(utmX, utmY) {
+        if (!this.coordinateSystem.isRealCoordinates) {
+            return { x: utmX, y: utmY };
+        }
+        
+        const canvasX = this.coordinateSystem.centerCanvasX + (utmX - this.coordinateSystem.centerUtmX) * this.coordinateSystem.scale;
+        const canvasY = this.coordinateSystem.centerCanvasY - (utmY - this.coordinateSystem.centerUtmY) * this.coordinateSystem.scale;
+        
+        return { x: canvasX, y: canvasY };
+    }
+
+    /**
+     * Convert UTM coordinates to Lat/Lon
+     */
+    utmToLatLon(utmX, utmY, zone) {
+        const a = 6378137; // WGS84 semi-major axis
+        const e = 0.0818191908426; // WGS84 eccentricity
+        const k0 = 0.9996; // UTM scale factor
+        
+        const x = utmX - 500000; // Remove false easting
+        const y = utmY >= 10000000 ? utmY - 10000000 : utmY; // Remove false northing if southern hemisphere
+        
+        const lonOrigin = (zone - 1) * 6 - 180 + 3; // Central meridian
+        
+        const M = y / k0;
+        const mu = M / (a * (1 - e * e / 4 - 3 * e * e * e * e / 64 - 5 * e * e * e * e * e * e / 256));
+        
+        const e1 = (1 - Math.sqrt(1 - e * e)) / (1 + Math.sqrt(1 - e * e));
+        const phi1 = mu + (3 * e1 / 2 - 27 * e1 * e1 * e1 / 32) * Math.sin(2 * mu)
+                     + (21 * e1 * e1 / 16 - 55 * e1 * e1 * e1 * e1 / 32) * Math.sin(4 * mu)
+                     + (151 * e1 * e1 * e1 / 96) * Math.sin(6 * mu);
+        
+        const N1 = a / Math.sqrt(1 - e * e * Math.sin(phi1) * Math.sin(phi1));
+        const T1 = Math.tan(phi1) * Math.tan(phi1);
+        const C1 = (e * e / (1 - e * e)) * Math.cos(phi1) * Math.cos(phi1);
+        const R1 = a * (1 - e * e) / Math.pow(1 - e * e * Math.sin(phi1) * Math.sin(phi1), 1.5);
+        const D = x / (N1 * k0);
+        
+        const lat = phi1 - (N1 * Math.tan(phi1) / R1) * (D * D / 2 - (5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * (e * e / (1 - e * e))) * D * D * D * D / 24
+                   + (61 + 90 * T1 + 298 * C1 + 45 * T1 * T1 - 252 * (e * e / (1 - e * e)) - 3 * C1 * C1) * D * D * D * D * D * D / 720);
+        
+        const lon = lonOrigin + (D - (1 + 2 * T1 + C1) * D * D * D / 6
+                    + (5 - 2 * C1 + 28 * T1 - 3 * C1 * C1 + 8 * (e * e / (1 - e * e)) + 24 * T1 * T1) * D * D * D * D * D / 120) / Math.cos(phi1);
+        
+        return {
+            lat: lat * 180 / Math.PI,
+            lon: lon * 180 / Math.PI
+        };
+    }
+
+    /**
+     * Calculate distance between two points in meters
+     */
+    calculateDistance(x1, y1, x2, y2) {
+        return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    }
+
+    /**
+     * Enable real coordinate system for manual drawing
+     */
+    enableRealCoordinates(referencePoint = null) {
+        this.coordinateSystem.isRealCoordinates = true;
+        
+        if (referencePoint) {
+            // Use provided reference point (e.g., from GPX data)
+            this.coordinateSystem.centerUtmX = referencePoint.utmX || 0;
+            this.coordinateSystem.centerUtmY = referencePoint.utmY || 0;
+            this.coordinateSystem.utmZone = referencePoint.utmZone || 33; // Default to zone 33
+            this.coordinateSystem.scale = referencePoint.scale || 1;
+        } else {
+            // Set default coordinate system center to canvas center
+            this.coordinateSystem.centerUtmX = 500000; // Default UTM easting
+            this.coordinateSystem.centerUtmY = 0; // Default UTM northing
+            this.coordinateSystem.utmZone = 33; // Default UTM zone
+            this.coordinateSystem.scale = 1; // 1 meter per pixel
+        }
+        
+        this.coordinateSystem.centerCanvasX = this.canvas.width / 2;
+        this.coordinateSystem.centerCanvasY = this.canvas.height / 2;
+        
+        // Update metadata
+        this.metadata.coordinateSystem = 'UTM';
+        this.metadata.metersPerPixel = 1 / this.coordinateSystem.scale;
     }
 
     /**
@@ -705,7 +896,12 @@ class DrawingEngine {
         const panel = document.getElementById('propertiesContent');
         
         if (!element) {
-            panel.innerHTML = '<p>Select an element to view properties</p>';
+            panel.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-mouse-pointer"></i>
+                    <p>Select an element to edit properties</p>
+                </div>
+            `;
             return;
         }
         
@@ -713,77 +909,155 @@ class DrawingEngine {
         
         if (element.type && element.type.includes('tiang')) {
             // It's a pole
+            const typeDisplayNames = {
+                'tiang-baja-existing': 'Steel Pole (Existing)',
+                'tiang-baja-rencana': 'Steel Pole (Planned)',
+                'tiang-beton-existing': 'Concrete Pole (Existing)',
+                'tiang-beton-rencana': 'Concrete Pole (Planned)',
+                'gardu-portal': 'Portal Substation'
+            };
+            
             html = `
-                <div class="property-group">
-                    <label>Name:</label>
-                    <input type="text" value="${element.name}" onchange="drawingEngine.updateElementProperty('name', this.value)">
+                <div class="element-header">
+                    <div class="element-icon pole-icon"></div>
+                    <div class="element-info">
+                        <h4>Pole Properties</h4>
+                        <span class="element-type">${typeDisplayNames[element.type] || element.type}</span>
+                    </div>
                 </div>
-                <div class="property-group">
-                    <label>Type:</label>
-                    <select onchange="drawingEngine.updateElementProperty('type', this.value)">
-                        <option value="tiang-baja-existing" ${element.type === 'tiang-baja-existing' ? 'selected' : ''}>Tiang Baja Existing</option>
-                        <option value="tiang-baja-rencana" ${element.type === 'tiang-baja-rencana' ? 'selected' : ''}>Tiang Baja Rencana</option>
-                        <option value="tiang-beton-existing" ${element.type === 'tiang-beton-existing' ? 'selected' : ''}>Tiang Beton Existing</option>
-                        <option value="tiang-beton-rencana" ${element.type === 'tiang-beton-rencana' ? 'selected' : ''}>Tiang Beton Rencana</option>
-                        <option value="gardu-portal" ${element.type === 'gardu-portal' ? 'selected' : ''}>Gardu Portal</option>
-                    </select>
-                </div>
-                <div class="property-group">
-                    <label>
-                        <input type="checkbox" ${element.hasGrounding ? 'checked' : ''} onchange="drawingEngine.updateElementProperty('hasGrounding', this.checked)">
-                        Grounding
-                    </label>
-                </div>
-                <div class="property-group">
-                    <label>
-                        <input type="checkbox" ${element.hasGuywire ? 'checked' : ''} onchange="drawingEngine.updateElementProperty('hasGuywire', this.checked)">
-                        Guy Wire
-                    </label>
-                </div>
-                <div class="property-group">
-                    <label>Position:</label>
-                    <div>Canvas: X: ${Math.round(element.x)}, Y: ${Math.round(element.y)}</div>
-                    ${element.utmX ? `<div>UTM: ${Math.round(element.utmX)}, ${Math.round(element.utmY)} (Zone ${element.utmZone})</div>` : ''}
-                    ${element.originalLat ? `<div>GPS: ${element.originalLat.toFixed(6)}, ${element.originalLon.toFixed(6)}</div>` : ''}
+                
+                <div class="properties-form">
+                    <div class="form-row">
+                        <label><i class="fas fa-tag"></i> Name</label>
+                        <input type="text" value="${element.name}" onchange="drawingEngine.updateElementProperty('name', this.value)" placeholder="Enter pole name">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label><i class="fas fa-cog"></i> Type</label>
+                        <select onchange="drawingEngine.updateElementProperty('type', this.value)">
+                            <option value="tiang-baja-existing" ${element.type === 'tiang-baja-existing' ? 'selected' : ''}>Steel Pole (Existing)</option>
+                            <option value="tiang-baja-rencana" ${element.type === 'tiang-baja-rencana' ? 'selected' : ''}>Steel Pole (Planned)</option>
+                            <option value="tiang-beton-existing" ${element.type === 'tiang-beton-existing' ? 'selected' : ''}>Concrete Pole (Existing)</option>
+                            <option value="tiang-beton-rencana" ${element.type === 'tiang-beton-rencana' ? 'selected' : ''}>Concrete Pole (Planned)</option>
+                            <option value="gardu-portal" ${element.type === 'gardu-portal' ? 'selected' : ''}>Portal Substation</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-section">
+                        <label class="section-label"><i class="fas fa-plus-circle"></i> Accessories</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" ${element.hasGrounding ? 'checked' : ''} onchange="drawingEngine.updateElementProperty('hasGrounding', this.checked)">
+                                <span class="checkmark"></span>
+                                <i class="fas fa-bolt"></i> Grounding
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" ${element.hasGuywire ? 'checked' : ''} onchange="drawingEngine.updateElementProperty('hasGuywire', this.checked)">
+                                <span class="checkmark"></span>
+                                <i class="fas fa-link"></i> Guy Wire
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <label class="section-label"><i class="fas fa-map-marker-alt"></i> Location</label>
+                        <div class="location-info">
+                            <div class="coord-item">
+                                <span class="coord-label">Canvas</span>
+                                <span class="coord-value">X: ${Math.round(element.x)}, Y: ${Math.round(element.y)}</span>
+                            </div>
+                            ${element.utmX ? `
+                            <div class="coord-item">
+                                <span class="coord-label">UTM</span>
+                                <span class="coord-value">${Math.round(element.utmX)}, ${Math.round(element.utmY)} (${element.utmZone})</span>
+                            </div>` : ''}
+                            ${element.originalLat ? `
+                            <div class="coord-item">
+                                <span class="coord-label">GPS</span>
+                                <span class="coord-value">${element.originalLat.toFixed(6)}, ${element.originalLon.toFixed(6)}</span>
+                            </div>` : ''}
+                        </div>
+                    </div>
                 </div>
             `;
         } else {
             // It's a line
+            const typeDisplayNames = {
+                'sutm-existing': 'Medium Voltage (Existing)',
+                'sutm-rencana': 'Medium Voltage (Planned)',
+                'sutr-existing': 'Low Voltage (Existing)',
+                'sutr-rencana': 'Low Voltage (Planned)'
+            };
+            
+            const canvasLength = Math.round(Math.sqrt((element.endX - element.startX) ** 2 + (element.endY - element.startY) ** 2));
+            
             html = `
-                <div class="property-group">
-                    <label>Name:</label>
-                    <input type="text" value="${element.name}" onchange="drawingEngine.updateElementProperty('name', this.value)">
+                <div class="element-header">
+                    <div class="element-icon line-icon"></div>
+                    <div class="element-info">
+                        <h4>Line Properties</h4>
+                        <span class="element-type">${typeDisplayNames[element.type] || element.type}</span>
+                    </div>
                 </div>
-                <div class="property-group">
-                    <label>Type:</label>
-                    <select onchange="drawingEngine.updateElementProperty('type', this.value)">
-                        <option value="sutm-existing" ${element.type === 'sutm-existing' ? 'selected' : ''}>SUTM Existing</option>
-                        <option value="sutm-rencana" ${element.type === 'sutm-rencana' ? 'selected' : ''}>SUTM Rencana</option>
-                        <option value="sutr-existing" ${element.type === 'sutr-existing' ? 'selected' : ''}>SUTR Existing</option>
-                        <option value="sutr-rencana" ${element.type === 'sutr-rencana' ? 'selected' : ''}>SUTR Rencana</option>
-                    </select>
+                
+                <div class="properties-form">
+                    <div class="form-row">
+                        <label><i class="fas fa-tag"></i> Name</label>
+                        <input type="text" value="${element.name}" onchange="drawingEngine.updateElementProperty('name', this.value)" placeholder="Enter line name">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label><i class="fas fa-cog"></i> Type</label>
+                        <select onchange="drawingEngine.updateElementProperty('type', this.value)">
+                            <option value="sutm-existing" ${element.type === 'sutm-existing' ? 'selected' : ''}>Medium Voltage (Existing)</option>
+                            <option value="sutm-rencana" ${element.type === 'sutm-rencana' ? 'selected' : ''}>Medium Voltage (Planned)</option>
+                            <option value="sutr-existing" ${element.type === 'sutr-existing' ? 'selected' : ''}>Low Voltage (Existing)</option>
+                            <option value="sutr-rencana" ${element.type === 'sutr-rencana' ? 'selected' : ''}>Low Voltage (Planned)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-section">
+                        <label class="section-label"><i class="fas fa-ruler"></i> Measurements</label>
+                        <div class="measurement-info">
+                            <div class="measure-item">
+                                <span class="measure-label">Canvas Length</span>
+                                <span class="measure-value">${canvasLength} px</span>
+                            </div>
+                            ${element.distanceMeters ? `
+                            <div class="measure-item primary">
+                                <span class="measure-label">Real Distance</span>
+                                <span class="measure-value">${element.distanceMeters} m</span>
+                            </div>
+                            <div class="measure-item">
+                                <span class="measure-label">Kilometers</span>
+                                <span class="measure-value">${(element.distanceMeters / 1000).toFixed(3)} km</span>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                    
+                    ${element.startUtm ? `
+                    <div class="form-section">
+                        <label class="section-label"><i class="fas fa-map-marker-alt"></i> Coordinates</label>
+                        <div class="location-info">
+                            <div class="coord-item">
+                                <span class="coord-label">Start UTM</span>
+                                <span class="coord-value">${Math.round(element.startUtm.x)}, ${Math.round(element.startUtm.y)} (${element.startUtm.zone})</span>
+                            </div>
+                            <div class="coord-item">
+                                <span class="coord-label">End UTM</span>
+                                <span class="coord-value">${Math.round(element.endUtm.x)}, ${Math.round(element.endUtm.y)} (${element.endUtm.zone})</span>
+                            </div>
+                        </div>
+                    </div>` : ''}
                 </div>
-                <div class="property-group">
-                    <label>Length:</label>
-                    <div>Canvas: ${Math.round(Math.sqrt((element.endX - element.startX) ** 2 + (element.endY - element.startY) ** 2))} pixels</div>
-                    ${element.distanceMeters ? `<div>Real: ${element.distanceMeters} meters (${(element.distanceMeters / 1000).toFixed(3)} km)</div>` : ''}
-                </div>
-                ${element.startUtm ? `
-                <div class="property-group">
-                    <label>Start UTM:</label>
-                    <div>${Math.round(element.startUtm.x)}, ${Math.round(element.startUtm.y)} (Zone ${element.startUtm.zone})</div>
-                </div>
-                <div class="property-group">
-                    <label>End UTM:</label>
-                    <div>${Math.round(element.endUtm.x)}, ${Math.round(element.endUtm.y)} (Zone ${element.endUtm.zone})</div>
-                </div>` : ''}
             `;
         }
         
         html += `
             <div class="property-actions">
-                <button onclick="drawingEngine.deleteSelected()" class="btn-danger">
-                    <i class="fas fa-trash"></i> Delete
+                <button onclick="drawingEngine.deleteSelected()" class="delete-btn">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>Delete Element</span>
                 </button>
             </div>
         `;
