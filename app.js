@@ -107,6 +107,36 @@ class ElectricalCADApp {
             btn.addEventListener('click', (e) => this.selectTool(e.target.closest('.tool-btn')));
         });
         
+        // Selection controls
+        document.getElementById('selectAll')?.addEventListener('click', () => {
+            this.drawingEngine.selectAll();
+        });
+
+        document.getElementById('clearSelection')?.addEventListener('click', () => {
+            this.drawingEngine.clearSelection();
+        });
+
+        document.getElementById('selectFiltered')?.addEventListener('click', () => {
+            const filterType = document.getElementById('filterSelect').value;
+            this.drawingEngine.selectByFilter(filterType);
+        });
+
+        // Batch operation buttons
+        document.getElementById('batchChangeType')?.addEventListener('click', () => {
+            const newType = document.getElementById('batchTypeSelect').value;
+            if (newType) {
+                this.drawingEngine.batchChangeType(newType);
+            } else {
+                alert('Please select a type first.');
+            }
+        });
+
+        document.getElementById('batchChangeName')?.addEventListener('click', () => {
+            const newName = document.getElementById('batchNameInput').value;
+            const useNumberedNames = document.getElementById('useNumberedNames').checked;
+            this.drawingEngine.batchChangeName(newName, useNumberedNames);
+        });
+        
         // Symbol buttons
         document.querySelectorAll('.symbol-btn').forEach(btn => {
             btn.addEventListener('click', (e) => this.selectSymbol(e.target.closest('.symbol-btn')));
@@ -134,6 +164,11 @@ class ElectricalCADApp {
         // Display options
         document.getElementById('showNameLabels')?.addEventListener('change', (e) => {
             this.drawingEngine.toggleNameLabels(e.target.checked);
+        });
+        
+        // Snap toggle
+        document.getElementById('snapToggle')?.addEventListener('change', (e) => {
+            this.drawingEngine.toggleSnap(e.target.checked);
         });
         
         // Legend controls

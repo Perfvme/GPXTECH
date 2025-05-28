@@ -572,6 +572,304 @@ body {
     position: relative;
 }
 
+/* Tool Options */
+.tool-options {
+    margin: 8px 0;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.tool-options .checkbox-item {
+    margin: 0;
+    font-size: 11px;
+}
+
+/* Selection Controls */
+.selection-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.selection-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #495057;
+    transition: all 0.2s ease;
+}
+
+.selection-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.selection-btn:active {
+    background: #dee2e6;
+}
+
+.selection-btn i {
+    font-size: 14px;
+}
+
+.filter-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filter-controls label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #495057;
+}
+
+.filter-controls select {
+    padding: 6px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: white;
+    font-size: 13px;
+    color: #495057;
+}
+
+/* Batch Controls */
+.batch-controls {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #dee2e6;
+}
+
+.batch-controls h4 {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    color: #495057;
+    font-weight: 600;
+}
+
+.batch-type-change,
+.batch-name-change {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.batch-type-change label,
+.batch-name-change label {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.batch-controls select,
+.batch-controls input {
+    padding: 6px 8px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 12px;
+    background: white;
+}
+
+.batch-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.batch-btn:hover {
+    background: #0056b3;
+}
+
+.batch-btn:active {
+    background: #004085;
+}
+
+.batch-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+.batch-btn i {
+    font-size: 12px;
+}
+
+.naming-options {
+    margin: 6px 0;
+}
+
+.naming-options .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #6c757d;
+}
+
+.naming-options .checkbox-item input[type="checkbox"] {
+    margin: 0;
+}
+
+.naming-options .checkmark {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #dee2e6;
+    border-radius: 3px;
+    position: relative;
+    background: white;
+}
+
+.naming-options .checkbox-item input[type="checkbox"]:checked + .checkmark {
+    background: #007bff;
+    border-color: #007bff;
+}
+
+.naming-options .checkbox-item input[type="checkbox"]:checked + .checkmark::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.filter-controls select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Drag selection overlay */
+.drag-selection-overlay {
+    position: absolute;
+    border: 2px dashed #007bff;
+    background: rgba(0, 123, 255, 0.1);
+    pointer-events: none;
+    z-index: 1000;
+}
+
+/* Line Input Overlay */
+.line-input-overlay {
+    background: white;
+    border: 2px solid #3498db;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-width: 200px;
+    z-index: 1000;
+}
+
+.line-input-overlay .input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.line-input-overlay .input-group label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #2c3e50;
+    min-width: 70px;
+}
+
+.line-input-overlay .input-group input {
+    flex: 1;
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+    width: 60px;
+}
+
+.line-input-overlay .lock-btn {
+    padding: 4px 6px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 10px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.line-input-overlay .lock-btn:hover {
+    border-color: #3498db;
+    background: #f8f9fa;
+}
+
+.line-input-overlay .lock-btn.locked {
+    background: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+.line-input-overlay .input-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+}
+
+.line-input-overlay .confirm-btn {
+    flex: 1;
+    padding: 6px 12px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    transition: background 0.2s ease;
+}
+
+.line-input-overlay .confirm-btn:hover {
+    background: #229954;
+}
+
+.line-input-overlay .cancel-btn {
+    flex: 1;
+    padding: 6px 12px;
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    transition: background 0.2s ease;
+}
+
+.line-input-overlay .cancel-btn:hover {
+    background: #c0392b;
+}
+
 .checkbox-item:hover {
     background: #e9ecef;
 }

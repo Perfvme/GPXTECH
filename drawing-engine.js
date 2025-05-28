@@ -27,6 +27,14 @@ class DrawingEngine {
             scale: 1
         };
         this.selectedElement = null;
+        this.selectedElements = new Set(); // For multiple selection
+        this.dragSelection = {
+            active: false,
+            startX: 0,
+            startY: 0,
+            endX: 0,
+            endY: 0
+        };
         this.currentTool = 'select';
         this.currentPoleType = 'tiang-baja-existing';
         this.currentLineType = 'sutm-existing';
@@ -42,6 +50,18 @@ class DrawingEngine {
         this.showGrid = true;
         this.showNameLabels = true;
         this.onElementsChanged = null; // Callback for when elements change
+        
+        // Advanced line drawing features
+        this.snapEnabled = true;
+        this.snapDistance = 15; // pixels
+        this.lineDrawingMode = 'normal'; // 'normal', 'angle-length'
+        this.preciseInputs = {
+            angle: { value: 0, locked: false },
+            length: { value: 0, locked: false }
+        };
+        this.snapPoint = null;
+        this.previewLine = null;
+        this.inputOverlay = null;
         
         this.setupEventListeners();
         this.render();
@@ -59,6 +79,13 @@ class DrawingEngine {
         
         // Handle canvas resize
         window.addEventListener('resize', this.handleResize.bind(this));
+        
+        // Handle escape key to cancel line drawing
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.tempLine) {
+                this.cancelLine();
+            }
+        });
     }
 
     /**
@@ -75,6 +102,9 @@ class DrawingEngine {
             case 'select':
                 this.handleSelect(x, y);
                 break;
+            case 'drag-select':
+                this.startDragSelection(x, y);
+                break;
             case 'pan':
                 this.isDragging = true;
                 this.canvas.style.cursor = 'grabbing';
@@ -83,7 +113,13 @@ class DrawingEngine {
                 this.addPole(x, y);
                 break;
             case 'line':
-                this.startLine(x, y);
+                if (this.tempLine) {
+                    // Second click - finish the line
+                    this.finishLine(x, y);
+                } else {
+                    // First click - start the line
+                    this.startLine(x, y);
+                }
                 break;
         }
     }
@@ -104,8 +140,11 @@ class DrawingEngine {
             this.dragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
             this.render();
         } else if (this.tempLine) {
-            this.tempLine.endX = x;
-            this.tempLine.endY = y;
+            this.updateLineDrawing(x, y);
+        } else if (this.currentTool === 'drag-select' && this.dragSelection.active) {
+            this.updateDragSelection(x, y);
+        } else if (this.currentTool === 'line' && this.snapEnabled) {
+            this.updateSnapPoint(x, y);
             this.render();
         }
     }
@@ -119,12 +158,11 @@ class DrawingEngine {
             this.canvas.style.cursor = this.currentTool === 'pan' ? 'grab' : 'crosshair';
         }
         
-        if (this.tempLine && this.currentTool === 'line') {
-            const rect = this.canvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left - this.panX) / this.zoom;
-            const y = (e.clientY - rect.top - this.panY) / this.zoom;
-            this.finishLine(x, y);
+        if (this.currentTool === 'drag-select' && this.dragSelection.active) {
+            this.finishDragSelection();
         }
+        
+        // Line finishing is now handled in handleMouseDown for click-to-finish behavior
     }
 
     /**
@@ -163,6 +201,14 @@ class DrawingEngine {
      */
     handleSelect(x, y) {
         this.selectedElement = null;
+        this.selectedElements = new Set(); // For multiple selection
+        this.dragSelection = {
+            active: false,
+            startX: 0,
+            startY: 0,
+            endX: 0,
+            endY: 0
+        };
         
         // Check poles first (they're on top)
         for (let pole of this.elements.poles) {
@@ -187,6 +233,256 @@ class DrawingEngine {
         // Nothing selected
         this.updatePropertiesPanel(null);
         this.render();
+    }
+
+    /**
+     * Start drag selection
+     */
+    startDragSelection(x, y) {
+        this.dragSelection.active = true;
+        this.dragSelection.startX = x;
+        this.dragSelection.startY = y;
+        this.dragSelection.endX = x;
+        this.dragSelection.endY = y;
+        this.selectedElements.clear();
+        this.selectedElement = null;
+    }
+
+    /**
+     * Update drag selection
+     */
+    updateDragSelection(x, y) {
+        this.dragSelection.endX = x;
+        this.dragSelection.endY = y;
+        this.render();
+    }
+
+    /**
+     * Finish drag selection
+     */
+    finishDragSelection() {
+        const minX = Math.min(this.dragSelection.startX, this.dragSelection.endX);
+        const maxX = Math.max(this.dragSelection.startX, this.dragSelection.endX);
+        const minY = Math.min(this.dragSelection.startY, this.dragSelection.endY);
+        const maxY = Math.max(this.dragSelection.startY, this.dragSelection.endY);
+
+        // Select all elements within the selection rectangle
+        this.selectedElements.clear();
+        
+        // Check poles
+        for (let pole of this.elements.poles) {
+            if (pole.x >= minX && pole.x <= maxX && pole.y >= minY && pole.y <= maxY) {
+                this.selectedElements.add(pole);
+            }
+        }
+        
+        // Check lines (check if any part of the line is within the rectangle)
+        for (let line of this.elements.lines) {
+            if (this.isLineIntersectingRect(line, minX, minY, maxX, maxY)) {
+                this.selectedElements.add(line);
+            }
+        }
+
+        this.dragSelection.active = false;
+        this.updatePropertiesPanel(this.selectedElements.size > 0 ? Array.from(this.selectedElements) : null);
+        this.render();
+    }
+
+    /**
+     * Check if line intersects with rectangle
+     */
+    isLineIntersectingRect(line, minX, minY, maxX, maxY) {
+        // Check if either endpoint is within the rectangle
+        if ((line.startX >= minX && line.startX <= maxX && line.startY >= minY && line.startY <= maxY) ||
+            (line.endX >= minX && line.endX <= maxX && line.endY >= minY && line.endY <= maxY)) {
+            return true;
+        }
+        
+        // Check if line intersects any edge of the rectangle
+        return this.lineIntersectsLine(line.startX, line.startY, line.endX, line.endY, minX, minY, maxX, minY) ||
+               this.lineIntersectsLine(line.startX, line.startY, line.endX, line.endY, maxX, minY, maxX, maxY) ||
+               this.lineIntersectsLine(line.startX, line.startY, line.endX, line.endY, maxX, maxY, minX, maxY) ||
+               this.lineIntersectsLine(line.startX, line.startY, line.endX, line.endY, minX, maxY, minX, minY);
+    }
+
+    /**
+     * Check if two lines intersect
+     */
+    lineIntersectsLine(x1, y1, x2, y2, x3, y3, x4, y4) {
+        const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        if (denom === 0) return false;
+        
+        const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+        const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
+        
+        return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+    }
+
+    /**
+     * Select all elements
+     */
+    selectAll() {
+        this.selectedElements.clear();
+        this.selectedElement = null;
+        
+        // Add all poles
+        for (let pole of this.elements.poles) {
+            this.selectedElements.add(pole);
+        }
+        
+        // Add all lines
+        for (let line of this.elements.lines) {
+            this.selectedElements.add(line);
+        }
+        
+        this.updatePropertiesPanel(this.selectedElements.size > 0 ? Array.from(this.selectedElements) : null);
+        this.render();
+    }
+
+    /**
+     * Clear all selections
+     */
+    clearSelection() {
+        this.selectedElements.clear();
+        this.selectedElement = null;
+        this.updatePropertiesPanel(null);
+        this.render();
+    }
+
+    /**
+     * Select elements by filter
+     */
+    selectByFilter(filterType) {
+        this.selectedElements.clear();
+        this.selectedElement = null;
+        
+        switch (filterType) {
+            case 'all':
+                this.selectAll();
+                return;
+            case 'poles':
+                for (let pole of this.elements.poles) {
+                    this.selectedElements.add(pole);
+                }
+                break;
+            case 'lines':
+                for (let line of this.elements.lines) {
+                    this.selectedElements.add(line);
+                }
+                break;
+            case 'tiang-baja':
+                for (let pole of this.elements.poles) {
+                    if (pole.type && pole.type.includes('tiang-baja')) {
+                        this.selectedElements.add(pole);
+                    }
+                }
+                break;
+            case 'tiang-beton':
+                for (let pole of this.elements.poles) {
+                    if (pole.type && pole.type.includes('tiang-beton')) {
+                        this.selectedElements.add(pole);
+                    }
+                }
+                break;
+            case 'gardu-portal':
+                for (let pole of this.elements.poles) {
+                    if (pole.type && pole.type.includes('gardu-portal')) {
+                        this.selectedElements.add(pole);
+                    }
+                }
+                break;
+            case 'sutm':
+                for (let line of this.elements.lines) {
+                    if (line.type && line.type.includes('sutm')) {
+                        this.selectedElements.add(line);
+                    }
+                }
+                break;
+            case 'sutr':
+                for (let line of this.elements.lines) {
+                    if (line.type && line.type.includes('sutr')) {
+                        this.selectedElements.add(line);
+                    }
+                }
+                break;
+        }
+        
+        this.updatePropertiesPanel(this.selectedElements.size > 0 ? Array.from(this.selectedElements) : null);
+        this.render();
+    }
+
+    /**
+     * Batch change type for selected elements
+     */
+    batchChangeType(newType) {
+        if (this.selectedElements.size === 0) {
+            alert('No elements selected. Please select elements first.');
+            return;
+        }
+
+        let changedCount = 0;
+        for (let element of this.selectedElements) {
+            // Check if the new type is compatible with the element
+            if (element.hasOwnProperty('x') && element.hasOwnProperty('y') && !element.hasOwnProperty('startX')) {
+                // This is a pole
+                if (['tiang-baja-existing', 'tiang-baja-rencana', 'tiang-beton-existing', 'tiang-beton-rencana', 'gardu-portal'].includes(newType)) {
+                    element.type = newType;
+                    changedCount++;
+                }
+            } else if (element.hasOwnProperty('startX') && element.hasOwnProperty('startY')) {
+                // This is a line
+                if (['sutm', 'sutr'].includes(newType)) {
+                    element.type = newType;
+                    changedCount++;
+                }
+            }
+        }
+
+        if (changedCount > 0) {
+            this.updatePropertiesPanel(Array.from(this.selectedElements));
+            this.render();
+            alert(`Successfully changed type for ${changedCount} element(s).`);
+        } else {
+            alert('No compatible elements found for the selected type.');
+        }
+    }
+
+    /**
+     * Batch change name for selected elements
+     */
+    batchChangeName(newName, useNumberedNames = true) {
+        if (this.selectedElements.size === 0) {
+            alert('No elements selected. Please select elements first.');
+            return;
+        }
+
+        if (!newName || newName.trim() === '') {
+            alert('Please enter a valid name.');
+            return;
+        }
+
+        let changedCount = 0;
+        let counter = 1;
+        for (let element of this.selectedElements) {
+            if (useNumberedNames && this.selectedElements.size > 1) {
+                // Add a number suffix if there are multiple elements and numbering is enabled
+                element.name = `${newName.trim()} ${counter}`;
+                counter++;
+            } else {
+                // Use the same name for all elements
+                element.name = newName.trim();
+            }
+            changedCount++;
+        }
+
+        this.updatePropertiesPanel(Array.from(this.selectedElements));
+        this.render();
+        
+        if (useNumberedNames && this.selectedElements.size > 1) {
+            alert(`Successfully changed name for ${changedCount} element(s) with numbering.`);
+        } else {
+            alert(`Successfully changed name for ${changedCount} element(s) to "${newName.trim()}".`);
+        }
     }
 
     /**
@@ -253,13 +549,28 @@ class DrawingEngine {
      * Start drawing a line
      */
     startLine(x, y) {
+        // Check for snap point
+        const snapPoint = this.findSnapPoint(x, y);
+        const startX = snapPoint ? snapPoint.x : x;
+        const startY = snapPoint ? snapPoint.y : y;
+        
         this.tempLine = {
-            startX: x,
-            startY: y,
-            endX: x,
-            endY: y,
-            type: this.currentLineType
+            startX: startX,
+            startY: startY,
+            endX: startX,
+            endY: startY,
+            type: this.currentLineType,
+            snappedToStart: !!snapPoint
         };
+        
+        // Reset precise inputs
+        this.preciseInputs.angle.value = 0;
+        this.preciseInputs.length.value = 0;
+        
+        // Show input overlay
+        this.showInputOverlay(startX, startY);
+        
+        this.render();
     }
 
     /**
@@ -267,12 +578,17 @@ class DrawingEngine {
      */
     finishLine(x, y) {
         if (this.tempLine) {
+            // Check for snap point at end
+            const snapPoint = this.findSnapPoint(x, y);
+            const endX = snapPoint ? snapPoint.x : this.tempLine.endX;
+            const endY = snapPoint ? snapPoint.y : this.tempLine.endY;
+            
             const line = {
                 id: `line_${Date.now()}`,
                 startX: this.tempLine.startX,
                 startY: this.tempLine.startY,
-                endX: x,
-                endY: y,
+                endX: endX,
+                endY: endY,
                 type: this.currentLineType,
                 name: `Line ${this.elements.lines.length + 1}`
             };
@@ -294,6 +610,8 @@ class DrawingEngine {
             this.selectedElement = line;
             this.updatePropertiesPanel(line);
             this.tempLine = null;
+            this.hideInputOverlay();
+            this.snapPoint = null;
             this.render();
         }
     }
@@ -343,6 +661,317 @@ class DrawingEngine {
      */
     setGuywire(enabled) {
         this.addGuywire = enabled;
+    }
+
+    /**
+     * Toggle snap functionality
+     */
+    toggleSnap(enabled) {
+        this.snapEnabled = enabled;
+        if (!enabled) {
+            this.snapPoint = null;
+        }
+        this.render();
+    }
+
+    /**
+     * Find snap point near given coordinates
+     */
+    findSnapPoint(x, y) {
+        if (!this.snapEnabled) return null;
+        
+        // Check poles first
+        for (let pole of this.elements.poles) {
+            const distance = Math.sqrt((x - pole.x) ** 2 + (y - pole.y) ** 2);
+            if (distance <= this.snapDistance) {
+                return { x: pole.x, y: pole.y, type: 'pole', element: pole };
+            }
+        }
+        
+        // Check line endpoints
+        for (let line of this.elements.lines) {
+            // Start point
+            let distance = Math.sqrt((x - line.startX) ** 2 + (y - line.startY) ** 2);
+            if (distance <= this.snapDistance) {
+                return { x: line.startX, y: line.startY, type: 'line-start', element: line };
+            }
+            
+            // End point
+            distance = Math.sqrt((x - line.endX) ** 2 + (y - line.endY) ** 2);
+            if (distance <= this.snapDistance) {
+                return { x: line.endX, y: line.endY, type: 'line-end', element: line };
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Update snap point for cursor position
+     */
+    updateSnapPoint(x, y) {
+        this.snapPoint = this.findSnapPoint(x, y);
+    }
+
+    /**
+     * Update line drawing with precise inputs
+     */
+    updateLineDrawing(x, y) {
+        if (!this.tempLine) return;
+        
+        // Check for snap point
+        const snapPoint = this.findSnapPoint(x, y);
+        
+        if (this.preciseInputs.angle.locked || this.preciseInputs.length.locked) {
+            // Use precise inputs
+            let endX, endY;
+            
+            if (this.preciseInputs.angle.locked && this.preciseInputs.length.locked) {
+                // Both locked - calculate end point from angle and length
+                const angleRad = (this.preciseInputs.angle.value * Math.PI) / 180;
+                let pixelLength = this.preciseInputs.length.value;
+                
+                // Convert meters to pixels if using real coordinates
+                if (this.coordinateSystem.isRealCoordinates) {
+                    pixelLength = this.preciseInputs.length.value * this.coordinateSystem.scale;
+                }
+                
+                endX = this.tempLine.startX + pixelLength * Math.cos(angleRad);
+                endY = this.tempLine.startY + pixelLength * Math.sin(angleRad);
+            } else if (this.preciseInputs.angle.locked) {
+                // Angle locked - project mouse position onto the locked angle
+                const angleRad = (this.preciseInputs.angle.value * Math.PI) / 180;
+                const mouseDistance = Math.sqrt((x - this.tempLine.startX) ** 2 + (y - this.tempLine.startY) ** 2);
+                endX = this.tempLine.startX + mouseDistance * Math.cos(angleRad);
+                endY = this.tempLine.startY + mouseDistance * Math.sin(angleRad);
+                
+                // Update length input - convert to meters if using real coordinates
+                let lengthValue = mouseDistance;
+                if (this.coordinateSystem.isRealCoordinates) {
+                    lengthValue = mouseDistance / this.coordinateSystem.scale;
+                }
+                this.preciseInputs.length.value = Math.round(lengthValue * 100) / 100; // Round to cm
+                this.updateInputOverlay();
+            } else if (this.preciseInputs.length.locked) {
+                // Length locked - maintain distance but follow mouse direction
+                const mouseAngle = Math.atan2(y - this.tempLine.startY, x - this.tempLine.startX);
+                let pixelLength = this.preciseInputs.length.value;
+                
+                // Convert meters to pixels if using real coordinates
+                if (this.coordinateSystem.isRealCoordinates) {
+                    pixelLength = this.preciseInputs.length.value * this.coordinateSystem.scale;
+                }
+                
+                endX = this.tempLine.startX + pixelLength * Math.cos(mouseAngle);
+                endY = this.tempLine.startY + pixelLength * Math.sin(mouseAngle);
+                
+                // Update angle input
+                this.preciseInputs.angle.value = Math.round((mouseAngle * 180) / Math.PI);
+                this.updateInputOverlay();
+            }
+            
+            this.tempLine.endX = endX;
+            this.tempLine.endY = endY;
+        } else {
+            // Normal drawing - follow mouse or snap point
+            if (snapPoint) {
+                this.tempLine.endX = snapPoint.x;
+                this.tempLine.endY = snapPoint.y;
+            } else {
+                this.tempLine.endX = x;
+                this.tempLine.endY = y;
+            }
+            
+            // Update precise inputs with current values
+            const dx = this.tempLine.endX - this.tempLine.startX;
+            const dy = this.tempLine.endY - this.tempLine.startY;
+            const pixelLength = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            
+            // Convert pixel length to meters if using real coordinates
+            let lengthValue = pixelLength;
+            if (this.coordinateSystem.isRealCoordinates) {
+                lengthValue = pixelLength / this.coordinateSystem.scale;
+            }
+            
+            this.preciseInputs.length.value = Math.round(lengthValue * 100) / 100; // Round to cm
+            this.preciseInputs.angle.value = Math.round(angle);
+            this.updateInputOverlay();
+        }
+        
+        this.render();
+    }
+
+    /**
+     * Show input overlay for precise line drawing
+     */
+    showInputOverlay(x, y) {
+        this.hideInputOverlay(); // Remove existing overlay
+        
+        const canvasRect = this.canvas.getBoundingClientRect();
+        const overlayX = canvasRect.left + (x * this.zoom) + this.panX + 20;
+        const overlayY = canvasRect.top + (y * this.zoom) + this.panY - 50;
+        
+        this.inputOverlay = document.createElement('div');
+        this.inputOverlay.className = 'line-input-overlay';
+        this.inputOverlay.style.position = 'fixed';
+        this.inputOverlay.style.left = overlayX + 'px';
+        this.inputOverlay.style.top = overlayY + 'px';
+        this.inputOverlay.style.zIndex = '1000';
+        
+        const lengthUnit = this.coordinateSystem.isRealCoordinates ? 'm' : 'px';
+        const lengthStep = this.coordinateSystem.isRealCoordinates ? '0.01' : '1';
+        
+        this.inputOverlay.innerHTML = `
+            <div class="input-group">
+                <label>Angle (°):</label>
+                <input type="number" id="angleInput" value="${this.preciseInputs.angle.value}" step="1">
+                <button id="angleLock" class="lock-btn ${this.preciseInputs.angle.locked ? 'locked' : ''}">
+                    <i class="fas fa-${this.preciseInputs.angle.locked ? 'lock' : 'unlock'}"></i>
+                </button>
+            </div>
+            <div class="input-group">
+                <label id="lengthLabel">Length (${lengthUnit}):</label>
+                <input type="number" id="lengthInput" value="${this.preciseInputs.length.value}" step="${lengthStep}" min="0">
+                <button id="lengthLock" class="lock-btn ${this.preciseInputs.length.locked ? 'locked' : ''}">
+                    <i class="fas fa-${this.preciseInputs.length.locked ? 'lock' : 'unlock'}"></i>
+                </button>
+            </div>
+            <div class="input-actions">
+                <button id="confirmLine" class="confirm-btn">Confirm</button>
+                <button id="cancelLine" class="cancel-btn">Cancel</button>
+            </div>
+        `;
+        
+        document.body.appendChild(this.inputOverlay);
+        
+        // Add event listeners
+        this.setupInputOverlayEvents();
+    }
+
+    /**
+     * Update input overlay values
+     */
+    updateInputOverlay() {
+        if (!this.inputOverlay) return;
+        
+        const angleInput = this.inputOverlay.querySelector('#angleInput');
+        const lengthInput = this.inputOverlay.querySelector('#lengthInput');
+        const lengthLabel = this.inputOverlay.querySelector('#lengthLabel');
+        
+        if (angleInput && !this.preciseInputs.angle.locked) {
+            angleInput.value = this.preciseInputs.angle.value;
+        }
+        if (lengthInput && !this.preciseInputs.length.locked) {
+            lengthInput.value = this.preciseInputs.length.value;
+        }
+        
+        // Update length label and input step to show correct unit
+        if (lengthLabel && lengthInput) {
+            const lengthUnit = this.coordinateSystem.isRealCoordinates ? 'm' : 'px';
+            const lengthStep = this.coordinateSystem.isRealCoordinates ? '0.01' : '1';
+            lengthLabel.textContent = `Length (${lengthUnit}):`;
+            lengthInput.step = lengthStep;
+        }
+    }
+
+    /**
+     * Setup input overlay event listeners
+     */
+    setupInputOverlayEvents() {
+        if (!this.inputOverlay) return;
+        
+        const angleInput = this.inputOverlay.querySelector('#angleInput');
+        const lengthInput = this.inputOverlay.querySelector('#lengthInput');
+        const angleLock = this.inputOverlay.querySelector('#angleLock');
+        const lengthLock = this.inputOverlay.querySelector('#lengthLock');
+        const confirmBtn = this.inputOverlay.querySelector('#confirmLine');
+        const cancelBtn = this.inputOverlay.querySelector('#cancelLine');
+        
+        // Input changes
+        angleInput.addEventListener('input', (e) => {
+            this.preciseInputs.angle.value = parseFloat(e.target.value) || 0;
+            if (this.preciseInputs.angle.locked) {
+                this.updateLineFromInputs();
+            }
+        });
+        
+        lengthInput.addEventListener('input', (e) => {
+            this.preciseInputs.length.value = parseFloat(e.target.value) || 0;
+            if (this.preciseInputs.length.locked) {
+                this.updateLineFromInputs();
+            }
+        });
+        
+        // Lock toggles
+        angleLock.addEventListener('click', () => {
+            this.preciseInputs.angle.locked = !this.preciseInputs.angle.locked;
+            angleLock.className = `lock-btn ${this.preciseInputs.angle.locked ? 'locked' : ''}`;
+            angleLock.innerHTML = `<i class="fas fa-${this.preciseInputs.angle.locked ? 'lock' : 'unlock'}"></i>`;
+            
+            if (this.preciseInputs.angle.locked) {
+                this.updateLineFromInputs();
+            }
+        });
+        
+        lengthLock.addEventListener('click', () => {
+            this.preciseInputs.length.locked = !this.preciseInputs.length.locked;
+            lengthLock.className = `lock-btn ${this.preciseInputs.length.locked ? 'locked' : ''}`;
+            lengthLock.innerHTML = `<i class="fas fa-${this.preciseInputs.length.locked ? 'lock' : 'unlock'}"></i>`;
+            
+            if (this.preciseInputs.length.locked) {
+                this.updateLineFromInputs();
+            }
+        });
+        
+        // Action buttons
+        confirmBtn.addEventListener('click', () => {
+            this.finishLine(this.tempLine.endX, this.tempLine.endY);
+        });
+        
+        cancelBtn.addEventListener('click', () => {
+            this.cancelLine();
+        });
+        
+        // Prevent canvas events when interacting with overlay
+        this.inputOverlay.addEventListener('mousedown', (e) => e.stopPropagation());
+        this.inputOverlay.addEventListener('mousemove', (e) => e.stopPropagation());
+        this.inputOverlay.addEventListener('mouseup', (e) => e.stopPropagation());
+    }
+
+    /**
+     * Update line from precise inputs
+     */
+    updateLineFromInputs() {
+        if (!this.tempLine) return;
+        
+        const angleRad = (this.preciseInputs.angle.value * Math.PI) / 180;
+        const length = this.preciseInputs.length.value;
+        
+        this.tempLine.endX = this.tempLine.startX + length * Math.cos(angleRad);
+        this.tempLine.endY = this.tempLine.startY + length * Math.sin(angleRad);
+        
+        this.render();
+    }
+
+    /**
+     * Hide input overlay
+     */
+    hideInputOverlay() {
+        if (this.inputOverlay) {
+            this.inputOverlay.remove();
+            this.inputOverlay = null;
+        }
+    }
+
+    /**
+     * Cancel line drawing
+     */
+    cancelLine() {
+        this.tempLine = null;
+        this.hideInputOverlay();
+        this.snapPoint = null;
+        this.render();
     }
 
     /**
@@ -405,6 +1034,14 @@ class DrawingEngine {
         }
         
         this.selectedElement = null;
+        this.selectedElements = new Set(); // For multiple selection
+        this.dragSelection = {
+            active: false,
+            startX: 0,
+            startY: 0,
+            endX: 0,
+            endY: 0
+        };
         this.updatePropertiesPanel(null);
         
         // Trigger callback if set
@@ -428,6 +1065,14 @@ class DrawingEngine {
                 this.elements.lines = this.elements.lines.filter(l => l.id !== this.selectedElement.id);
             }
             this.selectedElement = null;
+        this.selectedElements = new Set(); // For multiple selection
+        this.dragSelection = {
+            active: false,
+            startX: 0,
+            startY: 0,
+            endX: 0,
+            endY: 0
+        };
             this.updatePropertiesPanel(null);
             this.render();
         }
@@ -603,8 +1248,23 @@ class DrawingEngine {
             this.drawLine(this.tempLine, true);
         }
         
+        // Draw snap point indicator
+        if (this.snapPoint) {
+            this.drawSnapIndicator(this.snapPoint);
+        }
+        
+        // Draw snap point for cursor (when not drawing)
+        if (this.currentTool === 'line' && !this.tempLine && this.snapPoint) {
+            this.drawSnapIndicator(this.snapPoint);
+        }
+        
         // Draw poles
         this.elements.poles.forEach(pole => this.drawPole(pole));
+        
+        // Draw drag selection rectangle
+        if (this.dragSelection.active) {
+            this.drawDragSelection();
+        }
         
         // Restore context
         this.ctx.restore();
@@ -640,7 +1300,8 @@ class DrawingEngine {
      * Draw a pole with the correct symbol
      */
     drawPole(pole) {
-        const isSelected = this.selectedElement && this.selectedElement.id === pole.id;
+        const isSelected = (this.selectedElement && this.selectedElement.id === pole.id) || 
+                          this.selectedElements.has(pole);
         
         this.ctx.save();
         this.ctx.translate(pole.x, pole.y);
@@ -813,7 +1474,8 @@ class DrawingEngine {
      * Draw a line with the correct style
      */
     drawLine(line, isTemporary = false) {
-        const isSelected = !isTemporary && this.selectedElement && this.selectedElement.id === line.id;
+        const isSelected = !isTemporary && ((this.selectedElement && this.selectedElement.id === line.id) || 
+                          this.selectedElements.has(line));
         
         this.ctx.save();
         
@@ -885,6 +1547,50 @@ class DrawingEngine {
         this.ctx.moveTo(line.startX, line.startY);
         this.ctx.lineTo(line.endX, line.endY);
         this.ctx.stroke();
+        
+        this.ctx.restore();
+    }
+
+    /**
+     * Draw drag selection rectangle
+     */
+    drawDragSelection() {
+        this.ctx.save();
+        
+        // Draw selection rectangle
+        this.ctx.strokeStyle = '#3498db';
+        this.ctx.fillStyle = 'rgba(52, 152, 219, 0.1)';
+        this.ctx.lineWidth = 1;
+        this.ctx.setLineDash([5, 5]);
+        
+        const width = this.dragSelection.endX - this.dragSelection.startX;
+        const height = this.dragSelection.endY - this.dragSelection.startY;
+        
+        this.ctx.fillRect(this.dragSelection.startX, this.dragSelection.startY, width, height);
+        this.ctx.strokeRect(this.dragSelection.startX, this.dragSelection.startY, width, height);
+        
+        this.ctx.restore();
+    }
+
+    /**
+     * Draw snap indicator
+     */
+    drawSnapIndicator(snapPoint) {
+        this.ctx.save();
+        
+        // Draw snap circle
+        this.ctx.strokeStyle = '#00ff00';
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([]);
+        this.ctx.beginPath();
+        this.ctx.arc(snapPoint.x, snapPoint.y, 8, 0, 2 * Math.PI);
+        this.ctx.stroke();
+        
+        // Draw center dot
+        this.ctx.fillStyle = '#00ff00';
+        this.ctx.beginPath();
+        this.ctx.arc(snapPoint.x, snapPoint.y, 2, 0, 2 * Math.PI);
+        this.ctx.fill();
         
         this.ctx.restore();
     }
@@ -1096,6 +1802,14 @@ class DrawingEngine {
         this.panX = data.panX || 0;
         this.panY = data.panY || 0;
         this.selectedElement = null;
+        this.selectedElements = new Set(); // For multiple selection
+        this.dragSelection = {
+            active: false,
+            startX: 0,
+            startY: 0,
+            endX: 0,
+            endY: 0
+        };
         this.updatePropertiesPanel(null);
         this.render();
     }
@@ -1106,6 +1820,14 @@ class DrawingEngine {
     clear() {
         this.elements = { poles: [], lines: [] };
         this.selectedElement = null;
+        this.selectedElements = new Set(); // For multiple selection
+        this.dragSelection = {
+            active: false,
+            startX: 0,
+            startY: 0,
+            endX: 0,
+            endY: 0
+        };
         this.updatePropertiesPanel(null);
         this.render();
     }
