@@ -1027,9 +1027,16 @@ class DrawingEngine {
             this.coordinateSystem.isRealCoordinates = true;
             this.coordinateSystem.scale = 1 / elements.metadata.metersPerPixel;
             
-            // Calculate coordinate system center from existing elements
-            if (this.elements.poles.length > 0 || this.elements.lines.length > 0) {
-                this.calculateCoordinateSystemCenter();
+            // Use coordinate system parameters from GPX metadata if available
+            if (elements.metadata.centerUtmX !== undefined && elements.metadata.centerUtmY !== undefined) {
+                this.coordinateSystem.centerUtmX = elements.metadata.centerUtmX;
+                this.coordinateSystem.centerUtmY = elements.metadata.centerUtmY;
+                this.coordinateSystem.utmZone = elements.metadata.utmZone || 33;
+            } else {
+                // Fallback: Calculate coordinate system center from existing elements
+                if (this.elements.poles.length > 0 || this.elements.lines.length > 0) {
+                    this.calculateCoordinateSystemCenter();
+                }
             }
         }
         
@@ -1156,9 +1163,13 @@ class DrawingEngine {
         const k0 = 0.9996; // UTM scale factor
         
         const x = utmX - 500000; // Remove false easting
-        const y = utmY >= 10000000 ? utmY - 10000000 : utmY; // Remove false northing if southern hemisphere
         
-        const lonOrigin = (zone - 1) * 6 - 180 + 3; // Central meridian
+        // Check if this is southern hemisphere (false northing was added)
+        const isSouthernHemisphere = utmY >= 10000000;
+        const y = isSouthernHemisphere ? utmY - 10000000 : utmY;
+        
+        const lonOrigin = (zone - 1) * 6 - 180 + 3; // Central meridian in degrees
+        const lonOriginRad = lonOrigin * Math.PI / 180; // Convert to radians
         
         const M = y / k0;
         const mu = M / (a * (1 - e * e / 4 - 3 * e * e * e * e / 64 - 5 * e * e * e * e * e * e / 256));
@@ -1174,15 +1185,29 @@ class DrawingEngine {
         const R1 = a * (1 - e * e) / Math.pow(1 - e * e * Math.sin(phi1) * Math.sin(phi1), 1.5);
         const D = x / (N1 * k0);
         
-        const lat = phi1 - (N1 * Math.tan(phi1) / R1) * (D * D / 2 - (5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * (e * e / (1 - e * e))) * D * D * D * D / 24
+        let lat = phi1 - (N1 * Math.tan(phi1) / R1) * (D * D / 2 - (5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * (e * e / (1 - e * e))) * D * D * D * D / 24
                    + (61 + 90 * T1 + 298 * C1 + 45 * T1 * T1 - 252 * (e * e / (1 - e * e)) - 3 * C1 * C1) * D * D * D * D * D * D / 720);
         
-        const lon = lonOrigin + (D - (1 + 2 * T1 + C1) * D * D * D / 6
-                    + (5 - 2 * C1 + 28 * T1 - 3 * C1 * C1 + 8 * (e * e / (1 - e * e)) + 24 * T1 * T1) * D * D * D * D * D / 120) / Math.cos(phi1);
+        // Calculate longitude in radians first, then convert to degrees
+        const lonRad = lonOriginRad + (D - (1 + 2 * T1 + C1) * D * D * D / 6
+                      + (5 - 2 * C1 + 28 * T1 - 3 * C1 * C1 + 8 * (e * e / (1 - e * e)) + 24 * T1 * T1) * D * D * D * D * D / 120) / Math.cos(phi1);
+        
+        // Convert to degrees
+        lat = lat * 180 / Math.PI;
+        let lon = lonRad * 180 / Math.PI;
+        
+        // If this was originally from southern hemisphere, make latitude negative
+        if (isSouthernHemisphere) {
+            lat = -Math.abs(lat);
+        }
+        
+        // Normalize longitude to [-180, 180] range
+        while (lon > 180) lon -= 360;
+        while (lon < -180) lon += 360;
         
         return {
-            lat: lat * 180 / Math.PI,
-            lon: lon * 180 / Math.PI
+            lat: lat,
+            lon: lon
         };
     }
 
@@ -1203,14 +1228,26 @@ class DrawingEngine {
             // Use provided reference point (e.g., from GPX data)
             this.coordinateSystem.centerUtmX = referencePoint.utmX || 0;
             this.coordinateSystem.centerUtmY = referencePoint.utmY || 0;
-            this.coordinateSystem.utmZone = referencePoint.utmZone || 33; // Default to zone 33
+            this.coordinateSystem.utmZone = referencePoint.utmZone || 33;
             this.coordinateSystem.scale = referencePoint.scale || 1;
         } else {
-            // Set default coordinate system center to canvas center
-            this.coordinateSystem.centerUtmX = 500000; // Default UTM easting
-            this.coordinateSystem.centerUtmY = 0; // Default UTM northing
-            this.coordinateSystem.utmZone = 33; // Default UTM zone
-            this.coordinateSystem.scale = 1; // 1 meter per pixel
+            // Check if we already have coordinate system data from loaded GPX
+            if (this.coordinateSystem.utmZone && this.coordinateSystem.centerUtmX !== 0) {
+                // Use existing coordinate system from GPX data
+                console.log('Using existing coordinate system from GPX data');
+                // Keep existing centerUtmX, centerUtmY, utmZone, and scale
+            } else {
+                // Calculate from existing elements if available
+                this.calculateCoordinateSystemCenter();
+                
+                // If still no coordinate system, use defaults
+                if (!this.coordinateSystem.utmZone) {
+                    this.coordinateSystem.centerUtmX = 500000; // Default UTM easting
+                    this.coordinateSystem.centerUtmY = 0; // Default UTM northing
+                    this.coordinateSystem.utmZone = 33; // Default UTM zone
+                    this.coordinateSystem.scale = 1; // 1 meter per pixel
+                }
+            }
         }
         
         this.coordinateSystem.centerCanvasX = this.canvas.width / 2;

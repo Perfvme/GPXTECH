@@ -330,6 +330,49 @@ class GPXParser {
             zone: zone
         };
     }
+
+    /**
+     * Convert latitude/longitude to UTM coordinates using a specific UTM zone
+     * @param {number} lat - Latitude in decimal degrees
+     * @param {number} lon - Longitude in decimal degrees
+     * @param {number} targetZone - Target UTM zone to use for conversion
+     * @returns {Object} UTM coordinates {x, y, zone}
+     */
+    latLonToUTMWithZone(lat, lon, targetZone) {
+        const a = 6378137; // WGS84 semi-major axis
+        const e = 0.0818191908426; // WGS84 eccentricity
+        const k0 = 0.9996; // UTM scale factor
+        
+        const latRad = lat * Math.PI / 180;
+        const lonRad = lon * Math.PI / 180;
+        
+        // Use the specified target zone instead of calculating from longitude
+        const zone = targetZone;
+        const lonOrigin = (zone - 1) * 6 - 180 + 3; // Central meridian
+        const lonOriginRad = lonOrigin * Math.PI / 180;
+        
+        const N = a / Math.sqrt(1 - e * e * Math.sin(latRad) * Math.sin(latRad));
+        const T = Math.tan(latRad) * Math.tan(latRad);
+        const C = (e * e / (1 - e * e)) * Math.cos(latRad) * Math.cos(latRad);
+        const A = Math.cos(latRad) * (lonRad - lonOriginRad);
+        
+        const M = a * ((1 - e * e / 4 - 3 * e * e * e * e / 64 - 5 * e * e * e * e * e * e / 256) * latRad
+                    - (3 * e * e / 8 + 3 * e * e * e * e / 32 + 45 * e * e * e * e * e * e / 1024) * Math.sin(2 * latRad)
+                    + (15 * e * e * e * e / 256 + 45 * e * e * e * e * e * e / 1024) * Math.sin(4 * latRad)
+                    - (35 * e * e * e * e * e * e / 3072) * Math.sin(6 * latRad));
+        
+        const x = k0 * N * (A + (1 - T + C) * A * A * A / 6
+                           + (5 - 18 * T + T * T + 72 * C - 58 * (e * e / (1 - e * e))) * A * A * A * A * A / 120) + 500000;
+        
+        const y = k0 * (M + N * Math.tan(latRad) * (A * A / 2 + (5 - T + 9 * C + 4 * C * C) * A * A * A * A / 24
+                       + (61 - 58 * T + T * T + 600 * C - 330 * (e * e / (1 - e * e))) * A * A * A * A * A * A / 720));
+        
+        return {
+            x: x,
+            y: lat >= 0 ? y : y + 10000000, // Add false northing for southern hemisphere
+            zone: zone
+        };
+    }
     
     /**
      * Calculate distance between two points in meters
@@ -341,6 +384,52 @@ class GPXParser {
      */
     calculateDistance(x1, y1, x2, y2) {
         return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    }
+
+    /**
+     * Calculate the dominant UTM zone from all points in the GPX data
+     * @returns {number} The most frequently occurring UTM zone
+     */
+    calculateDominantUtmZone() {
+        const zoneCount = {};
+        
+        // Count UTM zones from waypoints
+        this.waypoints.forEach(wpt => {
+            if (wpt.utmZone) {
+                zoneCount[wpt.utmZone] = (zoneCount[wpt.utmZone] || 0) + 1;
+            }
+        });
+        
+        // Count UTM zones from track points
+        this.tracks.forEach(track => {
+            track.points.forEach(pt => {
+                if (pt.utmZone) {
+                    zoneCount[pt.utmZone] = (zoneCount[pt.utmZone] || 0) + 1;
+                }
+            });
+        });
+        
+        // Count UTM zones from route points
+        this.routes.forEach(route => {
+            route.points.forEach(pt => {
+                if (pt.utmZone) {
+                    zoneCount[pt.utmZone] = (zoneCount[pt.utmZone] || 0) + 1;
+                }
+            });
+        });
+        
+        // Find the zone with the highest count
+        let dominantZone = 33; // Default zone
+        let maxCount = 0;
+        
+        for (const zone in zoneCount) {
+            if (zoneCount[zone] > maxCount) {
+                maxCount = zoneCount[zone];
+                dominantZone = parseInt(zone);
+            }
+        }
+        
+        return dominantZone;
     }
 
     /**
@@ -388,13 +477,53 @@ class GPXParser {
             });
         });
         
-        if (utmCoords.length === 0) return;
+        // Calculate dominant UTM zone
+        const dominantZone = this.calculateDominantUtmZone();
         
-        // Calculate UTM bounds
-        const minX = Math.min(...utmCoords.map(c => c.x));
-        const maxX = Math.max(...utmCoords.map(c => c.x));
-        const minY = Math.min(...utmCoords.map(c => c.y));
-        const maxY = Math.max(...utmCoords.map(c => c.y));
+        // Recalculate all coordinates using the dominant UTM zone for consistency
+        const consistentUtmCoords = [];
+        
+        // Recalculate waypoints with dominant zone
+        this.waypoints.forEach(wpt => {
+            const utm = this.latLonToUTMWithZone(wpt.lat, wpt.lon, dominantZone);
+            wpt.utmX = utm.x;
+            wpt.utmY = utm.y;
+            wpt.utmZone = dominantZone;
+            consistentUtmCoords.push({x: utm.x, y: utm.y});
+        });
+        
+        // Recalculate track points with dominant zone
+        this.tracks.forEach(track => {
+            track.points.forEach(pt => {
+                const utm = this.latLonToUTMWithZone(pt.lat, pt.lon, dominantZone);
+                pt.utmX = utm.x;
+                pt.utmY = utm.y;
+                pt.utmZone = dominantZone;
+                consistentUtmCoords.push({x: utm.x, y: utm.y});
+            });
+        });
+        
+        // Recalculate route points with dominant zone
+        this.routes.forEach(route => {
+            route.points.forEach(pt => {
+                const utm = this.latLonToUTMWithZone(pt.lat, pt.lon, dominantZone);
+                pt.utmX = utm.x;
+                pt.utmY = utm.y;
+                pt.utmZone = dominantZone;
+                consistentUtmCoords.push({x: utm.x, y: utm.y});
+            });
+        });
+        
+        // Use consistent coordinates for bounds calculation
+        const utmCoordsForBounds = consistentUtmCoords;
+        
+        if (utmCoordsForBounds.length === 0) return;
+        
+        // Find bounds in UTM coordinates using consistent coordinates
+        const minX = Math.min(...utmCoordsForBounds.map(c => c.x));
+        const maxX = Math.max(...utmCoordsForBounds.map(c => c.x));
+        const minY = Math.min(...utmCoordsForBounds.map(c => c.y));
+        const maxY = Math.max(...utmCoordsForBounds.map(c => c.y));
         
         const utmWidth = maxX - minX;
         const utmHeight = maxY - minY;
@@ -412,6 +541,11 @@ class GPXParser {
         const centerUtmY = (minY + maxY) / 2;
         const centerCanvasX = canvasWidth / 2;
         const centerCanvasY = canvasHeight / 2;
+        
+        // Store coordinate system parameters as instance properties
+        this.centerUtmX = centerUtmX;
+        this.centerUtmY = centerUtmY;
+        this.utmZone = dominantZone;
         
         // Project waypoints to canvas
         this.waypoints.forEach(wpt => {
@@ -447,7 +581,10 @@ class GPXParser {
             metadata: {
                 metersPerPixel: this.metersPerPixel || 1,
                 coordinateSystem: 'UTM',
-                totalDistance: 0
+                totalDistance: 0,
+                centerUtmX: this.centerUtmX,
+                centerUtmY: this.centerUtmY,
+                utmZone: this.utmZone
             }
         };
         
