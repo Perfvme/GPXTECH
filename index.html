@@ -34,22 +34,23 @@
             <div class="toolbar">
                 <div class="tool-section">
                     <h3>Drawing Tools</h3>
-                    <button id="selectTool" class="tool-btn active" data-tool="select">
-                        <i class="fas fa-mouse-pointer"></i>
-                        <span>Select</span>
-                    </button>
-                    <button id="dragSelectTool" class="tool-btn" data-tool="drag-select">
-                        <i class="fas fa-vector-square"></i>
-                        <span>Drag Select</span>
-                    </button>
-                    <button id="panTool" class="tool-btn" data-tool="pan">
-                        <i class="fas fa-hand-paper"></i>
-                        <span>Pan</span>
-                    </button>
-                    <button id="lineTool" class="tool-btn" data-tool="line">
-                        <i class="fas fa-minus"></i>
-                        <span>Line</span>
-                    </button>
+                    <div class="tool-grid">
+                        <button id="selectTool" class="tool-btn-icon active" data-tool="select" title="Select">
+                            <i class="fas fa-mouse-pointer"></i>
+                        </button>
+                        <button id="dragSelectTool" class="tool-btn-icon" data-tool="drag-select" title="Drag Select">
+                            <i class="fas fa-vector-square"></i>
+                        </button>
+                        <button id="panTool" class="tool-btn-icon" data-tool="pan" title="Pan">
+                            <i class="fas fa-hand-paper"></i>
+                        </button>
+                        <button id="lineTool" class="tool-btn-icon" data-tool="line" title="Line">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <button id="poleTool" class="tool-btn-icon" data-tool="pole" title="Pole">
+                            <i class="fas fa-circle"></i>
+                        </button>
+                    </div>
                     <div class="tool-options">
                         <label class="checkbox-item">
                             <input type="checkbox" id="snapToggle" checked>
@@ -57,73 +58,61 @@
                             <i class="fas fa-magnet"></i> Snap
                         </label>
                     </div>
-                    <button id="poleTool" class="tool-btn" data-tool="pole">
-                        <i class="fas fa-circle"></i>
-                        <span>Pole</span>
-                    </button>
                 </div>
 
                 <div class="tool-section">
-                    <h3>Selection Tools</h3>
-                    <div class="selection-controls">
-                        <button id="selectAll" class="selection-btn">
+                    <h3>Selection</h3>
+                    <div class="selection-controls-compact">
+                        <button id="selectAll" class="selection-btn-compact" title="Select All">
                             <i class="fas fa-check-double"></i>
-                            <span>Select All</span>
                         </button>
-                        <button id="clearSelection" class="selection-btn">
+                        <button id="clearSelection" class="selection-btn-compact" title="Clear Selection">
                             <i class="fas fa-times"></i>
-                            <span>Clear Selection</span>
                         </button>
-                    </div>
-                    <div class="filter-controls">
-                        <label>Filter by Type:</label>
-                        <select id="filterSelect">
-                            <option value="all">All Elements</option>
-                            <option value="poles">Poles Only</option>
-                            <option value="lines">Lines Only</option>
-                            <option value="tiang-baja">Tiang Baja</option>
-                            <option value="tiang-beton">Tiang Beton</option>
-                            <option value="gardu-portal">Gardu Portal</option>
-                            <option value="sutm">SUTM Lines</option>
-                            <option value="sutr">SUTR Lines</option>
-                        </select>
-                        <button id="selectFiltered" class="selection-btn">
+                        <button id="selectFiltered" class="selection-btn-compact" title="Select Filtered">
                             <i class="fas fa-filter"></i>
-                            <span>Select Filtered</span>
                         </button>
                     </div>
-                    <div class="batch-controls">
-                        <h4>Batch Operations</h4>
-                        <div class="batch-type-change">
-                            <label>Change Type:</label>
-                            <select id="batchTypeSelect">
-                                <option value="">Select Type...</option>
-                                <option value="tiang-baja-existing">Tiang Baja Existing</option>
-                                <option value="tiang-baja-rencana">Tiang Baja Rencana</option>
-                                <option value="tiang-beton-existing">Tiang Beton Existing</option>
-                                <option value="tiang-beton-rencana">Tiang Beton Rencana</option>
-                                <option value="gardu-portal">Gardu Portal Rencana</option>
-                                <option value="sutm">SUTM Line</option>
-                                <option value="sutr">SUTR Line</option>
-                            </select>
-                            <button id="batchChangeType" class="batch-btn">
-                                <i class="fas fa-exchange-alt"></i>
-                                <span>Change Type</span>
-                            </button>
-                        </div>
-                        <div class="batch-name-change">
-                            <label>Change Name:</label>
-                            <input type="text" id="batchNameInput" placeholder="Enter new name...">
-                            <div class="naming-options">
-                                <label class="checkbox-item">
-                                    <input type="checkbox" id="useNumberedNames" checked>
-                                    <span class="checkmark"></span>
-                                    <span>Use numbered names (e.g., Tower 1, Tower 2)</span>
-                                </label>
-                            </div>
-                            <button id="batchChangeName" class="batch-btn">
+                    <div class="filter-controls-compact">
+                        <select id="filterSelect" class="compact-select">
+                            <option value="all">All</option>
+                            <option value="poles">Poles</option>
+                            <option value="lines">Lines</option>
+                            <option value="tiang-baja">T.Baja</option>
+                            <option value="tiang-beton">T.Beton</option>
+                            <option value="gardu-portal">Portal</option>
+                            <option value="sutm">SUTM</option>
+                            <option value="sutr">SUTR</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Batch Edit</h3>
+                    <div class="batch-controls-compact">
+                        <select id="batchTypeSelect" class="compact-select">
+                            <option value="">Change Type...</option>
+                            <option value="tiang-baja-existing">T.Baja Existing</option>
+                            <option value="tiang-baja-rencana">T.Baja Rencana</option>
+                            <option value="tiang-beton-existing">T.Beton Existing</option>
+                            <option value="tiang-beton-rencana">T.Beton Rencana</option>
+                            <option value="gardu-portal">Portal Rencana</option>
+                            <option value="sutm">SUTM Line</option>
+                            <option value="sutr">SUTR Line</option>
+                        </select>
+                        <button id="batchChangeType" class="batch-btn-compact" title="Apply Type Change">
+                            <i class="fas fa-exchange-alt"></i>
+                        </button>
+                    </div>
+                    <div class="batch-name-controls">
+                        <input type="text" id="batchNameInput" placeholder="New name..." class="compact-input">
+                        <div class="batch-name-options">
+                            <label class="checkbox-item-compact">
+                                <input type="checkbox" id="useNumberedNames" checked>
+                                <span>Numbered</span>
+                            </label>
+                            <button id="batchChangeName" class="batch-btn-compact" title="Apply Name Change">
                                 <i class="fas fa-edit"></i>
-                                <span>Change Name</span>
                             </button>
                         </div>
                     </div>
@@ -131,177 +120,57 @@
 
                 <div class="tool-section">
                     <h3>Pole Types</h3>
-                    <div class="symbol-grid">
-                        <button class="symbol-btn" data-type="tiang-baja-existing">
+                    <div class="symbol-grid-compact">
+                        <button class="symbol-btn-icon" data-type="tiang-baja-existing" title="Tiang Baja Existing">
                             <div class="symbol-icon tiang-baja-existing"></div>
-                            <span>Tiang Baja Existing</span>
                         </button>
-                        <button class="symbol-btn" data-type="tiang-baja-rencana">
+                        <button class="symbol-btn-icon" data-type="tiang-baja-rencana" title="Tiang Baja Rencana">
                             <div class="symbol-icon tiang-baja-rencana"></div>
-                            <span>Tiang Baja Rencana</span>
                         </button>
-                        <button class="symbol-btn" data-type="tiang-beton-existing">
+                        <button class="symbol-btn-icon" data-type="tiang-beton-existing" title="Tiang Beton Existing">
                             <div class="symbol-icon tiang-beton-existing"></div>
-                            <span>Tiang Beton Existing</span>
                         </button>
-                        <button class="symbol-btn" data-type="tiang-beton-rencana">
+                        <button class="symbol-btn-icon" data-type="tiang-beton-rencana" title="Tiang Beton Rencana">
                             <div class="symbol-icon tiang-beton-rencana"></div>
-                            <span>Tiang Beton Rencana</span>
                         </button>
-                        <button class="symbol-btn" data-type="gardu-portal">
+                        <button class="symbol-btn-icon" data-type="gardu-portal" title="Gardu Portal Rencana">
                             <div class="symbol-icon gardu-portal"></div>
-                            <span>Gardu Portal Rencana</span>
                         </button>
-                    </div>
-                    <div class="batch-controls">
-                        <h4>Batch Operations</h4>
-                        <div class="batch-type-change">
-                            <label>Change Type:</label>
-                            <select id="batchTypeSelect">
-                                <option value="">Select Type...</option>
-                                <option value="tiang-baja-existing">Tiang Baja Existing</option>
-                                <option value="tiang-baja-rencana">Tiang Baja Rencana</option>
-                                <option value="tiang-beton-existing">Tiang Beton Existing</option>
-                                <option value="tiang-beton-rencana">Tiang Beton Rencana</option>
-                                <option value="gardu-portal">Gardu Portal Rencana</option>
-                                <option value="sutm">SUTM Line</option>
-                                <option value="sutr">SUTR Line</option>
-                            </select>
-                            <button id="batchChangeType" class="batch-btn">
-                                <i class="fas fa-exchange-alt"></i>
-                                <span>Change Type</span>
-                            </button>
-                        </div>
-                        <div class="batch-name-change">
-                            <label>Change Name:</label>
-                            <input type="text" id="batchNameInput" placeholder="Enter new name...">
-                            <div class="naming-options">
-                                <label class="checkbox-item">
-                                    <input type="checkbox" id="useNumberedNames" checked>
-                                    <span class="checkmark"></span>
-                                    <span>Use numbered names (e.g., Tower 1, Tower 2)</span>
-                                </label>
-                            </div>
-                            <button id="batchChangeName" class="batch-btn">
-                                <i class="fas fa-edit"></i>
-                                <span>Change Name</span>
-                            </button>
-                        </div>
                     </div>
                 </div>
 
                 <div class="tool-section">
                     <h3>Line Types</h3>
-                    <div class="line-types">
-                        <button class="line-type-btn" data-type="sutm-rencana">
+                    <div class="line-types-compact">
+                        <button class="line-type-btn-icon" data-type="sutm-rencana" title="SUTM Rencana">
                             <div class="line-sample sutm-rencana"></div>
-                            <span>SUTM Rencana</span>
                         </button>
-                        <button class="line-type-btn" data-type="sutm-existing">
+                        <button class="line-type-btn-icon" data-type="sutm-existing" title="SUTM Existing">
                             <div class="line-sample sutm-existing"></div>
-                            <span>SUTM Existing</span>
                         </button>
-                        <button class="line-type-btn" data-type="sutr-rencana">
+                        <button class="line-type-btn-icon" data-type="sutr-rencana" title="SUTR Rencana">
                             <div class="line-sample sutr-rencana"></div>
-                            <span>SUTR Rencana</span>
                         </button>
-                        <button class="line-type-btn" data-type="sutr-existing">
+                        <button class="line-type-btn-icon" data-type="sutr-existing" title="SUTR Existing">
                             <div class="line-sample sutr-existing"></div>
-                            <span>SUTR Existing</span>
                         </button>
                     </div>
-                    <div class="batch-controls">
-                        <h4>Batch Operations</h4>
-                        <div class="batch-type-change">
-                            <label>Change Type:</label>
-                            <select id="batchTypeSelect">
-                                <option value="">Select Type...</option>
-                                <option value="tiang-baja-existing">Tiang Baja Existing</option>
-                                <option value="tiang-baja-rencana">Tiang Baja Rencana</option>
-                                <option value="tiang-beton-existing">Tiang Beton Existing</option>
-                                <option value="tiang-beton-rencana">Tiang Beton Rencana</option>
-                                <option value="gardu-portal">Gardu Portal Rencana</option>
-                                <option value="sutm">SUTM Line</option>
-                                <option value="sutr">SUTR Line</option>
-                            </select>
-                            <button id="batchChangeType" class="batch-btn">
-                                <i class="fas fa-exchange-alt"></i>
-                                <span>Change Type</span>
-                            </button>
-                        </div>
-                        <div class="batch-name-change">
-                            <label>Change Name:</label>
-                            <input type="text" id="batchNameInput" placeholder="Enter new name...">
-                            <div class="naming-options">
-                                <label class="checkbox-item">
-                                    <input type="checkbox" id="useNumberedNames" checked>
-                                    <span class="checkmark"></span>
-                                    <span>Use numbered names (e.g., Tower 1, Tower 2)</span>
-                                </label>
-                            </div>
-                            <button id="batchChangeName" class="batch-btn">
-                                <i class="fas fa-edit"></i>
-                                <span>Change Name</span>
-                            </button>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="tool-section">
-                    <h3>Accessories</h3>
-                    <div class="accessories">
-                        <label class="checkbox-label">
+                    <h3>Options</h3>
+                    <div class="options-compact">
+                        <label class="checkbox-label-compact">
                             <input type="checkbox" id="addGrounding">
-                            <span>Add Grounding</span>
+                            <span>Grounding</span>
                         </label>
-                        <label class="checkbox-label">
+                        <label class="checkbox-label-compact">
                             <input type="checkbox" id="addGuywire">
-                            <span>Add Guy Wire</span>
+                            <span>Guy Wire</span>
                         </label>
-                    </div>
-                    <div class="batch-controls">
-                        <h4>Batch Operations</h4>
-                        <div class="batch-type-change">
-                            <label>Change Type:</label>
-                            <select id="batchTypeSelect">
-                                <option value="">Select Type...</option>
-                                <option value="tiang-baja-existing">Tiang Baja Existing</option>
-                                <option value="tiang-baja-rencana">Tiang Baja Rencana</option>
-                                <option value="tiang-beton-existing">Tiang Beton Existing</option>
-                                <option value="tiang-beton-rencana">Tiang Beton Rencana</option>
-                                <option value="gardu-portal">Gardu Portal Rencana</option>
-                                <option value="sutm">SUTM Line</option>
-                                <option value="sutr">SUTR Line</option>
-                            </select>
-                            <button id="batchChangeType" class="batch-btn">
-                                <i class="fas fa-exchange-alt"></i>
-                                <span>Change Type</span>
-                            </button>
-                        </div>
-                        <div class="batch-name-change">
-                            <label>Change Name:</label>
-                            <input type="text" id="batchNameInput" placeholder="Enter new name...">
-                            <div class="naming-options">
-                                <label class="checkbox-item">
-                                    <input type="checkbox" id="useNumberedNames" checked>
-                                    <span class="checkmark"></span>
-                                    <span>Use numbered names (e.g., Tower 1, Tower 2)</span>
-                                </label>
-                            </div>
-                            <button id="batchChangeName" class="batch-btn">
-                                <i class="fas fa-edit"></i>
-                                <span>Change Name</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tool-section">
-                    <h3>Display Options</h3>
-                    <div class="display-options">
-                        <label class="checkbox-label">
+                        <label class="checkbox-label-compact">
                             <input type="checkbox" id="showNameLabels" checked>
-                            <span>Show Name Labels</span>
+                            <span>Labels</span>
                         </label>
                     </div>
                 </div>
