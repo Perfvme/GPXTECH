@@ -103,8 +103,8 @@ class ElectricalCADApp {
         document.getElementById('gpxFileInput')?.addEventListener('change', (e) => this.handleGPXFile(e));
         
         // Tool buttons
-        document.querySelectorAll('.tool-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => this.selectTool(e.target.closest('.tool-btn')));
+        document.querySelectorAll('.tool-btn-icon').forEach(btn => {
+            btn.addEventListener('click', (e) => this.selectTool(e.target.closest('.tool-btn-icon')));
         });
         
         // Selection controls
@@ -138,13 +138,13 @@ class ElectricalCADApp {
         });
         
         // Symbol buttons
-        document.querySelectorAll('.symbol-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => this.selectSymbol(e.target.closest('.symbol-btn')));
+        document.querySelectorAll('.symbol-btn-icon').forEach(btn => {
+            btn.addEventListener('click', (e) => this.selectSymbol(e.target.closest('.symbol-btn-icon')));
         });
         
         // Line type buttons
-        document.querySelectorAll('.line-type-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => this.selectLineType(e.target.closest('.line-type-btn')));
+        document.querySelectorAll('.line-type-btn-icon').forEach(btn => {
+            btn.addEventListener('click', (e) => this.selectLineType(e.target.closest('.line-type-btn-icon')));
         });
         
         // Canvas controls
@@ -303,7 +303,7 @@ class ElectricalCADApp {
      */
     selectTool(toolBtn) {
         // Remove active class from all tool buttons
-        document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tool-btn-icon').forEach(btn => btn.classList.remove('active'));
         
         // Add active class to selected button
         toolBtn.classList.add('active');
@@ -318,7 +318,7 @@ class ElectricalCADApp {
      */
     selectSymbol(symbolBtn) {
         // Remove active class from all symbol buttons
-        document.querySelectorAll('.symbol-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.symbol-btn-icon').forEach(btn => btn.classList.remove('active'));
         
         // Add active class to selected button
         symbolBtn.classList.add('active');
@@ -336,7 +336,7 @@ class ElectricalCADApp {
      */
     selectLineType(lineBtn) {
         // Remove active class from all line type buttons
-        document.querySelectorAll('.line-type-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.line-type-btn-icon').forEach(btn => btn.classList.remove('active'));
         
         // Add active class to selected button
         lineBtn.classList.add('active');
