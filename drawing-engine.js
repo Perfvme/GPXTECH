@@ -596,9 +596,12 @@ class DrawingEngine {
     finishLine(x, y) {
         if (this.tempLine) {
             // Check for snap point at end
-            const snapPoint = this.findSnapPoint(x, y);
-            const endX = snapPoint ? snapPoint.x : this.tempLine.endX;
-            const endY = snapPoint ? snapPoint.y : this.tempLine.endY;
+            const endSnapPoint = this.findSnapPoint(x, y);
+            const endX = endSnapPoint ? endSnapPoint.x : this.tempLine.endX;
+            const endY = endSnapPoint ? endSnapPoint.y : this.tempLine.endY;
+            
+            // Check for snap point at start (from tempLine.snappedToStart)
+            const startSnapPoint = this.tempLine.snappedToStart ? this.findSnapPoint(this.tempLine.startX, this.tempLine.startY) : null;
             
             const line = {
                 id: `line_${Date.now()}`,
@@ -609,6 +612,14 @@ class DrawingEngine {
                 type: this.currentLineType,
                 name: `Line ${this.elements.lines.length + 1}`
             };
+            
+            // Assign pole references if snapped to poles
+            if (startSnapPoint && startSnapPoint.type === 'endpoint-pole') {
+                line.startPole = startSnapPoint.element.id;
+            }
+            if (endSnapPoint && endSnapPoint.type === 'endpoint-pole') {
+                line.endPole = endSnapPoint.element.id;
+            }
             
             // Add real coordinate information and distance calculation if using real coordinate system
             if (this.coordinateSystem.isRealCoordinates) {

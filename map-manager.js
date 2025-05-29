@@ -255,27 +255,52 @@ class MapManager {
      * Add line to map
      */
     addLineToMap(line) {
-        if (!line.startPole || !line.endPole) return;
-
-        const startPole = this.drawingEngine.elements.poles.find(p => p.id === line.startPole);
-        const endPole = this.drawingEngine.elements.poles.find(p => p.id === line.endPole);
-
-        if (!startPole || !endPole || !startPole.originalLat || !startPole.originalLon || !endPole.originalLat || !endPole.originalLon) {
+        let startLat, startLon, endLat, endLon;
+        let startName = 'Start', endName = 'End';
+        
+        // Try to get coordinates from connected poles first
+        if (line.startPole && line.endPole) {
+            const startPole = this.drawingEngine.elements.poles.find(p => p.id === line.startPole);
+            const endPole = this.drawingEngine.elements.poles.find(p => p.id === line.endPole);
+            
+            if (startPole && endPole && startPole.originalLat && startPole.originalLon && endPole.originalLat && endPole.originalLon) {
+                startLat = startPole.originalLat;
+                startLon = startPole.originalLon;
+                endLat = endPole.originalLat;
+                endLon = endPole.originalLon;
+                startName = startPole.name;
+                endName = endPole.name;
+            }
+        }
+        
+        // If no pole coordinates available, try to convert from UTM coordinates
+        if (!startLat && line.startUtm && line.endUtm) {
+            const startLatLon = this.drawingEngine.utmToLatLon(line.startUtm.x, line.startUtm.y, line.startUtm.zone);
+            const endLatLon = this.drawingEngine.utmToLatLon(line.endUtm.x, line.endUtm.y, line.endUtm.zone);
+            
+            startLat = startLatLon.lat;
+            startLon = startLatLon.lon;
+            endLat = endLatLon.lat;
+            endLon = endLatLon.lon;
+        }
+        
+        // If still no coordinates available, skip this line
+        if (!startLat || !endLat) {
             return;
         }
 
         const style = this.lineStyles[line.type] || this.lineStyles['sutm-existing'];
         const polyline = L.polyline([
-            [startPole.originalLat, startPole.originalLon],
-            [endPole.originalLat, endPole.originalLon]
+            [startLat, startLon],
+            [endLat, endLon]
         ], style)
             .bindPopup(`
                 <div class="line-popup">
                     <h4>${line.name}</h4>
                     <p><strong>Type:</strong> ${line.type}</p>
-                    <p><strong>From:</strong> ${startPole.name}</p>
-                    <p><strong>To:</strong> ${endPole.name}</p>
-                    <p><strong>Length:</strong> ${line.length ? line.length.toFixed(2) + 'm' : 'N/A'}</p>
+                    <p><strong>From:</strong> ${startName}</p>
+                    <p><strong>To:</strong> ${endName}</p>
+                    <p><strong>Length:</strong> ${line.distanceMeters ? line.distanceMeters.toFixed(2) + 'm' : (line.length ? line.length.toFixed(2) + 'm' : 'N/A')}</p>
                 </div>
             `)
             .addTo(this.drawingLayer);
