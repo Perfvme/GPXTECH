@@ -167,9 +167,23 @@ class ElectricalCADApp {
         });
         
         // Snap toggle
-        document.getElementById('snapToggle')?.addEventListener('change', (e) => {
-            this.drawingEngine.toggleSnap(e.target.checked);
+        document.getElementById('snapToggle').addEventListener('change', (e) => {
+            this.drawingEngine.setSnapEnabled(e.target.checked);
         });
+        
+        // Undo/Redo buttons
+        document.getElementById('undoBtn').addEventListener('click', () => {
+            this.drawingEngine.undo();
+            this.updateUndoRedoButtons();
+        });
+        
+        document.getElementById('redoBtn').addEventListener('click', () => {
+            this.drawingEngine.redo();
+            this.updateUndoRedoButtons();
+        });
+        
+        // Initial update of undo/redo button states
+        this.updateUndoRedoButtons();
         
         // Legend controls
         this.setupLegendControls();
@@ -259,6 +273,22 @@ class ElectricalCADApp {
                     e.preventDefault();
                     this.loadGPXFile();
                     break;
+                case 'z':
+                     if (!e.shiftKey) {
+                         e.preventDefault();
+                         this.drawingEngine.undo();
+                         this.updateUndoRedoButtons();
+                     } else {
+                         e.preventDefault();
+                         this.drawingEngine.redo();
+                         this.updateUndoRedoButtons();
+                     }
+                     break;
+                 case 'y':
+                     e.preventDefault();
+                     this.drawingEngine.redo();
+                     this.updateUndoRedoButtons();
+                     break;
             }
         }
         
@@ -311,6 +341,22 @@ class ElectricalCADApp {
         // Set tool in drawing engine
         const tool = toolBtn.dataset.tool;
         this.drawingEngine.setTool(tool);
+    }
+
+    /**
+     * Update undo/redo button states
+     */
+    updateUndoRedoButtons() {
+        const undoBtn = document.getElementById('undoBtn');
+        const redoBtn = document.getElementById('redoBtn');
+        
+        if (undoBtn) {
+            undoBtn.disabled = !this.drawingEngine.canUndo();
+        }
+        
+        if (redoBtn) {
+            redoBtn.disabled = !this.drawingEngine.canRedo();
+        }
     }
 
     /**
@@ -729,7 +775,7 @@ class ElectricalCADApp {
 // Initialize application when page loads
 let app;
 document.addEventListener('DOMContentLoaded', () => {
-    app = new ElectricalCADApp();
+    window.app = new ElectricalCADApp();
 });
 
 // Add some additional CSS for properties panel

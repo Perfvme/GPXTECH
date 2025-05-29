@@ -51,6 +51,11 @@ class DrawingEngine {
         this.showNameLabels = true;
         this.onElementsChanged = null; // Callback for when elements change
         
+        // Undo/Redo system
+        this.commandHistory = [];
+        this.currentCommandIndex = -1;
+        this.maxHistorySize = 50;
+        
         // Advanced line drawing features
         this.snapEnabled = true;
         this.snapDistance = 15; // pixels
@@ -420,28 +425,31 @@ class DrawingEngine {
             return;
         }
 
-        let changedCount = 0;
-        for (let element of this.selectedElements) {
+        const selectedElements = Array.from(this.selectedElements);
+        const compatibleElements = [];
+        
+        for (let element of selectedElements) {
             // Check if the new type is compatible with the element
             if (element.hasOwnProperty('x') && element.hasOwnProperty('y') && !element.hasOwnProperty('startX')) {
                 // This is a pole
                 if (['tiang-baja-existing', 'tiang-baja-rencana', 'tiang-beton-existing', 'tiang-beton-rencana', 'gardu-portal'].includes(newType)) {
-                    element.type = newType;
-                    changedCount++;
+                    compatibleElements.push(element);
                 }
             } else if (element.hasOwnProperty('startX') && element.hasOwnProperty('startY')) {
                 // This is a line
                 if (['sutm', 'sutr'].includes(newType)) {
-                    element.type = newType;
-                    changedCount++;
+                    compatibleElements.push(element);
                 }
             }
         }
 
-        if (changedCount > 0) {
+        if (compatibleElements.length > 0) {
+            // Use command system for undo/redo support
+            const command = new BatchChangeTypeCommand(this, compatibleElements, newType);
+            this.executeCommand(command);
+            
             this.updatePropertiesPanel(Array.from(this.selectedElements));
-            this.render();
-            alert(`Successfully changed type for ${changedCount} element(s).`);
+            alert(`Successfully changed type for ${compatibleElements.length} element(s).`);
         } else {
             alert('No compatible elements found for the selected type.');
         }
@@ -461,27 +469,18 @@ class DrawingEngine {
             return;
         }
 
-        let changedCount = 0;
-        let counter = 1;
-        for (let element of this.selectedElements) {
-            if (useNumberedNames && this.selectedElements.size > 1) {
-                // Add a number suffix if there are multiple elements and numbering is enabled
-                element.name = `${newName.trim()} ${counter}`;
-                counter++;
-            } else {
-                // Use the same name for all elements
-                element.name = newName.trim();
-            }
-            changedCount++;
-        }
+        const selectedElements = Array.from(this.selectedElements);
+        
+        // Use command system for undo/redo support
+        const command = new BatchChangeNameCommand(this, selectedElements, newName.trim(), useNumberedNames);
+        this.executeCommand(command);
 
         this.updatePropertiesPanel(Array.from(this.selectedElements));
-        this.render();
         
         if (useNumberedNames && this.selectedElements.size > 1) {
-            alert(`Successfully changed name for ${changedCount} element(s) with numbering.`);
+            alert(`Successfully changed name for ${selectedElements.length} element(s) with numbering.`);
         } else {
-            alert(`Successfully changed name for ${changedCount} element(s) to "${newName.trim()}".`);
+            alert(`Successfully changed name for ${selectedElements.length} element(s) to "${newName.trim()}".`);
         }
     }
 
@@ -539,10 +538,12 @@ class DrawingEngine {
             pole.originalLon = latLon.lon;
         }
         
-        this.elements.poles.push(pole);
+        // Use command system for undo/redo support
+        const command = new AddPoleCommand(this, pole);
+        this.executeCommand(command);
+        
         this.selectedElement = pole;
         this.updatePropertiesPanel(pole);
-        this.render();
     }
 
     /**
@@ -606,13 +607,15 @@ class DrawingEngine {
                 line.distanceMeters = Math.round(line.distanceMeters * 100) / 100; // Round to cm
             }
             
-            this.elements.lines.push(line);
+            // Use command system for undo/redo support
+            const command = new AddLineCommand(this, line);
+            this.executeCommand(command);
+            
             this.selectedElement = line;
             this.updatePropertiesPanel(line);
             this.tempLine = null;
             this.hideInputOverlay();
             this.snapPoint = null;
-            this.render();
         }
     }
 
@@ -1064,24 +1067,20 @@ class DrawingEngine {
      */
     deleteSelected() {
         if (this.selectedElement) {
-            if (this.selectedElement.type && this.selectedElement.type.includes('tiang')) {
-                // It's a pole
-                this.elements.poles = this.elements.poles.filter(p => p.id !== this.selectedElement.id);
-            } else {
-                // It's a line
-                this.elements.lines = this.elements.lines.filter(l => l.id !== this.selectedElement.id);
-            }
+            // Use command system for undo/redo support
+            const command = new DeleteElementCommand(this, this.selectedElement);
+            this.executeCommand(command);
+            
             this.selectedElement = null;
-        this.selectedElements = new Set(); // For multiple selection
-        this.dragSelection = {
-            active: false,
-            startX: 0,
-            startY: 0,
-            endX: 0,
-            endY: 0
-        };
+            this.selectedElements = new Set(); // For multiple selection
+            this.dragSelection = {
+                active: false,
+                startX: 0,
+                startY: 0,
+                endX: 0,
+                endY: 0
+            };
             this.updatePropertiesPanel(null);
-            this.render();
         }
     }
 
@@ -1813,8 +1812,11 @@ class DrawingEngine {
      */
     updateElementProperty(property, value) {
         if (this.selectedElement) {
-            this.selectedElement[property] = value;
-            this.render();
+            const oldValue = this.selectedElement[property];
+            
+            // Use command system for undo/redo support
+            const command = new UpdatePropertyCommand(this, this.selectedElement, property, value, oldValue);
+            this.executeCommand(command);
         }
     }
 
@@ -1867,5 +1869,263 @@ class DrawingEngine {
         };
         this.updatePropertiesPanel(null);
         this.render();
+    }
+
+    /**
+     * Execute a command and add it to history
+     */
+    executeCommand(command) {
+        // Remove any commands after current index (for when we undo then do new action)
+        this.commandHistory = this.commandHistory.slice(0, this.currentCommandIndex + 1);
+        
+        // Execute the command
+        command.execute();
+        
+        // Add to history
+        this.commandHistory.push(command);
+        this.currentCommandIndex++;
+        
+        // Limit history size
+        if (this.commandHistory.length > this.maxHistorySize) {
+            this.commandHistory.shift();
+            this.currentCommandIndex--;
+        }
+        
+        this.render();
+        if (this.onElementsChanged) {
+            this.onElementsChanged();
+        }
+        
+        // Update undo/redo button states if app instance is available
+        if (window.app && window.app.updateUndoRedoButtons) {
+            window.app.updateUndoRedoButtons();
+        }
+    }
+
+    /**
+     * Undo the last command
+     */
+    undo() {
+        if (this.currentCommandIndex >= 0) {
+            const command = this.commandHistory[this.currentCommandIndex];
+            command.undo();
+            this.currentCommandIndex--;
+            
+            // Clear selection after undo
+            this.selectedElement = null;
+            this.selectedElements.clear();
+            this.updatePropertiesPanel(null);
+            
+            this.render();
+            if (this.onElementsChanged) {
+                this.onElementsChanged();
+            }
+            
+            // Update undo/redo button states if app instance is available
+            if (window.app && window.app.updateUndoRedoButtons) {
+                window.app.updateUndoRedoButtons();
+            }
+        }
+    }
+
+    /**
+     * Redo the next command
+     */
+    redo() {
+        if (this.currentCommandIndex < this.commandHistory.length - 1) {
+            this.currentCommandIndex++;
+            const command = this.commandHistory[this.currentCommandIndex];
+            command.execute();
+            
+            // Clear selection after redo
+            this.selectedElement = null;
+            this.selectedElements.clear();
+            this.updatePropertiesPanel(null);
+            
+            this.render();
+            if (this.onElementsChanged) {
+                this.onElementsChanged();
+            }
+            
+            // Update undo/redo button states if app instance is available
+            if (window.app && window.app.updateUndoRedoButtons) {
+                window.app.updateUndoRedoButtons();
+            }
+        }
+    }
+
+    /**
+     * Check if undo is available
+     */
+    canUndo() {
+        return this.currentCommandIndex >= 0;
+    }
+
+    /**
+     * Check if redo is available
+     */
+    canRedo() {
+        return this.currentCommandIndex < this.commandHistory.length - 1;
+    }
+
+    /**
+     * Clear command history
+     */
+    clearHistory() {
+        this.commandHistory = [];
+        this.currentCommandIndex = -1;
+    }
+}
+
+/**
+ * Command classes for undo/redo functionality
+ */
+
+/**
+ * Add Pole Command
+ */
+class AddPoleCommand {
+    constructor(drawingEngine, pole) {
+        this.drawingEngine = drawingEngine;
+        this.pole = pole;
+    }
+
+    execute() {
+        this.drawingEngine.elements.poles.push(this.pole);
+    }
+
+    undo() {
+        this.drawingEngine.elements.poles = this.drawingEngine.elements.poles.filter(p => p.id !== this.pole.id);
+    }
+}
+
+/**
+ * Add Line Command
+ */
+class AddLineCommand {
+    constructor(drawingEngine, line) {
+        this.drawingEngine = drawingEngine;
+        this.line = line;
+    }
+
+    execute() {
+        this.drawingEngine.elements.lines.push(this.line);
+    }
+
+    undo() {
+        this.drawingEngine.elements.lines = this.drawingEngine.elements.lines.filter(l => l.id !== this.line.id);
+    }
+}
+
+/**
+ * Delete Element Command
+ */
+class DeleteElementCommand {
+    constructor(drawingEngine, element) {
+        this.drawingEngine = drawingEngine;
+        this.element = element;
+        this.isPole = element.type && element.type.includes('tiang');
+    }
+
+    execute() {
+        if (this.isPole) {
+            this.drawingEngine.elements.poles = this.drawingEngine.elements.poles.filter(p => p.id !== this.element.id);
+        } else {
+            this.drawingEngine.elements.lines = this.drawingEngine.elements.lines.filter(l => l.id !== this.element.id);
+        }
+    }
+
+    undo() {
+        if (this.isPole) {
+            this.drawingEngine.elements.poles.push(this.element);
+        } else {
+            this.drawingEngine.elements.lines.push(this.element);
+        }
+    }
+}
+
+/**
+ * Update Property Command
+ */
+class UpdatePropertyCommand {
+    constructor(drawingEngine, element, property, newValue, oldValue) {
+        this.drawingEngine = drawingEngine;
+        this.element = element;
+        this.property = property;
+        this.newValue = newValue;
+        this.oldValue = oldValue;
+    }
+
+    execute() {
+        this.element[this.property] = this.newValue;
+    }
+
+    undo() {
+        this.element[this.property] = this.oldValue;
+    }
+}
+
+/**
+ * Batch Change Type Command
+ */
+class BatchChangeTypeCommand {
+    constructor(drawingEngine, elements, newType) {
+        this.drawingEngine = drawingEngine;
+        this.changes = [];
+        
+        // Store old values for undo
+        elements.forEach(element => {
+            this.changes.push({
+                element: element,
+                oldType: element.type,
+                newType: newType
+            });
+        });
+    }
+
+    execute() {
+        this.changes.forEach(change => {
+            change.element.type = change.newType;
+        });
+    }
+
+    undo() {
+        this.changes.forEach(change => {
+            change.element.type = change.oldType;
+        });
+    }
+}
+
+/**
+ * Batch Change Name Command
+ */
+class BatchChangeNameCommand {
+    constructor(drawingEngine, elements, newName, useNumberedNames) {
+        this.drawingEngine = drawingEngine;
+        this.changes = [];
+        
+        // Store old values for undo
+        let counter = 1;
+        elements.forEach(element => {
+            const finalName = useNumberedNames && elements.length > 1 ? `${newName} ${counter}` : newName;
+            this.changes.push({
+                element: element,
+                oldName: element.name,
+                newName: finalName
+            });
+            counter++;
+        });
+    }
+
+    execute() {
+        this.changes.forEach(change => {
+            change.element.name = change.newName;
+        });
+    }
+
+    undo() {
+        this.changes.forEach(change => {
+            change.element.name = change.oldName;
+        });
     }
 }
