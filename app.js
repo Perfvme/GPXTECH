@@ -6,6 +6,7 @@
 class ElectricalCADApp {
     constructor() {
         this.drawingEngine = null;
+        this.mapManager = new MapManager();
         this.gpxParser = new GPXParser();
         this.currentProject = {
             name: 'Untitled Project',
@@ -49,9 +50,13 @@ class ElectricalCADApp {
         // Make drawing engine globally accessible for property panel
         window.drawingEngine = this.drawingEngine;
         
-        // Set up callback for status bar updates
+        // Connect map manager with drawing engine
+        this.mapManager.setDrawingEngine(this.drawingEngine);
+        
+        // Set up callback for status bar updates and map updates
         this.drawingEngine.onElementsChanged = () => {
             this.updateStatusBar();
+            this.mapManager.onDrawingChanged();
         };
         
         // Setup event listeners
@@ -85,6 +90,7 @@ class ElectricalCADApp {
         document.getElementById('newProject')?.addEventListener('click', () => this.newProject());
         document.getElementById('saveProject')?.addEventListener('click', () => this.saveProject());
         document.getElementById('loadGpx')?.addEventListener('click', () => this.loadGPXFile());
+        document.getElementById('toggleMapView')?.addEventListener('click', () => this.mapManager.toggleMapView());
         
         // Add button to enable real coordinates for manual drawing
         const enableRealCoordsBtn = document.createElement('button');
@@ -541,6 +547,9 @@ class ElectricalCADApp {
             
             // Load into drawing engine
             this.drawingEngine.loadFromGPX(elements);
+            
+            // Load GPX data into map manager
+            this.mapManager.loadGPXData(gpxData);
             
             // Enable real coordinates for manual drawing using GPX reference
             if (elements.poles.length > 0 || elements.lines.length > 0) {

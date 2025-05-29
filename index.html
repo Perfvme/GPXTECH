@@ -6,6 +6,8 @@
     <title>Electrical CAD Drawing - GPX Tech</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 </head>
 <body>
     <div class="app-container">
@@ -24,6 +26,9 @@
                 <input type="file" id="gpxFileInput" accept=".gpx" style="display: none;">
                 <button id="loadGpx" class="btn btn-success">
                     <i class="fas fa-upload"></i> Load GPX
+                </button>
+                <button id="toggleMapView" class="btn btn-info">
+                    <i class="fas fa-map"></i> Map View
                 </button>
             </div>
         </header>
@@ -230,7 +235,7 @@
             </div>
 
             <!-- Canvas Area -->
-            <div class="canvas-container">
+            <div class="canvas-container" id="canvasContainer">
                 <canvas id="drawingCanvas" width="1200" height="800"></canvas>
                 <div class="canvas-controls">
                     <button id="zoomIn" class="control-btn">
@@ -241,6 +246,25 @@
                     </button>
                     <button id="resetView" class="control-btn">
                         <i class="fas fa-home"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Map Container -->
+            <div class="map-container" id="mapContainer" style="display: none;">
+                <div id="leafletMap"></div>
+                <div class="map-controls">
+                    <button id="mapZoomIn" class="control-btn">
+                        <i class="fas fa-search-plus"></i>
+                    </button>
+                    <button id="mapZoomOut" class="control-btn">
+                        <i class="fas fa-search-minus"></i>
+                    </button>
+                    <button id="mapResetView" class="control-btn">
+                        <i class="fas fa-home"></i>
+                    </button>
+                    <button id="mapToggleLayers" class="control-btn">
+                        <i class="fas fa-layer-group"></i>
                     </button>
                 </div>
             </div>
@@ -340,8 +364,11 @@
         </div>
     </div>
 
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="gpx-parser.js"></script>
     <script src="drawing-engine.js"></script>
+    <script src="map-manager.js"></script>
     <script src="snap-toggle.js"></script>
     <script src="app.js"></script>
 </body>
