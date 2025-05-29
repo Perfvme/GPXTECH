@@ -1157,6 +1157,162 @@ body {
     transform: rotate(45deg);
 }
 
+/* Snap Settings */
+.snap-settings {
+    margin-top: 8px;
+    background-color: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+.snap-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    cursor: pointer;
+    font-size: 11px;
+    color: #bdc3c7;
+    background-color: rgba(255, 255, 255, 0.02);
+    transition: background-color 0.2s;
+}
+
+.snap-header:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.snap-header i {
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+
+.snap-header.expanded i {
+    transform: rotate(180deg);
+}
+
+.snap-details {
+    padding: 8px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.snap-details.expanded {
+    max-height: 200px;
+}
+
+.snap-types-compact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.snap-types-compact:last-child {
+    margin-bottom: 0;
+}
+
+.snap-type-compact {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    flex: 1;
+    min-width: 32px;
+    height: 32px;
+    position: relative;
+}
+
+.snap-type-compact:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.snap-type-compact input[type="checkbox"] {
+    display: none;
+}
+
+.snap-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    opacity: 0.4;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.snap-type-compact input[type="checkbox"]:checked + .snap-icon {
+    opacity: 1;
+    transform: scale(1.1);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+.snap-type-compact:not(:has(input:checked)) .snap-icon {
+    filter: grayscale(70%);
+}
+
+.snap-distance-compact {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 6px;
+    background-color: rgba(255, 255, 255, 0.02);
+    border-radius: 3px;
+    flex: 1;
+}
+
+.snap-distance-compact input[type="range"] {
+    flex: 1;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    outline: none;
+    -webkit-appearance: none;
+    min-width: 40px;
+}
+
+.snap-distance-compact input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    background: #3498db;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.snap-distance-compact input[type="range"]::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    background: #3498db;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+#snapDistanceValue {
+    font-size: 9px;
+    color: #3498db;
+    font-weight: 600;
+    min-width: 15px;
+    text-align: right;
+}
+
 .checkbox-item i {
     margin-right: 6px;
     color: #6c757d;

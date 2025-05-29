@@ -68,6 +68,22 @@ class DrawingEngine {
         this.previewLine = null;
         this.inputOverlay = null;
         
+        // Enhanced snap system
+        this.snapTypes = {
+            grid: true,
+            endpoints: true,
+            midpoints: true,
+            intersections: true,
+            perpendicular: true,
+            parallel: true,
+            center: true
+        };
+        this.snapToGrid = true;
+        this.snapPriority = ['endpoints', 'intersections', 'midpoints', 'perpendicular', 'grid', 'center'];
+        this.snapCache = new Map(); // Cache for performance
+        this.lastSnapUpdate = 0;
+        this.snapUpdateThrottle = 16; // ~60fps
+        
         this.setupEventListeners();
         this.render();
     }
@@ -673,40 +689,112 @@ class DrawingEngine {
         this.snapEnabled = enabled;
         if (!enabled) {
             this.snapPoint = null;
+            this.snapCache.clear();
         }
         this.render();
     }
 
     /**
-     * Find snap point near given coordinates
+     * Set snap enabled state (called from UI)
      */
-    findSnapPoint(x, y) {
+    setSnapEnabled(enabled) {
+        this.toggleSnap(enabled);
+    }
+
+    /**
+     * Set specific snap type enabled/disabled
+     */
+    setSnapType(type, enabled) {
+        if (this.snapTypes.hasOwnProperty(type)) {
+            this.snapTypes[type] = enabled;
+            this.snapCache.clear();
+            this.render();
+        }
+    }
+    
+    /**
+     * Set snap distance
+     */
+    setSnapDistance(distance) {
+        this.snapDistance = Math.max(5, Math.min(50, distance)); // Clamp between 5 and 50
+        this.snapCache.clear();
+        this.render();
+    }
+
+    /**
+     * Find snap point near given coordinates with comprehensive snap types
+     */
+    findSnapPoint(x, y, excludeElement = null) {
         if (!this.snapEnabled) return null;
         
-        // Check poles first
-        for (let pole of this.elements.poles) {
-            const distance = Math.sqrt((x - pole.x) ** 2 + (y - pole.y) ** 2);
-            if (distance <= this.snapDistance) {
-                return { x: pole.x, y: pole.y, type: 'pole', element: pole };
+        const now = Date.now();
+        if (now - this.lastSnapUpdate < this.snapUpdateThrottle) {
+            // Use cached result for performance
+            const cacheKey = `${Math.round(x)},${Math.round(y)}`;
+            if (this.snapCache.has(cacheKey)) {
+                return this.snapCache.get(cacheKey);
             }
         }
         
-        // Check line endpoints
-        for (let line of this.elements.lines) {
-            // Start point
-            let distance = Math.sqrt((x - line.startX) ** 2 + (y - line.startY) ** 2);
-            if (distance <= this.snapDistance) {
-                return { x: line.startX, y: line.startY, type: 'line-start', element: line };
+        let bestSnap = null;
+        let bestDistance = this.snapDistance;
+        
+        // Check snap points in priority order
+        for (let snapType of this.snapPriority) {
+            if (!this.snapTypes[snapType]) continue;
+            
+            let snapPoints = [];
+            
+            switch (snapType) {
+                case 'endpoints':
+                    snapPoints = this.findEndpointSnaps(x, y, excludeElement);
+                    break;
+                case 'intersections':
+                    snapPoints = this.findIntersectionSnaps(x, y, excludeElement);
+                    break;
+                case 'midpoints':
+                    snapPoints = this.findMidpointSnaps(x, y, excludeElement);
+                    break;
+                case 'perpendicular':
+                    snapPoints = this.findPerpendicularSnaps(x, y, excludeElement);
+                    break;
+                case 'grid':
+                    snapPoints = this.findGridSnaps(x, y);
+                    break;
+                case 'center':
+                    snapPoints = this.findCenterSnaps(x, y, excludeElement);
+                    break;
+                case 'parallel':
+                    snapPoints = this.findParallelSnaps(x, y, excludeElement);
+                    break;
             }
             
-            // End point
-            distance = Math.sqrt((x - line.endX) ** 2 + (y - line.endY) ** 2);
-            if (distance <= this.snapDistance) {
-                return { x: line.endX, y: line.endY, type: 'line-end', element: line };
+            // Find closest snap point of this type
+            for (let snap of snapPoints) {
+                const distance = Math.sqrt((x - snap.x) ** 2 + (y - snap.y) ** 2);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestSnap = snap;
+                }
+            }
+            
+            // If we found a high-priority snap, use it
+            if (bestSnap && ['endpoints', 'intersections'].includes(snapType)) {
+                break;
             }
         }
         
-        return null;
+        // Cache the result
+        const cacheKey = `${Math.round(x)},${Math.round(y)}`;
+        this.snapCache.set(cacheKey, bestSnap);
+        this.lastSnapUpdate = now;
+        
+        // Clean cache periodically
+        if (this.snapCache.size > 100) {
+            this.snapCache.clear();
+        }
+        
+        return bestSnap;
     }
 
     /**
@@ -714,6 +802,268 @@ class DrawingEngine {
      */
     updateSnapPoint(x, y) {
         this.snapPoint = this.findSnapPoint(x, y);
+    }
+
+    /**
+     * Find endpoint snap points (poles and line endpoints)
+     */
+    findEndpointSnaps(x, y, excludeElement = null) {
+        const snapPoints = [];
+        
+        // Check poles
+        for (let pole of this.elements.poles) {
+            if (excludeElement && pole.id === excludeElement.id) continue;
+            snapPoints.push({
+                x: pole.x,
+                y: pole.y,
+                type: 'endpoint-pole',
+                element: pole,
+                description: `Pole: ${pole.name || 'Unnamed'}`
+            });
+        }
+        
+        // Check line endpoints
+        for (let line of this.elements.lines) {
+            if (excludeElement && line.id === excludeElement.id) continue;
+            
+            snapPoints.push({
+                x: line.startX,
+                y: line.startY,
+                type: 'endpoint-line-start',
+                element: line,
+                description: `Line Start: ${line.name || 'Unnamed'}`
+            });
+            
+            snapPoints.push({
+                x: line.endX,
+                y: line.endY,
+                type: 'endpoint-line-end',
+                element: line,
+                description: `Line End: ${line.name || 'Unnamed'}`
+            });
+        }
+        
+        return snapPoints;
+    }
+
+    /**
+     * Find midpoint snap points
+     */
+    findMidpointSnaps(x, y, excludeElement = null) {
+        const snapPoints = [];
+        
+        for (let line of this.elements.lines) {
+            if (excludeElement && line.id === excludeElement.id) continue;
+            
+            const midX = (line.startX + line.endX) / 2;
+            const midY = (line.startY + line.endY) / 2;
+            
+            snapPoints.push({
+                x: midX,
+                y: midY,
+                type: 'midpoint',
+                element: line,
+                description: `Midpoint: ${line.name || 'Unnamed'}`
+            });
+        }
+        
+        return snapPoints;
+    }
+
+    /**
+     * Find grid snap points
+     */
+    findGridSnaps(x, y) {
+        if (!this.snapToGrid || !this.showGrid) return [];
+        
+        const snapX = Math.round(x / this.gridSize) * this.gridSize;
+        const snapY = Math.round(y / this.gridSize) * this.gridSize;
+        
+        return [{
+            x: snapX,
+            y: snapY,
+            type: 'grid',
+            element: null,
+            description: `Grid (${snapX}, ${snapY})`
+        }];
+    }
+
+    /**
+     * Find intersection snap points
+     */
+    findIntersectionSnaps(x, y, excludeElement = null) {
+        const snapPoints = [];
+        const lines = this.elements.lines.filter(line => 
+            !excludeElement || line.id !== excludeElement.id
+        );
+        
+        // Check intersections between all line pairs
+        for (let i = 0; i < lines.length; i++) {
+            for (let j = i + 1; j < lines.length; j++) {
+                const intersection = this.getLineIntersection(
+                    lines[i].startX, lines[i].startY, lines[i].endX, lines[i].endY,
+                    lines[j].startX, lines[j].startY, lines[j].endX, lines[j].endY
+                );
+                
+                if (intersection) {
+                    snapPoints.push({
+                        x: intersection.x,
+                        y: intersection.y,
+                        type: 'intersection',
+                        element: { line1: lines[i], line2: lines[j] },
+                        description: `Intersection: ${lines[i].name || 'Line'} × ${lines[j].name || 'Line'}`
+                    });
+                }
+            }
+        }
+        
+        return snapPoints;
+    }
+
+    /**
+     * Find perpendicular snap points
+     */
+    findPerpendicularSnaps(x, y, excludeElement = null) {
+        const snapPoints = [];
+        
+        if (!this.tempLine) return snapPoints;
+        
+        for (let line of this.elements.lines) {
+            if (excludeElement && line.id === excludeElement.id) continue;
+            
+            // Find perpendicular point from current line start to this line
+            const perpPoint = this.getPerpendicularPoint(
+                this.tempLine.startX, this.tempLine.startY,
+                line.startX, line.startY, line.endX, line.endY
+            );
+            
+            if (perpPoint) {
+                snapPoints.push({
+                    x: perpPoint.x,
+                    y: perpPoint.y,
+                    type: 'perpendicular',
+                    element: line,
+                    description: `Perpendicular to: ${line.name || 'Line'}`
+                });
+            }
+        }
+        
+        return snapPoints;
+    }
+
+    /**
+     * Find parallel snap points
+     */
+    findParallelSnaps(x, y, excludeElement = null) {
+        const snapPoints = [];
+        
+        if (!this.tempLine) return snapPoints;
+        
+        const currentAngle = Math.atan2(
+            y - this.tempLine.startY,
+            x - this.tempLine.startX
+        );
+        
+        for (let line of this.elements.lines) {
+            if (excludeElement && line.id === excludeElement.id) continue;
+            
+            const lineAngle = Math.atan2(
+                line.endY - line.startY,
+                line.endX - line.startX
+            );
+            
+            // Check if angles are parallel (within tolerance)
+            const angleDiff = Math.abs(currentAngle - lineAngle);
+            const tolerance = Math.PI / 36; // 5 degrees
+            
+            if (angleDiff < tolerance || Math.abs(angleDiff - Math.PI) < tolerance) {
+                // Project current mouse position along the parallel direction
+                const distance = Math.sqrt(
+                    (x - this.tempLine.startX) ** 2 + (y - this.tempLine.startY) ** 2
+                );
+                
+                const snapX = this.tempLine.startX + distance * Math.cos(lineAngle);
+                const snapY = this.tempLine.startY + distance * Math.sin(lineAngle);
+                
+                snapPoints.push({
+                    x: snapX,
+                    y: snapY,
+                    type: 'parallel',
+                    element: line,
+                    description: `Parallel to: ${line.name || 'Line'}`
+                });
+            }
+        }
+        
+        return snapPoints;
+    }
+
+    /**
+     * Find center snap points
+     */
+    findCenterSnaps(x, y, excludeElement = null) {
+        const snapPoints = [];
+        
+        // For now, center snaps are the same as pole positions
+        // Could be extended for geometric centers of complex shapes
+        for (let pole of this.elements.poles) {
+            if (excludeElement && pole.id === excludeElement.id) continue;
+            snapPoints.push({
+                x: pole.x,
+                y: pole.y,
+                type: 'center',
+                element: pole,
+                description: `Center: ${pole.name || 'Unnamed'}`
+            });
+        }
+        
+        return snapPoints;
+    }
+
+    /**
+     * Calculate intersection point between two lines
+     */
+    getLineIntersection(x1, y1, x2, y2, x3, y3, x4, y4) {
+        const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        if (Math.abs(denom) < 1e-10) return null; // Lines are parallel
+        
+        const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+        const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
+        
+        // Check if intersection is within both line segments
+        if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+            return {
+                x: x1 + t * (x2 - x1),
+                y: y1 + t * (y2 - y1)
+            };
+        }
+        
+        return null;
+    }
+
+    /**
+     * Get perpendicular point from a point to a line
+     */
+    getPerpendicularPoint(px, py, x1, y1, x2, y2) {
+        const A = px - x1;
+        const B = py - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+        
+        const dot = A * C + B * D;
+        const lenSq = C * C + D * D;
+        
+        if (lenSq === 0) return null; // Line has zero length
+        
+        const param = dot / lenSq;
+        
+        // Clamp to line segment
+        const clampedParam = Math.max(0, Math.min(1, param));
+        
+        return {
+            x: x1 + clampedParam * C,
+            y: y1 + clampedParam * D
+        };
     }
 
     /**
@@ -1609,24 +1959,151 @@ class DrawingEngine {
     }
 
     /**
-     * Draw snap indicator
+     * Draw snap indicator with type-specific styling
      */
     drawSnapIndicator(snapPoint) {
+        if (!snapPoint) return;
+        
         this.ctx.save();
         
-        // Draw snap circle
-        this.ctx.strokeStyle = '#00ff00';
+        // Set colors and styles based on snap type
+        let color = '#00ff00';
+        let size = 8;
+        let shape = 'circle';
+        
+        switch (snapPoint.type) {
+            case 'endpoint-pole':
+            case 'endpoint-line-start':
+            case 'endpoint-line-end':
+                color = '#ff6b6b'; // Red for endpoints
+                shape = 'square';
+                break;
+            case 'midpoint':
+                color = '#4ecdc4'; // Teal for midpoints
+                shape = 'triangle';
+                break;
+            case 'intersection':
+                color = '#ffe66d'; // Yellow for intersections
+                shape = 'cross';
+                size = 10;
+                break;
+            case 'perpendicular':
+                color = '#a8e6cf'; // Light green for perpendicular
+                shape = 'diamond';
+                break;
+            case 'parallel':
+                color = '#ffd93d'; // Gold for parallel
+                shape = 'arrow';
+                break;
+            case 'grid':
+                color = '#95a5a6'; // Gray for grid
+                shape = 'circle';
+                size = 6;
+                break;
+            case 'center':
+                color = '#e74c3c'; // Dark red for center
+                shape = 'circle';
+                break;
+        }
+        
+        this.ctx.strokeStyle = color;
+        this.ctx.fillStyle = color;
         this.ctx.lineWidth = 2;
         this.ctx.setLineDash([]);
-        this.ctx.beginPath();
-        this.ctx.arc(snapPoint.x, snapPoint.y, 8, 0, 2 * Math.PI);
-        this.ctx.stroke();
         
-        // Draw center dot
-        this.ctx.fillStyle = '#00ff00';
+        // Draw shape based on type
         this.ctx.beginPath();
-        this.ctx.arc(snapPoint.x, snapPoint.y, 2, 0, 2 * Math.PI);
-        this.ctx.fill();
+        
+        switch (shape) {
+            case 'circle':
+                this.ctx.arc(snapPoint.x, snapPoint.y, size, 0, 2 * Math.PI);
+                this.ctx.stroke();
+                this.ctx.beginPath();
+                this.ctx.arc(snapPoint.x, snapPoint.y, 2, 0, 2 * Math.PI);
+                this.ctx.fill();
+                break;
+                
+            case 'square':
+                this.ctx.strokeRect(snapPoint.x - size/2, snapPoint.y - size/2, size, size);
+                this.ctx.fillRect(snapPoint.x - 2, snapPoint.y - 2, 4, 4);
+                break;
+                
+            case 'triangle':
+                this.ctx.moveTo(snapPoint.x, snapPoint.y - size);
+                this.ctx.lineTo(snapPoint.x - size, snapPoint.y + size/2);
+                this.ctx.lineTo(snapPoint.x + size, snapPoint.y + size/2);
+                this.ctx.closePath();
+                this.ctx.stroke();
+                this.ctx.beginPath();
+                this.ctx.arc(snapPoint.x, snapPoint.y, 2, 0, 2 * Math.PI);
+                this.ctx.fill();
+                break;
+                
+            case 'cross':
+                this.ctx.moveTo(snapPoint.x - size, snapPoint.y);
+                this.ctx.lineTo(snapPoint.x + size, snapPoint.y);
+                this.ctx.moveTo(snapPoint.x, snapPoint.y - size);
+                this.ctx.lineTo(snapPoint.x, snapPoint.y + size);
+                this.ctx.stroke();
+                break;
+                
+            case 'diamond':
+                this.ctx.moveTo(snapPoint.x, snapPoint.y - size);
+                this.ctx.lineTo(snapPoint.x + size, snapPoint.y);
+                this.ctx.lineTo(snapPoint.x, snapPoint.y + size);
+                this.ctx.lineTo(snapPoint.x - size, snapPoint.y);
+                this.ctx.closePath();
+                this.ctx.stroke();
+                this.ctx.beginPath();
+                this.ctx.arc(snapPoint.x, snapPoint.y, 2, 0, 2 * Math.PI);
+                this.ctx.fill();
+                break;
+                
+            case 'arrow':
+                this.ctx.moveTo(snapPoint.x - size, snapPoint.y);
+                this.ctx.lineTo(snapPoint.x + size, snapPoint.y);
+                this.ctx.lineTo(snapPoint.x + size/2, snapPoint.y - size/2);
+                this.ctx.moveTo(snapPoint.x + size, snapPoint.y);
+                this.ctx.lineTo(snapPoint.x + size/2, snapPoint.y + size/2);
+                this.ctx.stroke();
+                break;
+        }
+        
+        // Draw snap description tooltip
+        if (snapPoint.description) {
+            this.drawSnapTooltip(snapPoint.x, snapPoint.y + size + 15, snapPoint.description, color);
+        }
+        
+        this.ctx.restore();
+    }
+
+    /**
+     * Draw snap tooltip
+     */
+    drawSnapTooltip(x, y, text, color) {
+        this.ctx.save();
+        
+        // Measure text
+        this.ctx.font = '12px Arial';
+        const metrics = this.ctx.measureText(text);
+        const padding = 4;
+        const width = metrics.width + padding * 2;
+        const height = 16;
+        
+        // Draw background
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        this.ctx.fillRect(x - width/2, y - height/2, width, height);
+        
+        // Draw border
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(x - width/2, y - height/2, width, height);
+        
+        // Draw text
+        this.ctx.fillStyle = 'white';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(text, x, y);
         
         this.ctx.restore();
     }
