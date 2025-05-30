@@ -62,6 +62,9 @@ class ElectricalCADApp {
         // Setup event listeners
         this.setupEventListeners();
         
+        // Initialize theme
+        this.initializeTheme();
+        
         // Initialize status bar
         this.updateStatusBar();
         
@@ -91,6 +94,7 @@ class ElectricalCADApp {
         document.getElementById('saveProject')?.addEventListener('click', () => this.saveProject());
         document.getElementById('loadGpx')?.addEventListener('click', () => this.loadGPXFile());
         document.getElementById('toggleMapView')?.addEventListener('click', () => this.mapManager.toggleMapView());
+        document.getElementById('darkModeToggle')?.addEventListener('click', () => this.toggleDarkMode());
         
         // Add button to enable real coordinates for manual drawing
         const enableRealCoordsBtn = document.createElement('button');
@@ -806,6 +810,54 @@ class ElectricalCADApp {
         } catch (error) {
             console.error('Error loading project:', error);
             this.showNotification('Error loading project: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * Toggle dark mode
+     */
+    toggleDarkMode() {
+        const body = document.body;
+        const darkModeBtn = document.getElementById('darkModeToggle');
+        const icon = darkModeBtn.querySelector('i');
+        const text = darkModeBtn.childNodes[1];
+        
+        if (body.getAttribute('data-theme') === 'dark') {
+            // Switch to light mode
+            body.removeAttribute('data-theme');
+            icon.className = 'fas fa-moon';
+            darkModeBtn.childNodes[1].textContent = ' Dark Mode';
+            localStorage.setItem('theme', 'light');
+            this.showNotification('Switched to light mode', 'success');
+        } else {
+            // Switch to dark mode
+            body.setAttribute('data-theme', 'dark');
+            icon.className = 'fas fa-sun';
+            darkModeBtn.childNodes[1].textContent = ' Light Mode';
+            localStorage.setItem('theme', 'dark');
+            this.showNotification('Switched to dark mode', 'success');
+        }
+        
+        // Re-render canvas if drawing engine exists
+        if (this.drawingEngine) {
+            this.drawingEngine.render();
+        }
+    }
+
+    /**
+     * Initialize theme from localStorage
+     */
+    initializeTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        const darkModeBtn = document.getElementById('darkModeToggle');
+        const icon = darkModeBtn?.querySelector('i');
+        
+        if (savedTheme === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+            if (icon) {
+                icon.className = 'fas fa-sun';
+                darkModeBtn.childNodes[1].textContent = ' Light Mode';
+            }
         }
     }
 

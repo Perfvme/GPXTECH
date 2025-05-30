@@ -30,6 +30,9 @@
                 <button id="toggleMapView" class="btn btn-info">
                     <i class="fas fa-map"></i> Map View
                 </button>
+                <button id="darkModeToggle" class="btn btn-dark-mode">
+                    <i class="fas fa-moon"></i> Dark Mode
+                </button>
             </div>
         </header>
 
@@ -71,33 +74,33 @@
                                 <div class="snap-types-compact">
                                     <label class="snap-type-compact" title="Endpoints - Snap to line ends and pole positions">
                                         <input type="checkbox" id="snapEndpoints" checked>
-                                        <span class="snap-icon" style="background: #ff4757;">■</span>
+                                        <span class="snap-icon snap-endpoints">■</span>
                                     </label>
                                     <label class="snap-type-compact" title="Intersections - Snap to line crossing points">
                                         <input type="checkbox" id="snapIntersections" checked>
-                                        <span class="snap-icon" style="background: #ffa502;">✕</span>
+                                        <span class="snap-icon snap-intersections">✕</span>
                                     </label>
                                     <label class="snap-type-compact" title="Midpoints - Snap to center of lines">
                                         <input type="checkbox" id="snapMidpoints" checked>
-                                        <span class="snap-icon" style="background: #2ed573;">▶</span>
+                                        <span class="snap-icon snap-midpoints">▶</span>
                                     </label>
                                     <label class="snap-type-compact" title="Grid - Snap to grid intersections">
                                         <input type="checkbox" id="snapGrid" checked>
-                                        <span class="snap-icon" style="background: #747d8c;">⊞</span>
+                                        <span class="snap-icon snap-grid">⊞</span>
                                     </label>
                                 </div>
                                 <div class="snap-types-compact">
                                     <label class="snap-type-compact" title="Perpendicular - Snap perpendicular to lines">
                                         <input type="checkbox" id="snapPerpendicular" checked>
-                                        <span class="snap-icon" style="background: #5f27cd;">⊥</span>
+                                        <span class="snap-icon snap-perpendicular">⊥</span>
                                     </label>
                                     <label class="snap-type-compact" title="Parallel - Snap parallel to existing lines">
                                         <input type="checkbox" id="snapParallel" checked>
-                                        <span class="snap-icon" style="background: #ff9f43;">∥</span>
+                                        <span class="snap-icon snap-parallel">∥</span>
                                     </label>
                                     <label class="snap-type-compact" title="Center - Snap to pole centers">
                                         <input type="checkbox" id="snapCenter" checked>
-                                        <span class="snap-icon" style="background: #c44569;">●</span>
+                                        <span class="snap-icon snap-center">●</span>
                                     </label>
                                     <div class="snap-distance-compact" title="Snap sensitivity distance">
                                         <span class="distance-label">📏</span>
