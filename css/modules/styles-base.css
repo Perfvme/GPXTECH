@@ -1,0 +1,66 @@
+/* Base Styles - Global reset and root variables */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* Light mode colors */
+    --bg-primary: #f5f5f5;
+    --bg-secondary: #fafbfc;
+    --bg-tertiary: #ffffff;
+    --text-primary: #333;
+    --text-secondary: #5f6368;
+    --border-color: #e1e5e9;
+    --border-light: #e8eaed;
+    --shadow-light: rgba(0,0,0,0.04);
+    --shadow-medium: rgba(0,0,0,0.1);
+    --header-bg: linear-gradient(135deg, #2c3e50, #34495e);
+    --toolbar-bg: #fafbfc;
+    --canvas-bg: #ffffff;
+}
+
+[data-theme="dark"] {
+    /* Dark mode colors */
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #3a3a3a;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --border-color: #404040;
+    --border-light: #505050;
+    --shadow-light: rgba(0,0,0,0.3);
+    --shadow-medium: rgba(0,0,0,0.5);
+    --header-bg: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+    --toolbar-bg: #2d2d2d;
+    --canvas-bg: #3a3a3a;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    overflow: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}

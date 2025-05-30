@@ -1,0 +1,202 @@
+/* Dimension Controls - Dimension and measurement control styles */
+
+/* Dimension Controls */
+.dimension-controls {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    margin-top: 3px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.dimension-preset-row {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.preset-buttons {
+    display: flex;
+    gap: 2px;
+    flex: 1;
+}
+
+.preset-btn {
+    flex: 1;
+    padding: 2px 4px;
+    font-size: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    min-height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preset-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--primary-color);
+}
+
+.preset-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.dimension-group {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dimension-group:last-child {
+    border-bottom: none;
+}
+
+.group-header {
+    padding: 3px 6px;
+    background: var(--bg-tertiary);
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dimension-compact-row {
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    gap: 3px;
+    min-height: 20px;
+}
+
+.dimension-compact-row label {
+    font-size: 8px;
+    color: var(--text-secondary);
+    min-width: 35px;
+    flex-shrink: 0;
+}
+
+.compact-control {
+    flex: 1;
+    min-width: 0;
+}
+
+.compact-control input[type="range"] {
+    width: 100%;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.compact-control input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.compact-control input[type="range"]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+.compact-control input[type="color"] {
+    width: 100%;
+    height: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    cursor: pointer;
+    background: none;
+    padding: 0;
+}
+
+.compact-control select {
+    width: 100%;
+    padding: 1px 2px;
+    font-size: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    height: 16px;
+}
+
+.compact-control input[type="text"],
+.compact-control input[type="number"] {
+    width: 100%;
+    padding: 1px 3px;
+    font-size: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    height: 14px;
+}
+
+.compact-control input[type="checkbox"] {
+    width: 12px;
+    height: 12px;
+    cursor: pointer;
+}
+
+.dimension-checkbox-row {
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    gap: 4px;
+    cursor: pointer;
+}
+
+.dimension-checkbox-row .checkbox-label {
+    font-size: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    flex: 1;
+}
+
+.dimension-checkbox-row input[type="checkbox"] {
+    width: 10px;
+    height: 10px;
+    cursor: pointer;
+}
+
+.dimension-checkbox-row .checkmark {
+    width: 10px;
+    height: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    position: relative;
+    cursor: pointer;
+    background: var(--bg-primary);
+}
+
+.dimension-checkbox-row input[type="checkbox"]:checked + .checkmark {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.dimension-checkbox-row input[type="checkbox"]:checked + .checkmark::after {
+    content: '✓';
+    position: absolute;
+    top: -2px;
+    left: 1px;
+    color: white;
+    font-size: 8px;
+    font-weight: bold;
+}

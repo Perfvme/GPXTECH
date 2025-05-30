@@ -1,0 +1,285 @@
+/* Properties Panel - Properties panel and form styles */
+
+/* Properties Panel */
+.properties-panel {
+    width: 280px;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
+    padding: 0;
+    overflow-y: auto;
+    box-shadow: -2px 0 15px rgba(0,0,0,0.08);
+    font-size: 13px;
+}
+
+.properties-panel h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    padding: 20px 20px 15px 20px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* Element Header */
+.element-header {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.element-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: white;
+}
+
+.pole-icon {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.line-icon {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+}
+
+.element-info h4 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.element-type {
+    font-size: 12px;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Properties Form */
+.properties-form {
+    padding: 20px;
+    background: var(--bg-primary);
+}
+
+.form-row {
+    margin-bottom: 20px;
+}
+
+.form-row label {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-row label i {
+    margin-right: 8px;
+    width: 14px;
+    color: var(--text-secondary);
+}
+
+.form-row input,
+.form-row select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.form-row input:focus,
+.form-row select:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.form-row input::placeholder {
+    color: var(--text-secondary);
+}
+
+/* Form Sections */
+.form-section {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.form-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.section-label {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.section-label i {
+    margin-right: 8px;
+    width: 14px;
+    color: var(--text-secondary);
+}
+
+/* Checkbox Group */
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.checkbox-item:hover {
+    background: #e9ecef;
+}
+
+.checkbox-item input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    width: 0;
+    height: 0;
+}
+
+.checkmark {
+    width: 16px;
+    height: 16px;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 3px;
+    margin-right: 10px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.checkbox-item input:checked ~ .checkmark {
+    background: #3498db;
+    border-color: #3498db;
+}
+
+.checkbox-item input:checked ~ .checkmark:after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.checkbox-item i {
+    margin-right: 6px;
+    color: #6c757d;
+    font-size: 12px;
+}
+
+/* Location and Measurement Info */
+.location-info,
+.measurement-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.coord-item,
+.measure-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.measure-item.primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.measure-item.primary .measure-label,
+.measure-item.primary .measure-value {
+    color: white;
+}
+
+.coord-label,
+.measure-label {
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.coord-value,
+.measure-value {
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+    color: #495057;
+}
+
+/* Property Actions */
+.property-actions {
+    padding: 20px;
+    background: #f8f9fa;
+    border-top: 1px solid #e1e8ed;
+}

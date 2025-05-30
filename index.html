@@ -4,7 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Electrical CAD Drawing - GPX Tech</title>
-    <link rel="stylesheet" href="styles.css">
+    <!-- Modular CSS Files -->
+    <link rel="stylesheet" href="css/modules/styles-base.css">
+    <link rel="stylesheet" href="css/modules/layout.css">
+    <link rel="stylesheet" href="css/modules/buttons.css">
+    <link rel="stylesheet" href="css/modules/toolbar.css">
+    <link rel="stylesheet" href="css/modules/toolbar-controls.css">
+    <link rel="stylesheet" href="css/modules/canvas-map.css">
+    <link rel="stylesheet" href="css/modules/properties-panel.css">
+    <link rel="stylesheet" href="css/modules/legend.css">
+    <link rel="stylesheet" href="css/modules/statusbar.css">
+    <link rel="stylesheet" href="css/modules/notifications.css">
+    <link rel="stylesheet" href="css/modules/input-overlay.css">
+    <link rel="stylesheet" href="css/modules/snap.css">
+    <link rel="stylesheet" href="css/modules/dimension-controls.css">
+    <link rel="stylesheet" href="css/modules/styles-responsive.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -242,25 +256,148 @@
                 <div class="tool-section">
                     <h3>Dimension Style</h3>
                     <div class="dimension-controls">
-                        <div class="dimension-row">
-                            <label>Text Size: <input type="range" id="dimensionTextSize" min="10" max="24" value="14"> <span id="dimensionTextSizeValue">14</span>px</label>
+                        <!-- Style Presets -->
+                        <div class="dimension-preset-row">
+                            <label>Preset:</label>
+                            <div class="preset-buttons">
+                                <button class="preset-btn active" data-preset="standard" title="Standard Style">Std</button>
+                                <button class="preset-btn" data-preset="bold" title="Bold Style">Bold</button>
+                                <button class="preset-btn" data-preset="minimal" title="Minimal Style">Min</button>
+                                <button class="preset-btn" data-preset="custom" title="Custom Style">Custom</button>
+                            </div>
                         </div>
-                        <div class="dimension-row">
-                            <label>Text Color: <input type="color" id="dimensionTextColor" value="#000000"></label>
+                        
+                        <!-- Text Settings -->
+                        <div class="dimension-group">
+                            <div class="group-header">Text</div>
+                            <div class="dimension-compact-row">
+                                <div class="compact-control">
+                                    <label>Size</label>
+                                    <input type="range" id="dimensionTextSize" min="8" max="32" value="14">
+                                    <span id="dimensionTextSizeValue">14</span>
+                                </div>
+                                <div class="compact-control">
+                                    <label>Color</label>
+                                    <input type="color" id="dimensionTextColor" value="#000000">
+                                </div>
+                            </div>
+                            <div class="dimension-compact-row">
+                                <div class="compact-control">
+                                    <label>Font</label>
+                                    <select id="dimensionFont">
+                                        <option value="Arial">Arial</option>
+                                        <option value="Helvetica">Helvetica</option>
+                                        <option value="Times New Roman">Times</option>
+                                        <option value="Courier New">Courier</option>
+                                        <option value="Verdana">Verdana</option>
+                                    </select>
+                                </div>
+                                <div class="compact-control">
+                                    <label>Style</label>
+                                    <select id="dimensionTextStyle">
+                                        <option value="normal">Normal</option>
+                                        <option value="bold">Bold</option>
+                                        <option value="italic">Italic</option>
+                                        <option value="bold italic">Bold Italic</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
-                        <div class="dimension-row">
-                            <label>Line Color: <input type="color" id="dimensionLineColor" value="#0066cc"></label>
+                        
+                        <!-- Line Settings -->
+                        <div class="dimension-group">
+                            <div class="group-header">Lines</div>
+                            <div class="dimension-compact-row">
+                                <div class="compact-control">
+                                    <label>Color</label>
+                                    <input type="color" id="dimensionLineColor" value="#0066cc">
+                                </div>
+                                <div class="compact-control">
+                                    <label>Opacity</label>
+                                    <input type="range" id="dimensionLineOpacity" min="10" max="100" value="100">
+                                    <span id="dimensionLineOpacityValue">100</span>%
+                                </div>
+                            </div>
+                            <div class="dimension-compact-row">
+                                <div class="compact-control">
+                                    <label>Width</label>
+                                    <input type="range" id="dimensionLineWidth" min="1" max="5" value="1">
+                                    <span id="dimensionLineWidthValue">1</span>
+                                </div>
+                                <div class="compact-control">
+                                    <label>Style</label>
+                                    <select id="dimensionLineStyle">
+                                        <option value="solid">Solid</option>
+                                        <option value="dashed">Dashed</option>
+                                        <option value="dotted">Dotted</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="dimension-compact-row">
+                                <div class="compact-control">
+                                    <label>Arc Size</label>
+                                    <input type="range" id="dimensionArcSize" min="5" max="80" value="30">
+                                    <span id="dimensionArcSizeValue">30</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="dimension-row">
-                            <label>Unit: 
-                                <select id="dimensionUnit">
-                                    <option value="°">Degrees (°)</option>
-                                    <option value="rad">Radians (rad)</option>
-                                </select>
-                            </label>
+                        
+                        <!-- Format Settings -->
+                        <div class="dimension-group">
+                            <div class="group-header">Format</div>
+                            <div class="dimension-compact-row">
+                                <div class="compact-control">
+                                    <label>Unit</label>
+                                    <select id="dimensionUnit">
+                                        <option value="°">Degrees (°)</option>
+                                        <option value="rad">Radians</option>
+                                        <option value="grad">Gradians</option>
+                                    </select>
+                                </div>
+                                <div class="compact-control">
+                                    <label>Precision</label>
+                                    <input type="range" id="dimensionPrecision" min="0" max="4" value="1">
+                                    <span id="dimensionPrecisionValue">1</span>
+                                </div>
+                            </div>
+                            <div class="dimension-compact-row">
+                                <div class="compact-control">
+                                    <label>Prefix</label>
+                                    <input type="text" id="dimensionPrefix" placeholder="∠" maxlength="3">
+                                </div>
+                                <div class="compact-control">
+                                    <label>Suffix</label>
+                                    <input type="text" id="dimensionSuffix" placeholder="" maxlength="3">
+                                </div>
+                            </div>
                         </div>
-                        <div class="dimension-row">
-                            <label>Precision: <input type="range" id="dimensionPrecision" min="0" max="3" value="1"> <span id="dimensionPrecisionValue">1</span> decimal</label>
+                        
+                        <!-- Display Options -->
+                        <div class="dimension-group">
+                            <div class="group-header">Display</div>
+                            <div class="dimension-checkbox-row">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="dimensionShowBackground" checked>
+                                    <span class="checkmark"></span>
+                                    Text Background
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="dimensionShowArrows">
+                                    <span class="checkmark"></span>
+                                    Arrow Heads
+                                </label>
+                            </div>
+                            <div class="dimension-compact-row">
+                                <div class="compact-control">
+                                    <label>Background</label>
+                                    <input type="color" id="dimensionBackgroundColor" value="#ffffff">
+                                </div>
+                                <div class="compact-control">
+                                    <label>Opacity</label>
+                                    <input type="range" id="dimensionBackgroundOpacity" min="0" max="100" value="80">
+                                    <span id="dimensionBackgroundOpacityValue">80</span>%
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -399,9 +536,51 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="gpx-parser.js"></script>
-    <script src="drawing-engine.js"></script>
+    
+    <!-- Drawing Engine - Command Classes (must load first) -->
+    <script src="js/drawing-engine/drawing-engine-commands.js"></script>
+    
+    <!-- Drawing Engine - Main Class Definition -->
+    <script src="js/drawing-engine/drawing-engine-main.js"></script>
+    
+    <!-- Drawing Engine - Prototype Method Modules -->
+    <script src="js/drawing-engine/drawing-engine-events.js"></script>
+    <script src="js/drawing-engine/drawing-engine-rendering.js"></script>
+    <script src="js/drawing-engine/drawing-engine-dimensions.js"></script>
+    <script src="js/drawing-engine/drawing-engine-snap.js"></script>
+    <script src="js/drawing-engine/drawing-engine-utils.js"></script>
+    <script src="js/drawing-engine/drawing-engine-selection.js"></script>
+    <script src="js/drawing-engine/drawing-engine-drawing.js"></script>
+    <script src="js/drawing-engine/drawing-engine-precise-line.js"></script>
+    <script src="js/drawing-engine/drawing-engine-properties-panel.js"></script>
+    <script src="js/drawing-engine/drawing-engine-data-io.js"></script>
+    <script src="js/drawing-engine/drawing-engine-history.js"></script>
+    
     <script src="map-manager.js"></script>
     <script src="snap-toggle.js"></script>
+    
+    <!-- App Main Class (must load first) -->
+    <script src="js/app/app-main.js"></script>
+    
+    <!-- App Module Files (ElectricalCADApp.prototype methods) -->
+    <script src="js/app/app-coordinates.js"></script>
+    <script src="js/app/app-dimension-presets.js"></script>
+    <script src="js/app/app-event-listeners-dimension-presets.js"></script>
+    <script src="js/app/app-event-listeners-dimensions.js"></script>
+    <script src="js/app/app-event-listeners-header.js"></script>
+    <script src="js/app/app-event-listeners-misc.js"></script>
+    <script src="js/app/app-event-listeners-selection.js"></script>
+    <script src="js/app/app-event-listeners-snap.js"></script>
+    <script src="js/app/app-event-listeners-tools.js"></script>
+    <script src="js/app/app-event-setup.js"></script>
+    <script src="js/app/app-export.js"></script>
+    <script src="js/app/app-keyboard.js"></script>
+    <script src="js/app/app-legend.js"></script>
+    <script src="js/app/app-project-management.js"></script>
+    <script src="js/app/app-tool-management.js"></script>
+    <script src="js/app/app-ui-updates.js"></script>
+    
+    <!-- Original app.js (contains remaining code and initialization) -->
     <script src="app.js"></script>
 </body>
 </html>

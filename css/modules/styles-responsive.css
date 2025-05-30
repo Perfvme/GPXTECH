@@ -1,0 +1,42 @@
+/* Responsive - Responsive design and media queries */
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .toolbar {
+        width: 280px;
+    }
+    
+    .properties-panel {
+        width: 280px;
+    }
+}
+
+@media (max-width: 768px) {
+    .toolbar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        max-height: 40vh;
+        overflow-y: auto;
+    }
+    
+    .properties-panel {
+        width: 100%;
+        height: auto;
+        position: relative;
+        max-height: 40vh;
+        overflow-y: auto;
+        right: auto;
+        left: 0;
+        bottom: 0;
+    }
+    
+    .main-content {
+        flex-direction: column;
+    }
+    
+    .canvas-container {
+        order: 2;
+        height: 60vh;
+    }
+}

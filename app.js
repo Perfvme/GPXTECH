@@ -229,6 +229,9 @@ class ElectricalCADApp {
         // Dimension style controls
         this.setupDimensionStyleControls();
         
+        // Setup dimension preset controls
+        this.setupDimensionPresetControls();
+        
         // Initialize snap details as collapsed
         const snapDetails = document.getElementById('snapDetails');
         const snapHeader = document.querySelector('.snap-header');
@@ -255,134 +258,7 @@ class ElectricalCADApp {
         document.addEventListener('keydown', (e) => this.handleKeyboard(e));
     }
 
-    /**
-     * Setup legend controls (dragging and minimizing)
-     */
-    setupLegendControls() {
-        const legend = document.getElementById('legend');
-        const legendHeader = legend.querySelector('.legend-header');
-        const legendMinimize = document.getElementById('legendMinimize');
-        const legendContent = document.getElementById('legendContent');
-        
-        let isDragging = false;
-        let dragOffset = { x: 0, y: 0 };
-        
-        // Minimize/maximize functionality
-        legendMinimize.addEventListener('click', (e) => {
-            e.stopPropagation();
-            legend.classList.toggle('minimized');
-            const icon = legendMinimize.querySelector('i');
-            if (legend.classList.contains('minimized')) {
-                icon.className = 'fas fa-plus';
-            } else {
-                icon.className = 'fas fa-minus';
-            }
-        });
-        
-        // Dragging functionality
-        legendHeader.addEventListener('mousedown', (e) => {
-            if (e.target.closest('.legend-control-btn')) return;
-            
-            isDragging = true;
-            const rect = legend.getBoundingClientRect();
-            dragOffset.x = e.clientX - rect.left;
-            dragOffset.y = e.clientY - rect.top;
-            
-            legend.style.position = 'fixed';
-            legend.style.zIndex = '1000';
-            
-            document.addEventListener('mousemove', handleDrag);
-            document.addEventListener('mouseup', handleDragEnd);
-        });
-        
-        function handleDrag(e) {
-            if (!isDragging) return;
-            
-            const x = e.clientX - dragOffset.x;
-            const y = e.clientY - dragOffset.y;
-            
-            // Keep legend within viewport bounds
-            const maxX = window.innerWidth - legend.offsetWidth;
-            const maxY = window.innerHeight - legend.offsetHeight;
-            
-            legend.style.left = Math.max(0, Math.min(x, maxX)) + 'px';
-            legend.style.top = Math.max(0, Math.min(y, maxY)) + 'px';
-            legend.style.bottom = 'auto';
-        }
-        
-        function handleDragEnd() {
-            isDragging = false;
-            document.removeEventListener('mousemove', handleDrag);
-            document.removeEventListener('mouseup', handleDragEnd);
-        }
-    }
 
-    /**
-     * Handle keyboard shortcuts
-     */
-    handleKeyboard(e) {
-        // Prevent default for our shortcuts
-        if (e.ctrlKey || e.metaKey) {
-            switch (e.key.toLowerCase()) {
-                case 's':
-                    e.preventDefault();
-                    this.saveProject();
-                    break;
-                case 'n':
-                    e.preventDefault();
-                    this.newProject();
-                    break;
-                case 'o':
-                    e.preventDefault();
-                    this.loadGPXFile();
-                    break;
-                case 'z':
-                     if (!e.shiftKey) {
-                         e.preventDefault();
-                         this.drawingEngine.undo();
-                         this.updateUndoRedoButtons();
-                     } else {
-                         e.preventDefault();
-                         this.drawingEngine.redo();
-                         this.updateUndoRedoButtons();
-                     }
-                     break;
-                 case 'y':
-                     e.preventDefault();
-                     this.drawingEngine.redo();
-                     this.updateUndoRedoButtons();
-                     break;
-            }
-        }
-        
-        // Tool shortcuts
-        switch (e.key.toLowerCase()) {
-            case 'v':
-                this.selectToolByType('select');
-                break;
-            case 'h':
-                this.selectToolByType('pan');
-                break;
-            case 'l':
-                this.selectToolByType('line');
-                break;
-            case 'p':
-                this.selectToolByType('pole');
-                break;
-            case 'a':
-                this.selectToolByType('angle');
-                break;
-            case 'delete':
-            case 'backspace':
-                this.drawingEngine.deleteSelected();
-                break;
-            case 'escape':
-                this.drawingEngine.selectedElement = null;
-                this.drawingEngine.updatePropertiesPanel(null);
-                this.drawingEngine.render();
-                break;
-        }
-    }
 
     /**
      * Select tool by type
@@ -459,6 +335,69 @@ class ElectricalCADApp {
             });
         }
 
+        // Line width
+        const lineWidthSlider = document.getElementById('dimensionLineWidth');
+        const lineWidthValue = document.getElementById('dimensionLineWidthValue');
+        if (lineWidthSlider && lineWidthValue) {
+            lineWidthSlider.addEventListener('input', (e) => {
+                const width = parseInt(e.target.value);
+                lineWidthValue.textContent = width;
+                this.drawingEngine.dimensionStyle.lineWidth = width;
+                this.drawingEngine.render();
+            });
+        }
+
+        // Line opacity
+        const lineOpacitySlider = document.getElementById('dimension-line-opacity');
+        const lineOpacityValue = document.getElementById('dimension-line-opacity-value');
+        if (lineOpacitySlider && lineOpacityValue) {
+            lineOpacitySlider.addEventListener('input', (e) => {
+                const value = parseInt(e.target.value);
+                this.drawingEngine.dimensionStyle.lineOpacity = value;
+                lineOpacityValue.textContent = value + '%';
+                this.drawingEngine.render();
+            });
+        }
+
+        // Line style
+        const lineStyleSelect = document.getElementById('dimensionLineStyle');
+        if (lineStyleSelect) {
+            lineStyleSelect.addEventListener('change', (e) => {
+                this.drawingEngine.dimensionStyle.lineStyle = e.target.value;
+                this.drawingEngine.render();
+            });
+        }
+
+        // Arc size
+        const arcSizeSlider = document.getElementById('dimensionArcSize');
+        const arcSizeValue = document.getElementById('dimensionArcSizeValue');
+        if (arcSizeSlider && arcSizeValue) {
+            arcSizeSlider.addEventListener('input', (e) => {
+                const size = parseInt(e.target.value);
+                arcSizeValue.textContent = size;
+                this.drawingEngine.dimensionStyle.arcSize = size;
+                this.drawingEngine.render();
+            });
+        }
+
+        // Font
+        const fontSelect = document.getElementById('dimensionFont');
+        if (fontSelect) {
+            fontSelect.addEventListener('change', (e) => {
+                this.drawingEngine.dimensionStyle.font = e.target.value;
+                this.drawingEngine.render();
+            });
+        }
+
+        // Text style
+        const textStyleSelect = document.getElementById('dimensionTextStyle');
+        if (textStyleSelect) {
+            textStyleSelect.addEventListener('change', (e) => {
+                this.drawingEngine.dimensionStyle.textStyle = e.target.value;
+                this.drawingEngine.render();
+            });
+        }
+
         // Unit
         const unitSelect = document.getElementById('dimensionUnit');
         if (unitSelect) {
@@ -479,6 +418,240 @@ class ElectricalCADApp {
                 this.drawingEngine.render();
             });
         }
+
+        // Prefix
+        const prefixInput = document.getElementById('dimensionPrefix');
+        if (prefixInput) {
+            prefixInput.addEventListener('input', (e) => {
+                this.drawingEngine.dimensionStyle.prefix = e.target.value;
+                this.drawingEngine.render();
+            });
+        }
+
+        // Suffix
+        const suffixInput = document.getElementById('dimensionSuffix');
+        if (suffixInput) {
+            suffixInput.addEventListener('input', (e) => {
+                this.drawingEngine.dimensionStyle.suffix = e.target.value;
+                this.drawingEngine.render();
+            });
+        }
+
+        // Show background
+        const showBackgroundCheck = document.getElementById('dimensionShowBackground');
+        if (showBackgroundCheck) {
+            showBackgroundCheck.addEventListener('change', (e) => {
+                this.drawingEngine.dimensionStyle.showBackground = e.target.checked;
+                this.drawingEngine.render();
+            });
+        }
+
+        // Show arrows
+        const showArrowsCheck = document.getElementById('dimensionShowArrows');
+        if (showArrowsCheck) {
+            showArrowsCheck.addEventListener('change', (e) => {
+                this.drawingEngine.dimensionStyle.showArrows = e.target.checked;
+                this.drawingEngine.render();
+            });
+        }
+
+        // Background color
+        const backgroundColorInput = document.getElementById('dimensionBackgroundColor');
+        if (backgroundColorInput) {
+            backgroundColorInput.addEventListener('change', (e) => {
+                this.drawingEngine.dimensionStyle.backgroundColor = e.target.value;
+                this.drawingEngine.render();
+            });
+        }
+
+        // Background opacity
+        const backgroundOpacitySlider = document.getElementById('dimensionBackgroundOpacity');
+        const backgroundOpacityValue = document.getElementById('dimensionBackgroundOpacityValue');
+        if (backgroundOpacitySlider && backgroundOpacityValue) {
+            backgroundOpacitySlider.addEventListener('input', (e) => {
+                const opacity = parseInt(e.target.value);
+                backgroundOpacityValue.textContent = opacity;
+                this.drawingEngine.dimensionStyle.backgroundOpacity = opacity;
+                this.drawingEngine.render();
+            });
+        }
+    }
+
+    /**
+     * Setup dimension preset controls
+     */
+    setupDimensionPresetControls() {
+        const presetButtons = document.querySelectorAll('.preset-btn');
+        presetButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const preset = e.target.dataset.preset;
+                this.applyDimensionPreset(preset);
+                
+                // Update active state
+                presetButtons.forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+            });
+        });
+    }
+
+    /**
+     * Apply dimension preset
+     */
+    applyDimensionPreset(preset) {
+        const presets = {
+            minimal: {
+                textSize: 12,
+                textColor: '#333333',
+                lineColor: '#666666',
+                lineWidth: 1,
+                lineStyle: 'solid',
+                arcSize: 30,
+                font: 'Arial',
+                textStyle: 'normal',
+                unit: '°',
+                precision: 1,
+                prefix: '',
+                suffix: '',
+                showBackground: false,
+                showArrows: false,
+                backgroundColor: '#ffffff',
+                backgroundOpacity: 80
+            },
+            standard: {
+                textSize: 14,
+                textColor: '#000000',
+                lineColor: '#0066cc',
+                lineWidth: 2,
+                lineStyle: 'solid',
+                arcSize: 40,
+                font: 'Arial',
+                textStyle: 'normal',
+                unit: '°',
+                precision: 1,
+                prefix: '',
+                suffix: '',
+                showBackground: true,
+                showArrows: true,
+                backgroundColor: '#ffffff',
+                backgroundOpacity: 90
+            },
+            technical: {
+                textSize: 12,
+                textColor: '#000000',
+                lineColor: '#ff0000',
+                lineWidth: 1,
+                lineStyle: 'solid',
+                arcSize: 35,
+                font: 'Courier New',
+                textStyle: 'normal',
+                unit: '°',
+                precision: 2,
+                prefix: '∠',
+                suffix: '',
+                showBackground: true,
+                showArrows: true,
+                backgroundColor: '#ffffcc',
+                backgroundOpacity: 85
+            },
+            bold: {
+                textSize: 16,
+                textColor: '#ffffff',
+                lineColor: '#ff6600',
+                lineWidth: 3,
+                lineStyle: 'solid',
+                arcSize: 50,
+                font: 'Arial',
+                textStyle: 'bold',
+                unit: '°',
+                precision: 0,
+                prefix: '',
+                suffix: '',
+                showBackground: true,
+                showArrows: true,
+                backgroundColor: '#333333',
+                backgroundOpacity: 95
+            }
+        };
+
+        const presetStyle = presets[preset];
+        if (presetStyle) {
+            // Apply preset to drawing engine
+            Object.assign(this.drawingEngine.dimensionStyle, presetStyle);
+            
+            // Update UI controls
+            this.updateDimensionStyleUI();
+            
+            // Re-render
+            this.drawingEngine.render();
+        }
+    }
+
+    /**
+     * Update dimension style UI controls
+     */
+    updateDimensionStyleUI() {
+        const style = this.drawingEngine.dimensionStyle;
+        
+        // Update sliders and their values
+        const updateSlider = (id, valueId, value) => {
+            const slider = document.getElementById(id);
+            const valueEl = document.getElementById(valueId);
+            if (slider) slider.value = value;
+            if (valueEl) valueEl.textContent = value;
+        };
+        
+        updateSlider('dimensionTextSize', 'dimensionTextSizeValue', style.textSize);
+        updateSlider('dimensionLineWidth', 'dimensionLineWidthValue', style.lineWidth);
+        updateSlider('dimensionArcSize', 'dimensionArcSizeValue', style.arcSize);
+        updateSlider('dimensionPrecision', 'dimensionPrecisionValue', style.precision);
+        updateSlider('dimensionBackgroundOpacity', 'dimensionBackgroundOpacityValue', style.backgroundOpacity);
+        
+        // Update line opacity slider
+        const lineOpacitySlider = document.getElementById('dimension-line-opacity');
+        const lineOpacityValue = document.getElementById('dimension-line-opacity-value');
+        if (lineOpacitySlider && lineOpacityValue) {
+            lineOpacitySlider.value = style.lineOpacity;
+            lineOpacityValue.textContent = style.lineOpacity + '%';
+        }
+        
+        // Update color inputs
+        const updateColor = (id, value) => {
+            const input = document.getElementById(id);
+            if (input) input.value = value;
+        };
+        
+        updateColor('dimensionTextColor', style.textColor);
+        updateColor('dimensionLineColor', style.lineColor);
+        updateColor('dimensionBackgroundColor', style.backgroundColor);
+        
+        // Update selects
+        const updateSelect = (id, value) => {
+            const select = document.getElementById(id);
+            if (select) select.value = value;
+        };
+        
+        updateSelect('dimensionLineStyle', style.lineStyle);
+        updateSelect('dimensionFont', style.font);
+        updateSelect('dimensionTextStyle', style.textStyle);
+        updateSelect('dimensionUnit', style.unit);
+        
+        // Update text inputs
+        const updateText = (id, value) => {
+            const input = document.getElementById(id);
+            if (input) input.value = value;
+        };
+        
+        updateText('dimensionPrefix', style.prefix);
+        updateText('dimensionSuffix', style.suffix);
+        
+        // Update checkboxes
+        const updateCheckbox = (id, value) => {
+            const checkbox = document.getElementById(id);
+            if (checkbox) checkbox.checked = value;
+        };
+        
+        updateCheckbox('dimensionShowBackground', style.showBackground);
+        updateCheckbox('dimensionShowArrows', style.showArrows);
     }
 
     /**
@@ -667,282 +840,11 @@ class ElectricalCADApp {
         }
     }
 
-    /**
-     * Enable real coordinates for manual drawing
-     */
-    enableRealCoordinatesForDrawing() {
-        if (!this.drawingEngine.coordinateSystem.isRealCoordinates) {
-            this.drawingEngine.enableRealCoordinates();
-            this.showNotification('Real coordinate system enabled! Manual drawing will now use UTM coordinates and metric calculations.', 'success');
-            this.updateStatusBar();
-        } else {
-            this.showNotification('Real coordinate system is already enabled.', 'info');
-        }
-    }
 
-    /**
-     * Update status bar with current project information
-     */
-    updateStatusBar() {
-        const metadata = this.drawingEngine.metadata || {};
-        const elements = this.drawingEngine.elements || { poles: [], lines: [] };
-        
-        // Update coordinate system
-        const coordSystemEl = document.getElementById('coordinateSystem');
-        if (coordSystemEl) {
-            const system = metadata.coordinateSystem || 'Canvas';
-            coordSystemEl.textContent = `Coordinate System: ${system}`;
-        }
-        
-        // Update total distance
-        const totalDistanceEl = document.getElementById('totalDistance');
-        if (totalDistanceEl) {
-            const distance = metadata.totalDistance || 0;
-            const distanceText = distance > 0 
-                ? `Total Distance: ${distance}m (${(distance / 1000).toFixed(3)}km)`
-                : 'Total Distance: 0m';
-            totalDistanceEl.textContent = distanceText;
-        }
-        
-        // Update scale info
-        const scaleInfoEl = document.getElementById('scaleInfo');
-        if (scaleInfoEl) {
-            const metersPerPixel = metadata.metersPerPixel || 1;
-            const scale = metersPerPixel > 0 ? `1:${Math.round(metersPerPixel)}` : '1:1';
-            scaleInfoEl.textContent = `Scale: ${scale}`;
-        }
-        
-        // Update element count
-        const elementCountEl = document.getElementById('elementCount');
-        if (elementCountEl) {
-            const poleCount = elements.poles ? elements.poles.length : 0;
-            const lineCount = elements.lines ? elements.lines.length : 0;
-            const realCoords = this.drawingEngine.coordinateSystem && this.drawingEngine.coordinateSystem.isRealCoordinates ? 'Enabled' : 'Disabled';
-            elementCountEl.textContent = `Elements: ${poleCount} poles, ${lineCount} lines | Real Coordinates: ${realCoords}`;
-        }
-    }
 
-    /**
-     * Show notification to user
-     */
-    showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.innerHTML = `
-            <div class="notification-content">
-                <span class="notification-message">${message}</span>
-                <button class="notification-close">&times;</button>
-            </div>
-        `;
-        
-        // Add styles if not already present
-        if (!document.querySelector('#notification-styles')) {
-            const styles = document.createElement('style');
-            styles.id = 'notification-styles';
-            styles.textContent = `
-                .notification {
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    z-index: 10000;
-                    max-width: 400px;
-                    padding: 15px;
-                    border-radius: 6px;
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-                    animation: slideIn 0.3s ease;
-                }
-                
-                .notification-info {
-                    background: #e3f2fd;
-                    border-left: 4px solid #2196f3;
-                    color: #1976d2;
-                }
-                
-                .notification-success {
-                    background: #e8f5e8;
-                    border-left: 4px solid #4caf50;
-                    color: #2e7d32;
-                }
-                
-                .notification-warning {
-                    background: #fff3e0;
-                    border-left: 4px solid #ff9800;
-                    color: #f57c00;
-                }
-                
-                .notification-error {
-                    background: #ffebee;
-                    border-left: 4px solid #f44336;
-                    color: #c62828;
-                }
-                
-                .notification-content {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-                
-                .notification-message {
-                    flex: 1;
-                    font-size: 14px;
-                    font-weight: 500;
-                }
-                
-                .notification-close {
-                    background: none;
-                    border: none;
-                    font-size: 18px;
-                    cursor: pointer;
-                    margin-left: 10px;
-                    opacity: 0.7;
-                }
-                
-                .notification-close:hover {
-                    opacity: 1;
-                }
-                
-                @keyframes slideIn {
-                    from {
-                        transform: translateX(100%);
-                        opacity: 0;
-                    }
-                    to {
-                        transform: translateX(0);
-                        opacity: 1;
-                    }
-                }
-                
-                @keyframes slideOut {
-                    from {
-                        transform: translateX(0);
-                        opacity: 1;
-                    }
-                    to {
-                        transform: translateX(100%);
-                        opacity: 0;
-                    }
-                }
-            `;
-            document.head.appendChild(styles);
-        }
-        
-        // Add to document
-        document.body.appendChild(notification);
-        
-        // Setup close button
-        const closeBtn = notification.querySelector('.notification-close');
-        closeBtn.addEventListener('click', () => {
-            this.removeNotification(notification);
-        });
-        
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                this.removeNotification(notification);
-            }
-        }, 5000);
-    }
 
-    /**
-     * Remove notification with animation
-     */
-    removeNotification(notification) {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
-    }
 
-    /**
-     * Load project from file
-     */
-    loadProject(projectData) {
-        try {
-            this.currentProject = {
-                name: projectData.name || 'Loaded Project',
-                created: new Date(projectData.created) || new Date(),
-                modified: new Date(projectData.modified) || new Date()
-            };
-            
-            if (projectData.drawing) {
-                this.drawingEngine.importData(projectData.drawing);
-            }
-            
-            this.showNotification('Project loaded successfully', 'success');
-        } catch (error) {
-            console.error('Error loading project:', error);
-            this.showNotification('Error loading project: ' + error.message, 'error');
-        }
-    }
 
-    /**
-     * Toggle dark mode
-     */
-    toggleDarkMode() {
-        const body = document.body;
-        const darkModeBtn = document.getElementById('darkModeToggle');
-        const icon = darkModeBtn.querySelector('i');
-        const text = darkModeBtn.childNodes[1];
-        
-        if (body.getAttribute('data-theme') === 'dark') {
-            // Switch to light mode
-            body.removeAttribute('data-theme');
-            icon.className = 'fas fa-moon';
-            darkModeBtn.childNodes[1].textContent = ' Dark Mode';
-            localStorage.setItem('theme', 'light');
-            this.showNotification('Switched to light mode', 'success');
-        } else {
-            // Switch to dark mode
-            body.setAttribute('data-theme', 'dark');
-            icon.className = 'fas fa-sun';
-            darkModeBtn.childNodes[1].textContent = ' Light Mode';
-            localStorage.setItem('theme', 'dark');
-            this.showNotification('Switched to dark mode', 'success');
-        }
-        
-        // Re-render canvas if drawing engine exists
-        if (this.drawingEngine) {
-            this.drawingEngine.render();
-        }
-    }
-
-    /**
-     * Initialize theme from localStorage
-     */
-    initializeTheme() {
-        const savedTheme = localStorage.getItem('theme');
-        const darkModeBtn = document.getElementById('darkModeToggle');
-        const icon = darkModeBtn?.querySelector('i');
-        
-        if (savedTheme === 'dark') {
-            document.body.setAttribute('data-theme', 'dark');
-            if (icon) {
-                icon.className = 'fas fa-sun';
-                darkModeBtn.childNodes[1].textContent = ' Light Mode';
-            }
-        }
-    }
-
-    /**
-     * Export drawing as image
-     */
-    exportAsImage() {
-        try {
-            const canvas = document.getElementById('drawingCanvas');
-            const link = document.createElement('a');
-            link.download = `${this.currentProject.name.replace(/[^a-z0-9]/gi, '_')}.png`;
-            link.href = canvas.toDataURL();
-            link.click();
-            
-            this.showNotification('Image exported successfully', 'success');
-        } catch (error) {
-            console.error('Error exporting image:', error);
-            this.showNotification('Error exporting image', 'error');
-        }
-    }
 }
 
 // Initialize application when page loads
