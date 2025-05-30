@@ -117,6 +117,9 @@ class ElectricalCADApp {
             btn.addEventListener('click', (e) => this.selectTool(e.target.closest('.tool-btn-icon')));
         });
         
+        // Add angle tool event listener if it exists
+        document.getElementById('angleTool')?.addEventListener('click', () => this.selectToolByType('angle'));
+        
         // Selection controls
         document.getElementById('selectAll')?.addEventListener('click', () => {
             this.drawingEngine.selectAll();
@@ -222,6 +225,9 @@ class ElectricalCADApp {
         
         // Initialize snap distance display
         snapDistanceValue.textContent = snapDistanceSlider.value + 'px';
+        
+        // Dimension style controls
+        this.setupDimensionStyleControls();
         
         // Initialize snap details as collapsed
         const snapDetails = document.getElementById('snapDetails');
@@ -363,6 +369,9 @@ class ElectricalCADApp {
             case 'p':
                 this.selectToolByType('pole');
                 break;
+            case 'a':
+                this.selectToolByType('angle');
+                break;
             case 'delete':
             case 'backspace':
                 this.drawingEngine.deleteSelected();
@@ -413,6 +422,62 @@ class ElectricalCADApp {
         
         if (redoBtn) {
             redoBtn.disabled = !this.drawingEngine.canRedo();
+        }
+    }
+
+    /**
+     * Setup dimension style controls
+     */
+    setupDimensionStyleControls() {
+        // Text size
+        const textSizeSlider = document.getElementById('dimensionTextSize');
+        const textSizeValue = document.getElementById('dimensionTextSizeValue');
+        if (textSizeSlider && textSizeValue) {
+            textSizeSlider.addEventListener('input', (e) => {
+                const size = parseInt(e.target.value);
+                textSizeValue.textContent = size;
+                this.drawingEngine.dimensionStyle.textSize = size;
+                this.drawingEngine.render();
+            });
+        }
+
+        // Text color
+        const textColorInput = document.getElementById('dimensionTextColor');
+        if (textColorInput) {
+            textColorInput.addEventListener('change', (e) => {
+                this.drawingEngine.dimensionStyle.textColor = e.target.value;
+                this.drawingEngine.render();
+            });
+        }
+
+        // Line color
+        const lineColorInput = document.getElementById('dimensionLineColor');
+        if (lineColorInput) {
+            lineColorInput.addEventListener('change', (e) => {
+                this.drawingEngine.dimensionStyle.lineColor = e.target.value;
+                this.drawingEngine.render();
+            });
+        }
+
+        // Unit
+        const unitSelect = document.getElementById('dimensionUnit');
+        if (unitSelect) {
+            unitSelect.addEventListener('change', (e) => {
+                this.drawingEngine.dimensionStyle.unit = e.target.value;
+                this.drawingEngine.render();
+            });
+        }
+
+        // Precision
+        const precisionSlider = document.getElementById('dimensionPrecision');
+        const precisionValue = document.getElementById('dimensionPrecisionValue');
+        if (precisionSlider && precisionValue) {
+            precisionSlider.addEventListener('input', (e) => {
+                const precision = parseInt(e.target.value);
+                precisionValue.textContent = precision;
+                this.drawingEngine.dimensionStyle.precision = precision;
+                this.drawingEngine.render();
+            });
         }
     }
 

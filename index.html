@@ -58,6 +58,9 @@
                         <button id="poleTool" class="tool-btn-icon" data-tool="pole" title="Pole">
                             <i class="fas fa-circle"></i>
                         </button>
+                        <button id="angleTool" class="tool-btn-icon" data-tool="angle" title="Angular Dimension">
+                            <i class="fas fa-drafting-compass"></i>
+                        </button>
                     </div>
                     <div class="tool-options">
                         <label class="checkbox-item">
@@ -233,6 +236,32 @@
                             <input type="checkbox" id="showNameLabels" checked>
                             <span>Labels</span>
                         </label>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Dimension Style</h3>
+                    <div class="dimension-controls">
+                        <div class="dimension-row">
+                            <label>Text Size: <input type="range" id="dimensionTextSize" min="10" max="24" value="14"> <span id="dimensionTextSizeValue">14</span>px</label>
+                        </div>
+                        <div class="dimension-row">
+                            <label>Text Color: <input type="color" id="dimensionTextColor" value="#000000"></label>
+                        </div>
+                        <div class="dimension-row">
+                            <label>Line Color: <input type="color" id="dimensionLineColor" value="#0066cc"></label>
+                        </div>
+                        <div class="dimension-row">
+                            <label>Unit: 
+                                <select id="dimensionUnit">
+                                    <option value="°">Degrees (°)</option>
+                                    <option value="rad">Radians (rad)</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="dimension-row">
+                            <label>Precision: <input type="range" id="dimensionPrecision" min="0" max="3" value="1"> <span id="dimensionPrecisionValue">1</span> decimal</label>
+                        </div>
                     </div>
                 </div>
             </div>

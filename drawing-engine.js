@@ -9,7 +9,8 @@ class DrawingEngine {
         this.ctx = canvas.getContext('2d');
         this.elements = {
             poles: [],
-            lines: []
+            lines: [],
+            dimensions: []
         };
         this.metadata = {
             metersPerPixel: 1,
@@ -50,6 +51,21 @@ class DrawingEngine {
         this.showGrid = true;
         this.showNameLabels = true;
         this.onElementsChanged = null; // Callback for when elements change
+        
+        // Angular dimension tool state
+        this.angleState = {
+            mode: 'none', // 'none', 'selecting-first', 'selecting-second', 'selecting-third'
+            points: [],
+            lines: [],
+            previewAngle: null
+        };
+        this.dimensionStyle = {
+            textSize: 12,
+            textColor: '#000000',
+            lineColor: '#FF0000',
+            unit: 'degrees',
+            precision: 1
+        };
         
         // Undo/Redo system
         this.commandHistory = [];
@@ -142,6 +158,9 @@ class DrawingEngine {
                     this.startLine(x, y);
                 }
                 break;
+            case 'angle':
+                this.handleAngleToolClick(x, y);
+                break;
         }
     }
 
@@ -167,6 +186,8 @@ class DrawingEngine {
         } else if (this.currentTool === 'line' && this.snapEnabled) {
             this.updateSnapPoint(x, y);
             this.render();
+        } else if (this.currentTool === 'angle') {
+            this.updateAnglePreview(x, y);
         }
     }
 
@@ -653,12 +674,22 @@ class DrawingEngine {
         this.currentTool = tool;
         this.tempLine = null;
         
+        // Reset angle tool state when switching tools
+        if (tool !== 'angle') {
+            this.resetAngleTool();
+        } else {
+            this.angleState.mode = 'selecting-first';
+        }
+        
         switch (tool) {
             case 'pan':
                 this.canvas.style.cursor = 'grab';
                 break;
             case 'select':
                 this.canvas.style.cursor = 'default';
+                break;
+            case 'angle':
+                this.canvas.style.cursor = 'crosshair';
                 break;
             default:
                 this.canvas.style.cursor = 'crosshair';
@@ -730,6 +761,405 @@ class DrawingEngine {
         this.snapDistance = Math.max(5, Math.min(50, distance)); // Clamp between 5 and 50
         this.snapCache.clear();
         this.render();
+    }
+
+    /**
+     * Draw dimension
+     */
+    drawDimension(dimension) {
+        this.ctx.save();
+        
+        if (dimension.method === '3-point') {
+            this.drawAngleDimension3Point(dimension);
+        } else if (dimension.method === '2-line') {
+            this.drawAngleDimension2Line(dimension);
+        }
+        
+        this.ctx.restore();
+    }
+
+    /**
+     * Draw 3-point angle dimension
+     */
+    drawAngleDimension3Point(dimension) {
+        const [p1, p2, p3] = dimension.points;
+        const style = dimension.style;
+        
+        // Draw angle arc
+        const radius = 30;
+        const angle1 = Math.atan2(p1.y - p2.y, p1.x - p2.x);
+        const angle2 = Math.atan2(p3.y - p2.y, p3.x - p2.x);
+        
+        this.ctx.strokeStyle = style.lineColor;
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.arc(p2.x, p2.y, radius, angle1, angle2);
+        this.ctx.stroke();
+        
+        // Draw dimension lines
+        this.ctx.beginPath();
+        this.ctx.moveTo(p2.x, p2.y);
+        this.ctx.lineTo(p2.x + Math.cos(angle1) * (radius + 10), p2.y + Math.sin(angle1) * (radius + 10));
+        this.ctx.moveTo(p2.x, p2.y);
+        this.ctx.lineTo(p2.x + Math.cos(angle2) * (radius + 10), p2.y + Math.sin(angle2) * (radius + 10));
+        this.ctx.stroke();
+        
+        // Draw text
+        const midAngle = (angle1 + angle2) / 2;
+        const textX = p2.x + Math.cos(midAngle) * (radius + 20);
+        const textY = p2.y + Math.sin(midAngle) * (radius + 20);
+        
+        this.ctx.fillStyle = style.textColor;
+        this.ctx.font = `${style.textSize}px Arial`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(`${dimension.angle}${style.unit}`, textX, textY);
+    }
+
+    /**
+     * Draw 2-line angle dimension
+     */
+    drawAngleDimension2Line(dimension) {
+        const [line1, line2] = dimension.lines;
+        const intersection = dimension.intersection;
+        const style = dimension.style;
+        
+        if (!intersection) return;
+        
+        // Calculate line directions
+        const v1 = { x: line1.endX - line1.startX, y: line1.endY - line1.startY };
+        const v2 = { x: line2.endX - line2.startX, y: line2.endY - line2.startY };
+        
+        const angle1 = Math.atan2(v1.y, v1.x);
+        const angle2 = Math.atan2(v2.y, v2.x);
+        
+        // Draw angle arc
+        const radius = 40;
+        this.ctx.strokeStyle = style.lineColor;
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.arc(intersection.x, intersection.y, radius, Math.min(angle1, angle2), Math.max(angle1, angle2));
+        this.ctx.stroke();
+        
+        // Draw text
+        const midAngle = (angle1 + angle2) / 2;
+        const textX = intersection.x + Math.cos(midAngle) * (radius + 20);
+        const textY = intersection.y + Math.sin(midAngle) * (radius + 20);
+        
+        this.ctx.fillStyle = style.textColor;
+        this.ctx.font = `${style.textSize}px Arial`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(`${dimension.angle}${style.unit}`, textX, textY);
+    }
+
+    /**
+     * Draw angle preview
+     */
+    drawAnglePreview(preview) {
+        this.ctx.save();
+        this.ctx.strokeStyle = '#ff6b6b';
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([5, 5]);
+        
+        if (preview.points.length === 2) {
+            // Preview line from first point to cursor
+            const [p1, p2] = preview.points;
+            this.ctx.beginPath();
+            this.ctx.moveTo(p1.x, p1.y);
+            this.ctx.lineTo(p2.x, p2.y);
+            this.ctx.stroke();
+        } else if (preview.points.length === 3) {
+            // Preview angle with 3 points
+            const [p1, p2, p3] = preview.points;
+            
+            // Draw lines
+            this.ctx.beginPath();
+            this.ctx.moveTo(p2.x, p2.y);
+            this.ctx.lineTo(p1.x, p1.y);
+            this.ctx.moveTo(p2.x, p2.y);
+            this.ctx.lineTo(p3.x, p3.y);
+            this.ctx.stroke();
+            
+            // Draw preview arc
+            const radius = 30;
+            const angle1 = Math.atan2(p1.y - p2.y, p1.x - p2.x);
+            const angle2 = Math.atan2(p3.y - p2.y, p3.x - p2.x);
+            
+            this.ctx.beginPath();
+            this.ctx.arc(p2.x, p2.y, radius, angle1, angle2);
+            this.ctx.stroke();
+            
+            // Show preview angle value
+            const angle = this.calculateAngle3Points(p1, p2, p3);
+            const midAngle = (angle1 + angle2) / 2;
+            const textX = p2.x + Math.cos(midAngle) * (radius + 20);
+            const textY = p2.y + Math.sin(midAngle) * (radius + 20);
+            
+            this.ctx.fillStyle = '#ff6b6b';
+            this.ctx.font = `${this.dimensionStyle.textSize}px Arial`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(`${angle}${this.dimensionStyle.unit}`, textX, textY);
+        }
+        
+        this.ctx.restore();
+    }
+
+    /**
+     * Reset angle tool state
+     */
+    resetAngleTool() {
+        this.angleState = {
+            mode: 'none',
+            points: [],
+            lines: [],
+            previewAngle: null
+        };
+        this.render();
+    }
+
+    /**
+     * Handle angle tool click
+     */
+    handleAngleToolClick(x, y) {
+        const snapPoint = this.findSnapPoint(x, y);
+        const clickPoint = snapPoint ? { x: snapPoint.x, y: snapPoint.y } : { x, y };
+        
+        // Try to find clicked element
+        const clickedPole = this.findPoleAt(clickPoint.x, clickPoint.y);
+        const clickedLine = this.findLineAt(clickPoint.x, clickPoint.y);
+        
+        switch (this.angleState.mode) {
+            case 'selecting-first':
+                if (clickedPole) {
+                    this.angleState.points = [clickPoint];
+                    this.angleState.mode = 'selecting-second';
+                    this.showAngleInstructions('Click second point or line');
+                } else if (clickedLine) {
+                    this.angleState.lines = [clickedLine];
+                    this.angleState.mode = 'selecting-second';
+                    this.showAngleInstructions('Click second line');
+                }
+                break;
+                
+            case 'selecting-second':
+                if (this.angleState.points.length > 0) {
+                    // 3-point angle mode
+                    this.angleState.points.push(clickPoint);
+                    this.angleState.mode = 'selecting-third';
+                    this.showAngleInstructions('Click third point (vertex will be middle point)');
+                } else if (this.angleState.lines.length > 0 && clickedLine) {
+                    // 2-line angle mode
+                    this.angleState.lines.push(clickedLine);
+                    this.createAngleDimension();
+                }
+                break;
+                
+            case 'selecting-third':
+                if (this.angleState.points.length === 2) {
+                    this.angleState.points.push(clickPoint);
+                    this.createAngleDimension();
+                }
+                break;
+        }
+        
+        this.render();
+    }
+
+    /**
+     * Update angle preview
+     */
+    updateAnglePreview(x, y) {
+        if (this.angleState.mode === 'none') return;
+        
+        const snapPoint = this.findSnapPoint(x, y);
+        const previewPoint = snapPoint ? { x: snapPoint.x, y: snapPoint.y } : { x, y };
+        
+        if (this.angleState.mode === 'selecting-second' && this.angleState.points.length === 1) {
+            this.angleState.previewAngle = {
+                points: [this.angleState.points[0], previewPoint],
+                isPreview: true
+            };
+        } else if (this.angleState.mode === 'selecting-third' && this.angleState.points.length === 2) {
+            this.angleState.previewAngle = {
+                points: [this.angleState.points[0], this.angleState.points[1], previewPoint],
+                isPreview: true
+            };
+        }
+        
+        this.render();
+    }
+
+    /**
+     * Create angle dimension
+     */
+    createAngleDimension() {
+        let angle = null;
+        
+        if (this.angleState.points.length === 3) {
+            // 3-point angle
+            const [p1, p2, p3] = this.angleState.points;
+            angle = this.calculateAngle3Points(p1, p2, p3);
+            
+            const dimension = {
+                id: 'angle_' + Date.now(),
+                type: 'angle',
+                method: '3-point',
+                points: [p1, p2, p3],
+                angle: angle,
+                style: { ...this.dimensionStyle }
+            };
+            
+            this.elements.dimensions.push(dimension);
+            this.executeCommand(new AddDimensionCommand(this, dimension));
+            
+        } else if (this.angleState.lines.length === 2) {
+            // 2-line angle
+            const [line1, line2] = this.angleState.lines;
+            const intersection = this.findLinesIntersection(line1, line2);
+            
+            if (intersection) {
+                angle = this.calculateAngle2Lines(line1, line2);
+                
+                const dimension = {
+                    id: 'angle_' + Date.now(),
+                    type: 'angle',
+                    method: '2-line',
+                    lines: [line1, line2],
+                    intersection: intersection,
+                    angle: angle,
+                    style: { ...this.dimensionStyle }
+                };
+                
+                this.elements.dimensions.push(dimension);
+                this.executeCommand(new AddDimensionCommand(this, dimension));
+            }
+        }
+        
+        this.resetAngleTool();
+        this.angleState.mode = 'selecting-first';
+        
+        if (this.onElementsChanged) {
+            this.onElementsChanged();
+        }
+    }
+
+    /**
+     * Calculate angle from 3 points (vertex is middle point)
+     */
+    calculateAngle3Points(p1, p2, p3) {
+        const v1 = { x: p1.x - p2.x, y: p1.y - p2.y };
+        const v2 = { x: p3.x - p2.x, y: p3.y - p2.y };
+        
+        const dot = v1.x * v2.x + v1.y * v2.y;
+        const mag1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
+        const mag2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+        
+        if (mag1 === 0 || mag2 === 0) return 0;
+        
+        const cosAngle = dot / (mag1 * mag2);
+        const angle = Math.acos(Math.max(-1, Math.min(1, cosAngle))) * 180 / Math.PI;
+        
+        return Math.round(angle * Math.pow(10, this.dimensionStyle.precision)) / Math.pow(10, this.dimensionStyle.precision);
+    }
+
+    /**
+     * Calculate angle between 2 lines
+     */
+    calculateAngle2Lines(line1, line2) {
+        const v1 = { x: line1.endX - line1.startX, y: line1.endY - line1.startY };
+        const v2 = { x: line2.endX - line2.startX, y: line2.endY - line2.startY };
+        
+        const dot = v1.x * v2.x + v1.y * v2.y;
+        const mag1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
+        const mag2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+        
+        if (mag1 === 0 || mag2 === 0) return 0;
+        
+        const cosAngle = Math.abs(dot) / (mag1 * mag2);
+        const angle = Math.acos(Math.max(-1, Math.min(1, cosAngle))) * 180 / Math.PI;
+        
+        return Math.round(angle * Math.pow(10, this.dimensionStyle.precision)) / Math.pow(10, this.dimensionStyle.precision);
+    }
+
+    /**
+     * Find intersection between two lines
+     */
+    findLinesIntersection(line1, line2) {
+        const x1 = line1.startX, y1 = line1.startY, x2 = line1.endX, y2 = line1.endY;
+        const x3 = line2.startX, y3 = line2.startY, x4 = line2.endX, y4 = line2.endY;
+        
+        const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        if (Math.abs(denom) < 1e-10) return null; // Lines are parallel
+        
+        const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+        const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
+        
+        // Return intersection point (extend lines if necessary)
+        return {
+            x: x1 + t * (x2 - x1),
+            y: y1 + t * (y2 - y1)
+        };
+    }
+
+    /**
+     * Find pole at coordinates
+     */
+    findPoleAt(x, y) {
+        for (let pole of this.elements.poles) {
+            if (this.isPointInPole(x, y, pole)) {
+                return pole;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Find line at coordinates
+     */
+    findLineAt(x, y) {
+        for (let line of this.elements.lines) {
+            if (this.isPointOnLine(x, y, line)) {
+                return line;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Show angle tool instructions
+     */
+    showAngleInstructions(message) {
+        // Create or update instruction overlay
+        let overlay = document.getElementById('angleInstructions');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'angleInstructions';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 10px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 10px 20px;
+                border-radius: 5px;
+                z-index: 1000;
+                font-size: 14px;
+            `;
+            document.body.appendChild(overlay);
+        }
+        
+        overlay.textContent = message;
+        
+        // Auto-hide after 3 seconds
+        clearTimeout(overlay.hideTimeout);
+        overlay.hideTimeout = setTimeout(() => {
+            if (overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+            }
+        }, 3000);
     }
 
     /**
@@ -1378,7 +1808,8 @@ class DrawingEngine {
     loadFromGPX(elements) {
         this.elements = {
             poles: elements.poles || [],
-            lines: elements.lines || []
+            lines: elements.lines || [],
+            dimensions: elements.dimensions || []
         };
         this.metadata = elements.metadata || {
             metersPerPixel: 1,
@@ -1657,6 +2088,14 @@ class DrawingEngine {
         
         // Draw poles
         this.elements.poles.forEach(pole => this.drawPole(pole));
+        
+        // Draw dimensions
+        this.elements.dimensions.forEach(dimension => this.drawDimension(dimension));
+        
+        // Draw angle preview
+        if (this.angleState.previewAngle) {
+            this.drawAnglePreview(this.angleState.previewAngle);
+        }
         
         // Draw drag selection rectangle
         if (this.dragSelection.active) {
@@ -2324,7 +2763,7 @@ class DrawingEngine {
      * Import drawing data
      */
     importData(data) {
-        this.elements = data.elements || { poles: [], lines: [] };
+        this.elements = data.elements || { poles: [], lines: [], dimensions: [] };
         this.zoom = data.zoom || 1;
         this.panX = data.panX || 0;
         this.panY = data.panY || 0;
@@ -2345,7 +2784,7 @@ class DrawingEngine {
      * Clear all elements
      */
     clear() {
-        this.elements = { poles: [], lines: [] };
+        this.elements = { poles: [], lines: [], dimensions: [] };
         this.selectedElement = null;
         this.selectedElements = new Set(); // For multiple selection
         this.dragSelection = {
@@ -2615,5 +3054,30 @@ class BatchChangeNameCommand {
         this.changes.forEach(change => {
             change.element.name = change.oldName;
         });
+    }
+}
+
+/**
+ * Command for adding dimension
+ */
+class AddDimensionCommand {
+    constructor(drawingEngine, dimension) {
+        this.drawingEngine = drawingEngine;
+        this.dimension = dimension;
+    }
+
+    execute() {
+        if (!this.drawingEngine.elements.dimensions.find(d => d.id === this.dimension.id)) {
+            this.drawingEngine.elements.dimensions.push(this.dimension);
+        }
+        this.drawingEngine.render();
+    }
+
+    undo() {
+        const index = this.drawingEngine.elements.dimensions.findIndex(d => d.id === this.dimension.id);
+        if (index !== -1) {
+            this.drawingEngine.elements.dimensions.splice(index, 1);
+        }
+        this.drawingEngine.render();
     }
 }
