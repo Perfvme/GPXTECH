@@ -1,202 +1,200 @@
-/* Dimension Controls - Dimension and measurement control styles */
+:root {
+    --dc-bg-color: #2c2c2c;
+    --dc-text-color: #e0e0e0;
+    --dc-border-color: #444;
+    --dc-input-bg: #383838;
+    --dc-input-border: #555;
+    --dc-accent-color: #007bff;
+    --dc-hover-bg: #4a4a4a;
+    --dc-active-bg: #0056b3;
+    --dc-label-color: #b0b0b0;
+    --dc-header-bg: #333;
+}
 
-/* Dimension Controls */
-.dimension-controls {
-    background: var(--bg-secondary);
+.dimension-controls-new {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--dc-text-color);
+    padding: 10px;
+    background-color: var(--dc-bg-color);
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.dimension-controls-new h3 {
+    font-size: 16px;
+    margin-bottom: 15px;
+    color: var(--dc-text-color);
+    border-bottom: 1px solid var(--dc-border-color);
+    padding-bottom: 8px;
+}
+
+/* Collapsible Groups */
+.dc-group {
+    margin-bottom: 10px;
+    border: 1px solid var(--dc-border-color);
     border-radius: 4px;
-    margin-top: 3px;
-    overflow: hidden;
-    border: 1px solid var(--border-color);
+    overflow: hidden; /* Ensures border-radius is respected by children */
 }
 
-.dimension-preset-row {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    padding: 3px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.preset-buttons {
-    display: flex;
-    gap: 2px;
-    flex: 1;
-}
-
-.preset-btn {
-    flex: 1;
-    padding: 2px 4px;
-    font-size: 8px;
-    border: 1px solid var(--border-color);
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    border-radius: 2px;
+.dc-group-header {
+    background-color: var(--dc-header-bg);
+    padding: 8px 12px;
     cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-    min-height: 16px;
+    font-weight: 500;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
+    transition: background-color 0.2s;
 }
 
-.preset-btn:hover {
-    background: var(--bg-hover);
-    border-color: var(--primary-color);
+.dc-group-header:hover {
+    background-color: var(--dc-hover-bg);
 }
 
-.preset-btn.active {
-    background: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
+.dc-group-header::after {
+    content: '▼'; /* Collapsed state */
+    font-size: 10px;
+    transition: transform 0.2s ease-out;
 }
 
-.dimension-group {
-    border-bottom: 1px solid var(--border-color);
+.dc-group[open] > .dc-group-header::after {
+    transform: rotate(-180deg); /* Expanded state */
 }
 
-.dimension-group:last-child {
-    border-bottom: none;
+.dc-group > div:not(.dc-group-header) {
+    padding: 12px;
+    background-color: var(--dc-bg-color); /* Slightly different from main bg for depth */
 }
 
-.group-header {
-    padding: 3px 6px;
-    background: var(--bg-tertiary);
-    font-size: 9px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    border-bottom: 1px solid var(--border-color);
+/* Grid Layout for Controls */
+.dc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
 }
 
-.dimension-compact-row {
+.dc-grid-display {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+}
+
+.dc-control {
     display: flex;
-    align-items: center;
-    padding: 2px 4px;
-    gap: 3px;
-    min-height: 20px;
+    flex-direction: column;
 }
 
-.dimension-compact-row label {
-    font-size: 8px;
-    color: var(--text-secondary);
-    min-width: 35px;
-    flex-shrink: 0;
+.dc-control-full {
+    grid-column: 1 / -1; /* Span full width */
 }
 
-.compact-control {
-    flex: 1;
-    min-width: 0;
+.dc-label-sm {
+    font-size: 11px;
+    color: var(--dc-label-color);
+    margin-bottom: 4px;
 }
 
-.compact-control input[type="range"] {
+/* Input Styles */
+.dc-input-sm,
+.dc-select,
+.dc-color-picker {
+    background-color: var(--dc-input-bg);
+    color: var(--dc-text-color);
+    border: 1px solid var(--dc-input-border);
+    border-radius: 3px;
+    padding: 6px 8px;
+    font-size: 12px;
     width: 100%;
-    height: 12px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
+    box-sizing: border-box;
+}
+
+.dc-input-sm:focus,
+.dc-select:focus {
     outline: none;
-    -webkit-appearance: none;
+    border-color: var(--dc-accent-color);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
-.compact-control input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 12px;
-    height: 12px;
-    background: var(--primary-color);
-    border-radius: 50%;
-    cursor: pointer;
+.dc-color-picker {
+    padding: 2px;
+    height: 28px; /* Consistent height with other inputs */
 }
 
-.compact-control input[type="range"]::-moz-range-thumb {
-    width: 12px;
-    height: 12px;
-    background: var(--primary-color);
-    border-radius: 50%;
-    cursor: pointer;
-    border: none;
+.dc-slider {
+    width: calc(100% - 30px); /* Accommodate value display */
+    margin-right: 5px;
 }
 
-.compact-control input[type="color"] {
-    width: 100%;
-    height: 16px;
-    border: 1px solid var(--border-color);
-    border-radius: 2px;
-    cursor: pointer;
-    background: none;
-    padding: 0;
+.dc-control-full .dc-slider + span {
+    font-size: 12px;
+    min-width: 25px; /* Ensure space for value */
+    text-align: right;
 }
 
-.compact-control select {
-    width: 100%;
-    padding: 1px 2px;
-    font-size: 8px;
-    border: 1px solid var(--border-color);
-    border-radius: 2px;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    cursor: pointer;
-    height: 16px;
+/* Checkbox Styles */
+.dc-checkbox-group {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 10px; /* If they are stacked */
+    grid-column: 1 / -1; /* Span full width in display grid */
 }
 
-.compact-control input[type="text"],
-.compact-control input[type="number"] {
-    width: 100%;
-    padding: 1px 3px;
-    font-size: 8px;
-    border: 1px solid var(--border-color);
-    border-radius: 2px;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    height: 14px;
-}
-
-.compact-control input[type="checkbox"] {
-    width: 12px;
-    height: 12px;
-    cursor: pointer;
-}
-
-.dimension-checkbox-row {
+.dc-checkbox-label {
     display: flex;
     align-items: center;
-    padding: 2px 4px;
-    gap: 4px;
     cursor: pointer;
+    font-size: 12px;
+    color: var(--dc-label-color);
 }
 
-.dimension-checkbox-row .checkbox-label {
-    font-size: 8px;
-    color: var(--text-secondary);
-    cursor: pointer;
-    flex: 1;
+.dc-checkbox-label input[type="checkbox"] {
+    opacity: 0;
+    width: 0;
+    height: 0;
 }
 
-.dimension-checkbox-row input[type="checkbox"] {
-    width: 10px;
-    height: 10px;
-    cursor: pointer;
-}
-
-.dimension-checkbox-row .checkmark {
-    width: 10px;
-    height: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 2px;
+.dc-checkmark {
     position: relative;
-    cursor: pointer;
-    background: var(--bg-primary);
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-color: var(--dc-input-bg);
+    border: 1px solid var(--dc-input-border);
+    border-radius: 3px;
+    margin-right: 6px;
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
-.dimension-checkbox-row input[type="checkbox"]:checked + .checkmark {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
+.dc-checkbox-label input[type="checkbox"]:checked ~ .dc-checkmark {
+    background-color: var(--dc-accent-color);
+    border-color: var(--dc-accent-color);
 }
 
-.dimension-checkbox-row input[type="checkbox"]:checked + .checkmark::after {
-    content: '✓';
+.dc-checkmark::after {
+    content: "";
     position: absolute;
-    top: -2px;
-    left: 1px;
-    color: white;
-    font-size: 8px;
-    font-weight: bold;
+    display: none;
+    left: 5px;
+    top: 2px;
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.dc-checkbox-label input[type="checkbox"]:checked ~ .dc-checkmark::after {
+    display: block;
+}
+
+/* Responsive adjustments if needed */
+@media (max-width: 350px) { /* Example breakpoint for very narrow panels */
+    .dc-grid {
+        grid-template-columns: 1fr; /* Stack controls */
+    }
+    .dc-preset-buttons {
+        flex-wrap: wrap; /* Allow preset buttons to wrap */
+    }
+    .dc-btn {
+        flex-grow: 1;
+    }
 }

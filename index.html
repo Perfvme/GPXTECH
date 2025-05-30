@@ -255,36 +255,22 @@
 
                 <div class="tool-section">
                     <h3>Dimension Style</h3>
-                    <div class="dimension-controls">
-                        <!-- Style Presets -->
-                        <div class="dimension-preset-row">
-                            <label>Preset:</label>
-                            <div class="preset-buttons">
-                                <button class="preset-btn active" data-preset="standard" title="Standard Style">Std</button>
-                                <button class="preset-btn" data-preset="bold" title="Bold Style">Bold</button>
-                                <button class="preset-btn" data-preset="minimal" title="Minimal Style">Min</button>
-                                <button class="preset-btn" data-preset="custom" title="Custom Style">Custom</button>
-                            </div>
-                        </div>
-                        
-                        <!-- Text Settings -->
-                        <div class="dimension-group">
-                            <div class="group-header">Text</div>
-                            <div class="dimension-compact-row">
-                                <div class="compact-control">
-                                    <label>Size</label>
-                                    <input type="range" id="dimensionTextSize" min="8" max="32" value="14">
-                                    <span id="dimensionTextSizeValue">14</span>
+                    <div class="dimension-controls-new">
+                        <!-- Text -->
+                        <details class="dc-group open">
+                            <summary class="dc-group-header">Text</summary>
+                            <div class="dc-grid">
+                                <div class="dc-control">
+                                    <label for="dimensionTextSize" class="dc-label-sm">Size</label>
+                                    <input type="number" id="dimensionTextSize" value="14" min="8" max="32" step="1" class="dc-input-sm">
                                 </div>
-                                <div class="compact-control">
-                                    <label>Color</label>
-                                    <input type="color" id="dimensionTextColor" value="#000000">
+                                <div class="dc-control">
+                                    <label for="dimensionTextColor" class="dc-label-sm">Color</label>
+                                    <input type="color" id="dimensionTextColor" value="#000000" class="dc-color-picker">
                                 </div>
-                            </div>
-                            <div class="dimension-compact-row">
-                                <div class="compact-control">
-                                    <label>Font</label>
-                                    <select id="dimensionFont">
+                                <div class="dc-control">
+                                    <label for="dimensionFont" class="dc-label-sm">Font</label>
+                                    <select id="dimensionFont" class="dc-select">
                                         <option value="Arial">Arial</option>
                                         <option value="Helvetica">Helvetica</option>
                                         <option value="Times New Roman">Times</option>
@@ -292,9 +278,9 @@
                                         <option value="Verdana">Verdana</option>
                                     </select>
                                 </div>
-                                <div class="compact-control">
-                                    <label>Style</label>
-                                    <select id="dimensionTextStyle">
+                                <div class="dc-control">
+                                    <label for="dimensionTextStyle" class="dc-label-sm">Style</label>
+                                    <select id="dimensionTextStyle" class="dc-select">
                                         <option value="normal">Normal</option>
                                         <option value="bold">Bold</option>
                                         <option value="italic">Italic</option>
@@ -302,103 +288,91 @@
                                     </select>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Line Settings -->
-                        <div class="dimension-group">
-                            <div class="group-header">Lines</div>
-                            <div class="dimension-compact-row">
-                                <div class="compact-control">
-                                    <label>Color</label>
-                                    <input type="color" id="dimensionLineColor" value="#0066cc">
+                        </details>
+
+                        <!-- Lines -->
+                        <details class="dc-group open">
+                            <summary class="dc-group-header">Lines</summary>
+                            <div class="dc-grid">
+                                <div class="dc-control">
+                                    <label for="dimensionLineColor" class="dc-label-sm">Color</label>
+                                    <input type="color" id="dimensionLineColor" value="#0066cc" class="dc-color-picker">
                                 </div>
-                                <div class="compact-control">
-                                    <label>Opacity</label>
-                                    <input type="range" id="dimensionLineOpacity" min="10" max="100" value="100">
-                                    <span id="dimensionLineOpacityValue">100</span>%
+                                <div class="dc-control">
+                                    <label for="dimensionLineOpacity" class="dc-label-sm">Opacity</label>
+                                    <input type="number" id="dimensionLineOpacity" value="100" min="0" max="100" step="1" class="dc-input-sm">
                                 </div>
-                            </div>
-                            <div class="dimension-compact-row">
-                                <div class="compact-control">
-                                    <label>Width</label>
-                                    <input type="range" id="dimensionLineWidth" min="1" max="5" value="1">
-                                    <span id="dimensionLineWidthValue">1</span>
+                                <div class="dc-control">
+                                    <label for="dimensionLineWidth" class="dc-label-sm">Width</label>
+                                    <input type="number" id="dimensionLineWidth" value="1" min="1" max="5" step="0.5" class="dc-input-sm">
                                 </div>
-                                <div class="compact-control">
-                                    <label>Style</label>
-                                    <select id="dimensionLineStyle">
+                                <div class="dc-control">
+                                    <label for="dimensionLineStyle" class="dc-label-sm">Style</label>
+                                    <select id="dimensionLineStyle" class="dc-select">
                                         <option value="solid">Solid</option>
                                         <option value="dashed">Dashed</option>
                                         <option value="dotted">Dotted</option>
                                     </select>
                                 </div>
-                            </div>
-                            <div class="dimension-compact-row">
-                                <div class="compact-control">
-                                    <label>Arc Size</label>
-                                    <input type="range" id="dimensionArcSize" min="5" max="80" value="30">
+                                <div class="dc-control dc-control-full">
+                                    <label for="dimensionArcSize" class="dc-label-sm">Arc Size</label>
+                                    <input type="range" id="dimensionArcSize" min="5" max="80" value="30" class="dc-slider">
                                     <span id="dimensionArcSizeValue">30</span>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Format Settings -->
-                        <div class="dimension-group">
-                            <div class="group-header">Format</div>
-                            <div class="dimension-compact-row">
-                                <div class="compact-control">
-                                    <label>Unit</label>
-                                    <select id="dimensionUnit">
+                        </details>
+
+                        <!-- Format -->
+                        <details class="dc-group open">
+                            <summary class="dc-group-header">Format</summary>
+                            <div class="dc-grid">
+                                <div class="dc-control">
+                                    <label for="dimensionUnit" class="dc-label-sm">Unit</label>
+                                    <select id="dimensionUnit" class="dc-select">
                                         <option value="°">Degrees (°)</option>
                                         <option value="rad">Radians</option>
                                         <option value="grad">Gradians</option>
                                     </select>
                                 </div>
-                                <div class="compact-control">
-                                    <label>Precision</label>
-                                    <input type="range" id="dimensionPrecision" min="0" max="4" value="1">
-                                    <span id="dimensionPrecisionValue">1</span>
+                                <div class="dc-control">
+                                    <label for="dimensionPrecision" class="dc-label-sm">Precision</label>
+                                    <input type="number" id="dimensionPrecision" value="1" min="0" max="4" step="1" class="dc-input-sm">
+                                </div>
+                                <div class="dc-control">
+                                    <label for="dimensionPrefix" class="dc-label-sm">Prefix</label>
+                                    <input type="text" id="dimensionPrefix" placeholder="∠" maxlength="3" class="dc-input-sm">
+                                </div>
+                                <div class="dc-control">
+                                    <label for="dimensionSuffix" class="dc-label-sm">Suffix</label>
+                                    <input type="text" id="dimensionSuffix" placeholder="" maxlength="3" class="dc-input-sm">
                                 </div>
                             </div>
-                            <div class="dimension-compact-row">
-                                <div class="compact-control">
-                                    <label>Prefix</label>
-                                    <input type="text" id="dimensionPrefix" placeholder="∠" maxlength="3">
+                        </details>
+
+                        <!-- Display -->
+                        <details class="dc-group open">
+                            <summary class="dc-group-header">Display</summary>
+                            <div class="dc-grid dc-grid-display">
+                                <div class="dc-checkbox-group">
+                                    <label class="dc-checkbox-label">
+                                        <input type="checkbox" id="dimensionShowBackground" checked>
+                                        <span class="dc-checkmark"></span> Text BG
+                                    </label>
+                                    <label class="dc-checkbox-label">
+                                        <input type="checkbox" id="dimensionShowArrows">
+                                        <span class="dc-checkmark"></span> Arrows
+                                    </label>
                                 </div>
-                                <div class="compact-control">
-                                    <label>Suffix</label>
-                                    <input type="text" id="dimensionSuffix" placeholder="" maxlength="3">
+                                <div class="dc-control">
+                                    <label for="dimensionBackgroundColor" class="dc-label-sm">BG Color</label>
+                                    <input type="color" id="dimensionBackgroundColor" value="#ffffff" class="dc-color-picker">
                                 </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Display Options -->
-                        <div class="dimension-group">
-                            <div class="group-header">Display</div>
-                            <div class="dimension-checkbox-row">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="dimensionShowBackground" checked>
-                                    <span class="checkmark"></span>
-                                    Text Background
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="dimensionShowArrows">
-                                    <span class="checkmark"></span>
-                                    Arrow Heads
-                                </label>
-                            </div>
-                            <div class="dimension-compact-row">
-                                <div class="compact-control">
-                                    <label>Background</label>
-                                    <input type="color" id="dimensionBackgroundColor" value="#ffffff">
-                                </div>
-                                <div class="compact-control">
-                                    <label>Opacity</label>
-                                    <input type="range" id="dimensionBackgroundOpacity" min="0" max="100" value="80">
-                                    <span id="dimensionBackgroundOpacityValue">80</span>%
+                                <div class="dc-control">
+                                    <label for="dimensionBackgroundOpacity" class="dc-label-sm">BG Opacity</label>
+                                    <input type="number" id="dimensionBackgroundOpacity" value="80" min="0" max="100" step="1" class="dc-input-sm">
                                 </div>
                             </div>
-                        </div>
+                        </details>
                     </div>
                 </div>
             </div>

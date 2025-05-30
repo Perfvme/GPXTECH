@@ -4,6 +4,6 @@
  */
 
 ElectricalCADApp.prototype.setupMiscEventListeners = function() {
-    // Legend controls
-    this.setupLegendControls();
+    // Legend controls are handled in app-main.js
+    // This function is reserved for other miscellaneous event listeners
 };

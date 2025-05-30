@@ -9,10 +9,16 @@
     border: 1px solid var(--border-color);
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    max-width: 300px;
+    max-width: 280px;
+    max-height: 400px;
+    overflow-y: auto;
     z-index: 1000;
     cursor: move;
     user-select: none;
+}
+
+.legend.minimized {
+    max-height: 50px;
 }
 
 .legend.minimized .legend-content {
@@ -23,7 +29,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 15px 10px 15px;
+    padding: 10px 12px 8px 12px;
     border-bottom: 1px solid var(--border-color);
     cursor: move;
 }
@@ -43,11 +49,11 @@
 }
 
 .legend-content {
-    padding: 15px;
+    padding: 10px 12px;
 }
 
 .legend-section {
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .legend-section:last-child {
@@ -55,10 +61,10 @@
 }
 
 .legend-section h4 {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }
@@ -66,21 +72,22 @@
 .legend-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 6px;
-    font-size: 11px;
+    gap: 8px;
+    margin-bottom: 4px;
+    font-size: 10px;
     color: var(--text-primary);
 }
 
 .legend-symbol {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 8px;
+    font-size: 7px;
     font-weight: bold;
+    flex-shrink: 0;
 }
 
 .legend-symbol.tiang-baja-existing {
@@ -171,9 +178,10 @@
 }
 
 .legend-line {
-    width: 30px;
+    width: 24px;
     height: 2px;
     border-radius: 1px;
+    flex-shrink: 0;
 }
 
 .legend-line.sutm-rencana {

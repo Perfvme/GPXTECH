@@ -6,11 +6,9 @@
 ElectricalCADApp.prototype.setupDimensionStyleControlListeners = function() {
     // Text size
     const textSizeSlider = document.getElementById('dimensionTextSize');
-    const textSizeValue = document.getElementById('dimensionTextSizeValue');
-    if (textSizeSlider && textSizeValue) {
+    if (textSizeSlider) {
         textSizeSlider.addEventListener('input', (e) => {
             const size = parseInt(e.target.value);
-            textSizeValue.textContent = size;
             this.drawingEngine.dimensionStyle.textSize = size;
             this.drawingEngine.render();
         });
@@ -36,24 +34,20 @@ ElectricalCADApp.prototype.setupDimensionStyleControlListeners = function() {
 
     // Line width
     const lineWidthSlider = document.getElementById('dimensionLineWidth');
-    const lineWidthValue = document.getElementById('dimensionLineWidthValue');
-    if (lineWidthSlider && lineWidthValue) {
+    if (lineWidthSlider) {
         lineWidthSlider.addEventListener('input', (e) => {
-            const width = parseInt(e.target.value);
-            lineWidthValue.textContent = width;
+            const width = parseFloat(e.target.value);
             this.drawingEngine.dimensionStyle.lineWidth = width;
             this.drawingEngine.render();
         });
     }
 
     // Line opacity
-    const lineOpacitySlider = document.getElementById('dimension-line-opacity');
-    const lineOpacityValue = document.getElementById('dimension-line-opacity-value');
-    if (lineOpacitySlider && lineOpacityValue) {
+    const lineOpacitySlider = document.getElementById('dimensionLineOpacity');
+    if (lineOpacitySlider) {
         lineOpacitySlider.addEventListener('input', (e) => {
             const value = parseInt(e.target.value);
             this.drawingEngine.dimensionStyle.lineOpacity = value;
-            lineOpacityValue.textContent = value + '%';
             this.drawingEngine.render();
         });
     }

@@ -144,11 +144,7 @@ class ElectricalCADApp {
             }
         });
 
-        document.getElementById('batchChangeName')?.addEventListener('click', () => {
-            const newName = document.getElementById('batchNameInput').value;
-            const useNumberedNames = document.getElementById('useNumberedNames').checked;
-            this.drawingEngine.batchChangeName(newName, useNumberedNames);
-        });
+        // Batch change name event listener is handled in app-event-listeners-selection.js
         
         // Symbol buttons
         document.querySelectorAll('.symbol-btn-icon').forEach(btn => {
@@ -251,8 +247,7 @@ class ElectricalCADApp {
         // Initial update of undo/redo button states
         this.updateUndoRedoButtons();
         
-        // Legend controls
-        this.setupLegendControls();
+        // Legend controls are handled in app-main.js
         
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => this.handleKeyboard(e));
@@ -307,11 +302,9 @@ class ElectricalCADApp {
     setupDimensionStyleControls() {
         // Text size
         const textSizeSlider = document.getElementById('dimensionTextSize');
-        const textSizeValue = document.getElementById('dimensionTextSizeValue');
-        if (textSizeSlider && textSizeValue) {
+        if (textSizeSlider) {
             textSizeSlider.addEventListener('input', (e) => {
                 const size = parseInt(e.target.value);
-                textSizeValue.textContent = size;
                 this.drawingEngine.dimensionStyle.textSize = size;
                 this.drawingEngine.render();
             });
@@ -337,24 +330,20 @@ class ElectricalCADApp {
 
         // Line width
         const lineWidthSlider = document.getElementById('dimensionLineWidth');
-        const lineWidthValue = document.getElementById('dimensionLineWidthValue');
-        if (lineWidthSlider && lineWidthValue) {
+        if (lineWidthSlider) {
             lineWidthSlider.addEventListener('input', (e) => {
-                const width = parseInt(e.target.value);
-                lineWidthValue.textContent = width;
+                const width = parseFloat(e.target.value);
                 this.drawingEngine.dimensionStyle.lineWidth = width;
                 this.drawingEngine.render();
             });
         }
 
         // Line opacity
-        const lineOpacitySlider = document.getElementById('dimension-line-opacity');
-        const lineOpacityValue = document.getElementById('dimension-line-opacity-value');
-        if (lineOpacitySlider && lineOpacityValue) {
+        const lineOpacitySlider = document.getElementById('dimensionLineOpacity');
+        if (lineOpacitySlider) {
             lineOpacitySlider.addEventListener('input', (e) => {
                 const value = parseInt(e.target.value);
                 this.drawingEngine.dimensionStyle.lineOpacity = value;
-                lineOpacityValue.textContent = value + '%';
                 this.drawingEngine.render();
             });
         }
@@ -600,19 +589,18 @@ class ElectricalCADApp {
             if (valueEl) valueEl.textContent = value;
         };
         
-        updateSlider('dimensionTextSize', 'dimensionTextSizeValue', style.textSize);
-        updateSlider('dimensionLineWidth', 'dimensionLineWidthValue', style.lineWidth);
+        // Update input values directly
+        const updateInput = (id, value) => {
+            const input = document.getElementById(id);
+            if (input) input.value = value;
+        };
+        
+        updateInput('dimensionTextSize', style.textSize);
+        updateInput('dimensionLineWidth', style.lineWidth);
+        updateInput('dimensionLineOpacity', style.lineOpacity);
         updateSlider('dimensionArcSize', 'dimensionArcSizeValue', style.arcSize);
         updateSlider('dimensionPrecision', 'dimensionPrecisionValue', style.precision);
         updateSlider('dimensionBackgroundOpacity', 'dimensionBackgroundOpacityValue', style.backgroundOpacity);
-        
-        // Update line opacity slider
-        const lineOpacitySlider = document.getElementById('dimension-line-opacity');
-        const lineOpacityValue = document.getElementById('dimension-line-opacity-value');
-        if (lineOpacitySlider && lineOpacityValue) {
-            lineOpacitySlider.value = style.lineOpacity;
-            lineOpacityValue.textContent = style.lineOpacity + '%';
-        }
         
         // Update color inputs
         const updateColor = (id, value) => {

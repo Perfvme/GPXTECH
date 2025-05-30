@@ -327,3 +327,29 @@ DrawingEngine.prototype.batchChangeType = function(newType) {
         alert('No compatible elements found for the selected type.');
     }
 };
+
+/**
+ * Batch change name for selected elements
+ */
+DrawingEngine.prototype.batchChangeName = function(newName, useNumberedNames = false) {
+    if (this.selectedElements.size === 0) {
+        alert('No elements selected. Please select elements first.');
+        return;
+    }
+
+    if (!newName || newName.trim() === '') {
+        alert('Please enter a name.');
+        return;
+    }
+
+    const selectedElements = Array.from(this.selectedElements);
+    
+    // Use command system for undo/redo support
+    const command = new BatchChangeNameCommand(this, selectedElements, newName.trim(), useNumberedNames);
+    this.executeCommand(command);
+    
+    this.updatePropertiesPanel(Array.from(this.selectedElements));
+    this.render();
+    
+    alert(`Changed name for ${selectedElements.length} elements.`);
+};

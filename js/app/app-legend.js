@@ -5,22 +5,36 @@
 
 ElectricalCADApp.prototype.setupLegendControls = function() {
     const legend = document.getElementById('legend');
-    const legendHeader = legend.querySelector('.legend-header');
+    const legendHeader = legend?.querySelector('.legend-header');
     const legendMinimize = document.getElementById('legendMinimize');
     const legendContent = document.getElementById('legendContent');
+    
+    // Check if all required elements exist
+    if (!legend || !legendHeader || !legendMinimize || !legendContent) {
+        console.error('Legend elements not found:', {
+            legend: !!legend,
+            legendHeader: !!legendHeader,
+            legendMinimize: !!legendMinimize,
+            legendContent: !!legendContent
+        });
+        return;
+    }
     
     let isDragging = false;
     let dragOffset = { x: 0, y: 0 };
     
     // Minimize/maximize functionality
     legendMinimize.addEventListener('click', (e) => {
+        console.log('Legend minimize button clicked'); // Debug log
         e.stopPropagation();
         legend.classList.toggle('minimized');
         const icon = legendMinimize.querySelector('i');
         if (legend.classList.contains('minimized')) {
             icon.className = 'fas fa-plus';
+            console.log('Legend minimized'); // Debug log
         } else {
             icon.className = 'fas fa-minus';
+            console.log('Legend expanded'); // Debug log
         }
     });
     
@@ -52,7 +66,6 @@ ElectricalCADApp.prototype.setupLegendControls = function() {
         
         legend.style.left = Math.max(0, Math.min(x, maxX)) + 'px';
         legend.style.top = Math.max(0, Math.min(y, maxY)) + 'px';
-        legend.style.bottom = 'auto';
     }
     
     function handleDragEnd() {
@@ -60,4 +73,6 @@ ElectricalCADApp.prototype.setupLegendControls = function() {
         document.removeEventListener('mousemove', handleDrag);
         document.removeEventListener('mouseup', handleDragEnd);
     }
+    
+    console.log('Legend controls initialized successfully'); // Debug log
 };

@@ -109,19 +109,18 @@ ElectricalCADApp.prototype.updateDimensionStyleUI = function() {
         if (valueEl) valueEl.textContent = value;
     };
     
-    updateSlider('dimensionTextSize', 'dimensionTextSizeValue', style.textSize);
-    updateSlider('dimensionLineWidth', 'dimensionLineWidthValue', style.lineWidth);
+    // Update input values directly
+    const updateInput = (id, value) => {
+        const input = document.getElementById(id);
+        if (input) input.value = value;
+    };
+    
+    updateInput('dimensionTextSize', style.textSize);
+    updateInput('dimensionLineWidth', style.lineWidth);
+    updateInput('dimensionLineOpacity', style.lineOpacity);
     updateSlider('dimensionArcSize', 'dimensionArcSizeValue', style.arcSize);
     updateSlider('dimensionPrecision', 'dimensionPrecisionValue', style.precision);
     updateSlider('dimensionBackgroundOpacity', 'dimensionBackgroundOpacityValue', style.backgroundOpacity);
-    
-    // Update line opacity slider
-    const lineOpacitySlider = document.getElementById('dimension-line-opacity');
-    const lineOpacityValue = document.getElementById('dimension-line-opacity-value');
-    if (lineOpacitySlider && lineOpacityValue) {
-        lineOpacitySlider.value = style.lineOpacity;
-        lineOpacityValue.textContent = style.lineOpacity + '%';
-    }
     
     // Update color inputs
     const updateColor = (id, value) => {
