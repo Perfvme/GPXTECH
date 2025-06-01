@@ -24,10 +24,10 @@ class MapManager {
         
         // Line styles for different types - matching legend colors
         this.lineStyles = {
-            'sutm-existing': { color: '#ff0000', weight: 4, dashArray: null, opacity: 0.8 },
-            'sutm-rencana': { color: '#ff0000', weight: 4, dashArray: '10, 5', opacity: 0.8 },
-            'sutr-existing': { color: '#0000ff', weight: 3, dashArray: null, opacity: 0.8 },
-            'sutr-rencana': { color: '#0000ff', weight: 3, dashArray: '5, 3', opacity: 0.8 }
+            'sutm-existing': { color: '#ff0000', weight: 1.2, dashArray: null, opacity: 0.8 },
+            'sutm-rencana': { color: '#ff0000', weight: 1.2, dashArray: '10, 5', opacity: 0.8 },
+            'sutr-existing': { color: '#0000ff', weight: 0.9, dashArray: null, opacity: 0.8 },
+            'sutr-rencana': { color: '#0000ff', weight: 0.9, dashArray: '5, 3', opacity: 0.8 }
         };
     }
 
@@ -92,33 +92,33 @@ class MapManager {
         switch(poleType) {
             case 'tiang-baja-existing':
                 // Filled black circle (matches canvas drawTiangBajaExisting)
-                iconHtml = `<div style="width: 16px; height: 16px; background: #000; border-radius: 50%;"></div>`;
+                iconHtml = `<div style="width: 8px; height: 8px; background: #000; border-radius: 50%;"></div>`;
                 break;
             case 'tiang-baja-rencana':
                 // Empty circle with black border (matches canvas drawTiangBajaRencana)
-                iconHtml = `<div style="width: 16px; height: 16px; background: white; border: 2px solid #000; border-radius: 50%;"></div>`;
+                iconHtml = `<div style="width: 8px; height: 8px; background: white; border: 1px solid #000; border-radius: 50%;"></div>`;
                 break;
             case 'tiang-beton-existing':
                 // Black circle with white dot (matches canvas drawTiangBetonExisting)
-                iconHtml = `<div style="width: 16px; height: 16px; background: #000; border-radius: 50%; position: relative;"><div style="position: absolute; width: 6px; height: 6px; background: white; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div></div>`;
+                iconHtml = `<div style="width: 8px; height: 8px; background: #000; border-radius: 50%; position: relative;"><div style="position: absolute; width: 3px; height: 3px; background: white; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div></div>`;
                 break;
             case 'tiang-beton-rencana':
                 // White circle with black border and black dot (matches canvas drawTiangBetonRencana)
-                iconHtml = `<div style="width: 16px; height: 16px; background: white; border: 2px solid #000; border-radius: 50%; position: relative;"><div style="position: absolute; width: 6px; height: 6px; background: #000; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div></div>`;
+                iconHtml = `<div style="width: 8px; height: 8px; background: white; border: 1px solid #000; border-radius: 50%; position: relative;"><div style="position: absolute; width: 3px; height: 3px; background: #000; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div></div>`;
                 break;
             case 'gardu-portal':
                 // Square with lightning bolt (matches canvas drawGarduPortal)
-                iconHtml = `<div style="width: 16px; height: 16px; background: white; border: 2px solid #000; display: flex; align-items: center; justify-content: center; font-size: 10px;">⚡</div>`;
+                iconHtml = `<div style="width: 8px; height: 8px; background: white; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 5px;">⚡</div>`;
                 break;
             default:
-                iconHtml = `<div style="width: 16px; height: 16px; background: #000; border-radius: 50%;"></div>`;
+                iconHtml = `<div style="width: 8px; height: 8px; background: #000; border-radius: 50%;"></div>`;
         }
         
         return L.divIcon({
             className: 'custom-pole-icon',
             html: iconHtml,
-            iconSize: [16, 16],
-            iconAnchor: [8, 8]
+            iconSize: [8, 8],
+            iconAnchor: [4, 4]
         });
     }
 
