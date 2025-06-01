@@ -203,7 +203,8 @@ ElectricalCADApp.prototype.setupDimensionStyleControlListeners = function() {
                 showArrows: document.getElementById('dimensionShowArrows')?.checked,
                 backgroundColor: document.getElementById('dimensionBackgroundColor')?.value,
                 backgroundOpacity: parseInt(document.getElementById('dimensionBackgroundOpacity')?.value),
-                textOpacity: parseInt(document.getElementById('dimensionTextOpacity')?.value)
+                textOpacity: parseInt(document.getElementById('dimensionTextOpacity')?.value),
+                textOffset: parseInt(document.getElementById('dimensionTextOffset')?.value)
             };
 
             this.drawingEngine.applyStyleToSelectedDimensions(styleUpdates);

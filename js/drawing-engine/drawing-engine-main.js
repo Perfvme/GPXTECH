@@ -86,7 +86,8 @@ class DrawingEngine {
                 showArrows: false,
                 backgroundColor: '#ffffff',
                 backgroundOpacity: 80,
-                textOpacity: 100
+                textOpacity: 100,
+                textOffset: 10
             },
             // Default style for aligned dimensions
             aligned: {
@@ -106,7 +107,8 @@ class DrawingEngine {
                 showArrows: true,
                 backgroundColor: '#f8f8f8',
                 backgroundOpacity: 90,
-                textOpacity: 100
+                textOpacity: 100,
+                textOffset: 10
             }
         };
         

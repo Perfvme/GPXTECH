@@ -25,7 +25,8 @@ ElectricalCADApp.prototype.applyDimensionPreset = function(preset) {
             showArrows: false,
             backgroundColor: '#ffffff',
             backgroundOpacity: 80,
-            textOpacity: 100
+            textOpacity: 100,
+            textOffset: 5
         },
         standard: {
             textSize: 14,
@@ -44,7 +45,8 @@ ElectricalCADApp.prototype.applyDimensionPreset = function(preset) {
             showArrows: true,
             backgroundColor: '#ffffff',
             backgroundOpacity: 90,
-            textOpacity: 100
+            textOpacity: 100,
+            textOffset: 10
         },
         technical: {
             textSize: 12,
@@ -63,7 +65,8 @@ ElectricalCADApp.prototype.applyDimensionPreset = function(preset) {
             showArrows: true,
             backgroundColor: '#ffffcc',
             backgroundOpacity: 85,
-            textOpacity: 100
+            textOpacity: 100,
+            textOffset: 8
         },
         bold: {
             textSize: 16,
@@ -82,7 +85,8 @@ ElectricalCADApp.prototype.applyDimensionPreset = function(preset) {
             showArrows: true,
             backgroundColor: '#333333',
             backgroundOpacity: 95,
-            textOpacity: 100
+            textOpacity: 100,
+            textOffset: 12
         }
     };
 
@@ -126,6 +130,7 @@ ElectricalCADApp.prototype.updateDimensionStyleUI = function() {
     updateSlider('dimensionPrecision', 'dimensionPrecisionValue', style.precision);
     updateSlider('dimensionBackgroundOpacity', 'dimensionBackgroundOpacityValue', style.backgroundOpacity);
     updateSlider('dimensionTextOpacity', 'dimensionTextOpacityValue', style.textOpacity);
+    updateInput('dimensionTextOffset', style.textOffset);
     
     // Update color inputs
     const updateColor = (id, value) => {

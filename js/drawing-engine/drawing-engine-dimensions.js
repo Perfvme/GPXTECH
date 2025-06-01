@@ -65,8 +65,9 @@ DrawingEngine.prototype.drawAngleDimension3Point = function(dimension) {
     
     // Draw text
     const midAngle = (angle1 + angle2) / 2;
-    const textX = p2.x + Math.cos(midAngle) * (radius + 20);
-    const textY = p2.y + Math.sin(midAngle) * (radius + 20);
+    const textOffsetValue = style.textOffset !== undefined ? style.textOffset : 20; // Use new style property, fallback to old default
+    const textX = p2.x + Math.cos(midAngle) * (radius + textOffsetValue);
+    const textY = p2.y + Math.sin(midAngle) * (radius + textOffsetValue);
     
     this.drawDimensionText(dimensionText, textX, textY, style);
     
@@ -115,8 +116,9 @@ DrawingEngine.prototype.drawAngleDimension2Line = function(dimension) {
     
     // Draw text
     const midAngle = (angle1 + angle2) / 2;
-    const textX = intersection.x + Math.cos(midAngle) * (radius + 20);
-    const textY = intersection.y + Math.sin(midAngle) * (radius + 20);
+    const textOffsetValue = style.textOffset !== undefined ? style.textOffset : 20; // Use new style property, fallback to old default
+    const textX = intersection.x + Math.cos(midAngle) * (radius + textOffsetValue);
+    const textY = intersection.y + Math.sin(midAngle) * (radius + textOffsetValue);
     
     this.drawDimensionText(dimensionText, textX, textY, style);
     
@@ -635,11 +637,17 @@ DrawingEngine.prototype.drawAlignedDimension = function(dimensionData) {
         textX = (dimLineP1.x + dimLineP2.x) / 2;
         textY = (dimLineP1.y + dimLineP2.y) / 2;
         
-        const textOffsetFromDimLine = (dimensionData.textPosition && dimensionData.textPosition.offset !== undefined) 
-                                      ? dimensionData.textPosition.offset 
-                                      : (style.textOffsetFromLine || 10);
-        textX += textOffsetFromDimLine * Math.sin(angle);
-        textY -= textOffsetFromDimLine * Math.cos(angle);
+        let textOffsetValue;
+        if (dimensionData.textPosition && dimensionData.textPosition.offset !== undefined) {
+            textOffsetValue = dimensionData.textPosition.offset; // User-dragged specific offset for this dimension instance
+        } else if (style.textOffset !== undefined) {
+            textOffsetValue = style.textOffset; // From global dimension style (or instance style if overridden)
+        } else {
+            textOffsetValue = 10; // Fallback default if no specific or global textOffset is found
+        }
+        
+        textX += textOffsetValue * Math.sin(angle); // Apply perpendicular offset
+        textY -= textOffsetValue * Math.cos(angle); // Apply perpendicular offset
     }
     
     let textAngle = angle;

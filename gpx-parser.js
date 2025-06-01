@@ -639,7 +639,6 @@ class GPXParser {
                         distanceMeters: Math.round(distanceMeters * 100) / 100, // Round to cm
                         startUtm: { x: startPt.utmX, y: startPt.utmY, zone: startPt.utmZone },
                         endUtm: { x: endPt.utmX, y: endPt.utmY, zone: endPt.utmZone }
-                        // Removed: dimensionX, dimensionY, dimension
                     });
 
                     // Create corresponding aligned dimension object
@@ -650,14 +649,7 @@ class GPXParser {
                             { x: startPt.x, y: startPt.y },
                             { x: endPt.x, y: endPt.y }
                         ],
-                        distance: Math.round(distanceMeters * 100) / 100, // The real distance
-                        // Style will be applied by DrawingEngine on load
-                        // Default text position and offset can also be set here or by DrawingEngine
-                        offset: 20, // A default offset, can be part of style
-                        textPosition: { // Default relative placement; drawing engine can refine
-                            type: 'middle', // e.g. 'middle', 'above', 'below'
-                            offset: 10      // Perpendicular offset from dimension line
-                        }
+                        distance: Math.round(distanceMeters * 100) / 100 // The real distance
                     });
                 }
             }
@@ -691,7 +683,6 @@ class GPXParser {
                         distanceMeters: Math.round(distanceMeters * 100) / 100, // Round to cm
                         startUtm: { x: startPt.utmX, y: startPt.utmY, zone: startPt.utmZone },
                         endUtm: { x: endPt.utmX, y: endPt.utmY, zone: endPt.utmZone }
-                        // Removed: dimensionX, dimensionY, dimension
                     });
 
                     // Create corresponding aligned dimension object
@@ -702,9 +693,7 @@ class GPXParser {
                             { x: startPt.x, y: startPt.y },
                             { x: endPt.x, y: endPt.y }
                         ],
-                        distance: Math.round(distanceMeters * 100) / 100,
-                        offset: 20,
-                        textPosition: { type: 'middle', offset: 10 }
+                        distance: Math.round(distanceMeters * 100) / 100
                     });
                 }
             }
