@@ -168,4 +168,32 @@ ElectricalCADApp.prototype.setupDimensionStyleControlListeners = function() {
             this.drawingEngine.render();
         });
     }
+
+    // Apply style to selected dimensions
+    const applyStyleButton = document.getElementById('applyDimensionStyleToSelection');
+    if (applyStyleButton) {
+        applyStyleButton.addEventListener('click', () => {
+            const styleUpdates = {
+                textSize: parseFloat(document.getElementById('dimensionTextSize')?.value),
+                textColor: document.getElementById('dimensionTextColor')?.value,
+                lineColor: document.getElementById('dimensionLineColor')?.value,
+                lineWidth: parseFloat(document.getElementById('dimensionLineWidth')?.value),
+                lineOpacity: parseFloat(document.getElementById('dimensionLineOpacity')?.value),
+                lineStyle: document.getElementById('dimensionLineStyle')?.value,
+                arcSize: parseInt(document.getElementById('dimensionArcSize')?.value),
+                font: document.getElementById('dimensionFont')?.value,
+                textStyle: document.getElementById('dimensionTextStyle')?.value,
+                unit: document.getElementById('dimensionUnit')?.value,
+                precision: parseInt(document.getElementById('dimensionPrecision')?.value),
+                prefix: document.getElementById('dimensionPrefix')?.value,
+                suffix: document.getElementById('dimensionSuffix')?.value,
+                showBackground: document.getElementById('dimensionShowBackground')?.checked,
+                showArrows: document.getElementById('dimensionShowArrows')?.checked,
+                backgroundColor: document.getElementById('dimensionBackgroundColor')?.value,
+                backgroundOpacity: parseInt(document.getElementById('dimensionBackgroundOpacity')?.value)
+            };
+
+            this.drawingEngine.applyStyleToSelectedDimensions(styleUpdates);
+        });
+    }
 };

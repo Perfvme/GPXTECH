@@ -85,6 +85,14 @@ DrawingEngine.prototype.loadFromGPX = function(elements) {
                 this.calculateCoordinateSystemCenter();
             }
         }
+        
+        // Set canvas center for coordinate system (essential for projection)
+        this.coordinateSystem.centerCanvasX = this.canvas.width / 2;
+        this.coordinateSystem.centerCanvasY = this.canvas.height / 2;
+
+        // Adjust initial zoom to match the scale of the loaded GPX data
+        // This ensures that the drawing appears at a correct real-world scale
+        this.zoom = this.coordinateSystem.scale;
     }
     
     this.selectedElement = null;

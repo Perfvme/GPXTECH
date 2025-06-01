@@ -60,15 +60,15 @@ DrawingEngine.prototype.drawAngleDimension3Point = function(dimension) {
         this.drawArrowHead(p2.x + Math.cos(angle2) * radius, p2.y + Math.sin(angle2) * radius, angle2 + Math.PI, style);
     }
     
-    // Format angle text
-    const angleText = this.formatAngleText(dimension.angle, style);
+    // Format dimension text
+    const dimensionText = this.formatDimensionText(dimension.angle, style, 'angle');
     
     // Draw text
     const midAngle = (angle1 + angle2) / 2;
     const textX = p2.x + Math.cos(midAngle) * (radius + 20);
     const textY = p2.y + Math.sin(midAngle) * (radius + 20);
     
-    this.drawDimensionText(angleText, textX, textY, style);
+    this.drawDimensionText(dimensionText, textX, textY, style);
     
     // Reset line style
     this.ctx.setLineDash([]);
@@ -110,41 +110,57 @@ DrawingEngine.prototype.drawAngleDimension2Line = function(dimension) {
         this.drawArrowHead(intersection.x + Math.cos(angle2) * radius, intersection.y + Math.sin(angle2) * radius, angle2 + Math.PI, style);
     }
     
-    // Format angle text
-    const angleText = this.formatAngleText(dimension.angle, style);
+    // Format dimension text
+    const dimensionText = this.formatDimensionText(dimension.angle, style, 'angle');
     
     // Draw text
     const midAngle = (angle1 + angle2) / 2;
     const textX = intersection.x + Math.cos(midAngle) * (radius + 20);
     const textY = intersection.y + Math.sin(midAngle) * (radius + 20);
     
-    this.drawDimensionText(angleText, textX, textY, style);
+    this.drawDimensionText(dimensionText, textX, textY, style);
     
     // Reset line style
     this.ctx.setLineDash([]);
 };
 
 /**
- * Format angle text with prefix, suffix, and unit
+ * Format dimension text with prefix, suffix, and unit
  */
-DrawingEngine.prototype.formatAngleText = function(angle, style) {
-    let formattedAngle;
+DrawingEngine.prototype.formatDimensionText = function(value, style, type) {
+    let formattedValue;
     
-    // Convert angle based on unit
-    switch (style.unit) {
-        case 'rad':
-            formattedAngle = (angle * Math.PI / 180).toFixed(style.precision);
-            break;
-        case 'grad':
-            formattedAngle = (angle * 10 / 9).toFixed(style.precision);
-            break;
-        case '°':
-        default:
-            formattedAngle = angle.toFixed(style.precision);
-            break;
+    // Convert value based on unit and type
+    if (type === 'angle') {
+        switch (style.unit) {
+            case 'rad':
+                formattedValue = (value * Math.PI / 180).toFixed(style.precision);
+                break;
+            case 'grad':
+                formattedValue = (value * 10 / 9).toFixed(style.precision);
+                break;
+            case '°':
+            default:
+                formattedValue = value.toFixed(style.precision);
+                break;
+        }
+    } else if (type === 'aligned') {
+        let realDistance = value; // Default to canvas value
+
+        // Convert to real-world distance if real coordinates are enabled
+        if (this.coordinateSystem.isRealCoordinates && this.metadata.metersPerPixel) {
+            realDistance = value * this.metadata.metersPerPixel;
+        }
+
+        switch (style.unit) {
+            case 'm':
+            default:
+                formattedValue = realDistance.toFixed(style.precision);
+                break;
+        }
     }
     
-    return `${style.prefix}${formattedAngle}${style.unit}${style.suffix}`;
+    return `${style.prefix}${formattedValue}${style.unit}${style.suffix}`;
 };
 
 /**
@@ -546,78 +562,70 @@ DrawingEngine.prototype.showAngleInstructions = function(message) {
 DrawingEngine.prototype.drawAlignedDimension = function(dimension) {
     const [p1, p2] = dimension.points;
     const style = dimension.style;
-    const distance = dimension.distance;
+    
+    // Calculate the midpoint for text placement
+    const midX = (p1.x + p2.x) / 2;
+    const midY = (p1.y + p2.y) / 2;
 
-    // Calculate angle for orientation
+    // Calculate the angle of the line for text rotation
     const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
 
-    // Set line style
+    // Calculate perpendicular offset for the dimension line and text
+    const offsetDistance = 30; // Adjust as needed for visual spacing
+    const offsetX = Math.sin(angle) * offsetDistance;
+    const offsetY = -Math.cos(angle) * offsetDistance;
+
+    // Dimension line points (offset from the main line)
+    const dimLine1StartX = p1.x + offsetX;
+    const dimLine1StartY = p1.y + offsetY;
+    const dimLine1EndX = p2.x + offsetX;
+    const dimLine1EndY = p2.y + offsetY;
+
+    // Extension lines from original points to dimension line
+    const extLine1StartX = p1.x;
+    const extLine1StartY = p1.y;
+    const extLine1EndX = p1.x + offsetX;
+    const extLine1EndY = p1.y + offsetY;
+
+    const extLine2StartX = p2.x;
+    const extLine2StartY = p2.y;
+    const extLine2EndX = p2.x + offsetX;
+    const extLine2EndY = p2.y + offsetY;
+
+    // Draw dimension lines
     this.ctx.save();
     this.ctx.globalAlpha = (style.lineOpacity || 100) / 100;
     this.ctx.strokeStyle = style.lineColor;
     this.ctx.lineWidth = style.lineWidth || 1;
     this.setLineStyle(style.lineStyle || 'solid');
 
-    // Draw dimension line (offset from the actual line)
-    const offset = style.offset || 20; // Default offset
-    const offsetX = offset * Math.sin(angle);
-    const offsetY = -offset * Math.cos(angle);
-
-    const dimP1 = { x: p1.x + offsetX, y: p1.y + offsetY };
-    const dimP2 = { x: p2.x + offsetX, y: p2.y + offsetY };
-
     this.ctx.beginPath();
-    this.ctx.moveTo(dimP1.x, dimP1.y);
-    this.ctx.lineTo(dimP2.x, dimP2.y);
+    // Main dimension line
+    this.ctx.moveTo(dimLine1StartX, dimLine1StartY);
+    this.ctx.lineTo(dimLine1EndX, dimLine1EndY);
+    // Extension lines
+    this.ctx.moveTo(extLine1StartX, extLine1StartY);
+    this.ctx.lineTo(extLine1EndX, extLine1EndY);
+    this.ctx.moveTo(extLine2StartX, extLine2StartY);
+    this.ctx.lineTo(extLine2EndX, extLine2EndY);
     this.ctx.stroke();
-
-    // Draw extension lines
-    const extension = style.extension || 10; // Default extension
-    this.ctx.beginPath();
-    this.ctx.moveTo(p1.x, p1.y);
-    this.ctx.lineTo(dimP1.x + extension * Math.sin(angle), dimP1.y - extension * Math.cos(angle)); // Adjusted extension line start
-    this.ctx.moveTo(p2.x, p2.y);
-    this.ctx.lineTo(dimP2.x + extension * Math.sin(angle), dimP2.y - extension * Math.cos(angle)); // Adjusted extension line start
-    this.ctx.stroke();
+    this.ctx.restore();
 
     // Draw arrows if enabled
     if (style.showArrows) {
-        this.drawArrowHead(dimP1.x, dimP1.y, angle + Math.PI, style);
-        this.drawArrowHead(dimP2.x, dimP2.y, angle, style);
+        this.drawArrowHead(dimLine1StartX, dimLine1StartY, angle + Math.PI, style);
+        this.drawArrowHead(dimLine1EndX, dimLine1EndY, angle, style);
     }
-
-    this.ctx.restore(); // Restore context to remove line opacity for subsequent drawings
 
     // Format distance text
-    const distanceText = this.formatDistanceText(distance, style);
+    const distance = this.calculateDistance(p1.x, p1.y, p2.x, p2.y);
+    const dimensionText = this.formatDimensionText(distance, style, 'aligned');
 
-    // Draw text (with full opacity)
-    const textX = (dimP1.x + dimP2.x) / 2;
-    const textY = (dimP1.y + dimP2.y) / 2;
-
-    this.ctx.save(); // Save context before drawing text
-    this.ctx.globalAlpha = 1; // Ensure text is fully opaque
-    this.drawDimensionText(distanceText, textX, textY, style, angle); // Pass angle for rotation
-    this.ctx.restore(); // Restore context after drawing text
-};
-
-/**
- * Format distance text with prefix, suffix, and unit
- */
-DrawingEngine.prototype.formatDistanceText = function(distance, style) {
-    let formattedDistance = distance.toFixed(style.precision);
-    let displayUnit = style.unit;
-
-    // For aligned dimensions, distance is already in real-world units (meters).
-    // No further conversion needed, just formatting and unit display.
-    // If the style's unit is explicitly 'm', use 'm'. Otherwise, it defaults to 'px'.
-    if (style.unit === 'm') {
-        displayUnit = 'm';
-    } else if (style.unit === 'px') {
-        displayUnit = 'px';
-    }
+    // Draw text (offset perpendicular to the line)
+    const textX = midX + offsetX;
+    const textY = midY + offsetY;
     
-    return `${style.prefix}${formattedDistance}${displayUnit}${style.suffix}`;
+    this.drawDimensionText(dimensionText, textX, textY, style, angle);
 };
 
 /**

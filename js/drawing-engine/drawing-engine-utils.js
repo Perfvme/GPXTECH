@@ -250,59 +250,49 @@ DrawingEngine.prototype.clearSelection = function() {
  */
 DrawingEngine.prototype.selectByFilter = function(filterType) {
     this.selectedElements.clear();
-    this.selectedElement = null;
-    
+    this.selectedElement = null; // Clear single selection
+
+    let filteredElements = [];
+
     switch (filterType) {
         case 'all':
-            this.selectAll();
-            return;
+            filteredElements = [
+                ...this.elements.poles,
+                ...this.elements.lines,
+                ...this.elements.dimensions
+            ];
+            break;
         case 'poles':
-            for (let pole of this.elements.poles) {
-                this.selectedElements.add(pole);
-            }
+            filteredElements = this.elements.poles;
             break;
         case 'lines':
-            for (let line of this.elements.lines) {
-                this.selectedElements.add(line);
-            }
+            filteredElements = this.elements.lines;
             break;
         case 'tiang-baja':
-            for (let pole of this.elements.poles) {
-                if (pole.type && pole.type.includes('tiang-baja')) {
-                    this.selectedElements.add(pole);
-                }
-            }
+            filteredElements = this.elements.poles.filter(pole => pole.type === 'tiang-baja-existing' || pole.type === 'tiang-baja-rencana');
             break;
         case 'tiang-beton':
-            for (let pole of this.elements.poles) {
-                if (pole.type && pole.type.includes('tiang-beton')) {
-                    this.selectedElements.add(pole);
-                }
-            }
+            filteredElements = this.elements.poles.filter(pole => pole.type === 'tiang-beton-existing' || pole.type === 'tiang-beton-rencana');
             break;
         case 'gardu-portal':
-            for (let pole of this.elements.poles) {
-                if (pole.type && pole.type.includes('gardu-portal')) {
-                    this.selectedElements.add(pole);
-                }
-            }
+            filteredElements = this.elements.poles.filter(pole => pole.type === 'gardu-portal');
             break;
         case 'sutm':
-            for (let line of this.elements.lines) {
-                if (line.type && line.type.includes('sutm')) {
-                    this.selectedElements.add(line);
-                }
-            }
+            filteredElements = this.elements.lines.filter(line => line.type === 'sutm-existing' || line.type === 'sutm-rencana');
             break;
         case 'sutr':
-            for (let line of this.elements.lines) {
-                if (line.type && line.type.includes('sutr')) {
-                    this.selectedElements.add(line);
-                }
-            }
+            filteredElements = this.elements.lines.filter(line => line.type === 'sutr-existing' || line.type === 'sutr-rencana');
+            break;
+        case 'dimension-aligned':
+            filteredElements = this.elements.dimensions.filter(dim => dim.type === 'aligned');
+            break;
+        case 'dimension-angular':
+            filteredElements = this.elements.dimensions.filter(dim => dim.type === 'angular');
             break;
     }
-    
+
+    filteredElements.forEach(el => this.selectedElements.add(el));
+
     this.updatePropertiesPanel(this.selectedElements.size > 0 ? Array.from(this.selectedElements) : null);
     this.render();
 };
@@ -372,4 +362,17 @@ DrawingEngine.prototype.batchChangeName = function(newName, useNumberedNames = f
     this.render();
     
     alert(`Changed name for ${selectedElements.length} elements.`);
+};
+
+/**
+ * Apply style to selected dimensions
+ */
+DrawingEngine.prototype.applyStyleToSelectedDimensions = function(styleUpdates) {
+    this.selectedElements.forEach(element => {
+        if (element.type === 'aligned' || element.type === 'angular') {
+            // Apply style updates directly to the dimension
+            Object.assign(element.style, styleUpdates);
+        }
+    });
+    this.render();
 };
