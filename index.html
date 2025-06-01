@@ -78,6 +78,12 @@
                         <button id="alignedDimensionTool" class="tool-btn-icon" data-tool="aligned-dimension" title="Aligned Dimension">
                             <i class="fas fa-ruler-horizontal"></i>
                         </button>
+                        <button id="undoBtn" class="tool-btn-icon" title="Undo (Ctrl+Z)">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        <button id="redoBtn" class="tool-btn-icon" title="Redo (Ctrl+Y)">
+                            <i class="fas fa-redo"></i>
+                        </button>
                     </div>
                     <div class="tool-options">
                         <label class="checkbox-item">
@@ -130,14 +136,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="undo-redo-controls">
-                        <button id="undoBtn" class="tool-btn-icon" title="Undo (Ctrl+Z)">
-                            <i class="fas fa-undo"></i>
-                        </button>
-                        <button id="redoBtn" class="tool-btn-icon" title="Redo (Ctrl+Y)">
-                            <i class="fas fa-redo"></i>
-                        </button>
                     </div>
                 </div>
 
@@ -200,7 +198,8 @@
                 </div>
 
                 <div class="tool-section">
-                    <h3>Pole Types</h3>
+                    <h3>Element Types</h3>
+                    <h4>Poles</h4>
                     <div class="symbol-grid-compact">
                         <button class="symbol-btn-icon" data-type="tiang-baja-existing" title="Tiang Baja Existing">
                             <div class="symbol-icon tiang-baja-existing"></div>
@@ -218,10 +217,7 @@
                             <div class="symbol-icon gardu-portal"></div>
                         </button>
                     </div>
-                </div>
-
-                <div class="tool-section">
-                    <h3>Line Types</h3>
+                    <h4>Lines</h4>
                     <div class="line-types-compact">
                         <button class="line-type-btn-icon" data-type="sutm-rencana" title="SUTM Rencana">
                             <div class="line-sample sutm-rencana"></div>
@@ -240,18 +236,18 @@
 
                 <div class="tool-section">
                     <h3>Options</h3>
-                    <div class="options-compact">
-                        <label class="checkbox-label-compact">
+                    <div class="options-compact-grid">
+                        <label class="checkbox-item-icon" title="Grounding">
                             <input type="checkbox" id="addGrounding">
-                            <span>Grounding</span>
+                            <i class="fas fa-bolt"></i>
                         </label>
-                        <label class="checkbox-label-compact">
+                        <label class="checkbox-item-icon" title="Guy Wire">
                             <input type="checkbox" id="addGuywire">
-                            <span>Guy Wire</span>
+                            <i class="fas fa-grip-lines"></i>
                         </label>
-                        <label class="checkbox-label-compact">
-                            <input type="checkbox" id="showNameLabels" checked>
-                            <span>Labels</span>
+                        <label class="checkbox-item-icon" title="Labels">
+                            <input type="checkbox" id="addLabels" checked>
+                            <i class="fas fa-tag"></i>
                         </label>
                     </div>
                 </div>

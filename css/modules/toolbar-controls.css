@@ -37,7 +37,7 @@
 /* Compact Tool Grid */
 .tool-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 3px;
     margin-bottom: 6px;
 }
@@ -104,7 +104,7 @@
 /* Compact Symbol Grid */
 .symbol-grid-compact {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 3px;
 }
 
@@ -242,7 +242,7 @@
 /* Compact Line Types */
 .line-types-compact {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 3px;
 }
 
@@ -684,4 +684,58 @@
     background: rgba(0, 123, 255, 0.1);
     pointer-events: none;
     z-index: 1000;
+}
+
+/* Compact Options */
+.options-compact-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* Three icons in a row */
+    gap: 3px;
+}
+
+.checkbox-item-icon {
+    width: 100%;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    position: relative; /* For absolute positioning of checkbox */
+}
+
+.checkbox-item-icon input[type="checkbox"] {
+    position: absolute;
+    opacity: 0; /* Hide the default checkbox */
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.checkbox-item-icon i {
+    font-size: 16px;
+    color: var(--text-secondary);
+    pointer-events: none; /* Allow clicks to pass through to the hidden checkbox */
+}
+
+.checkbox-item-icon:hover {
+    border-color: #1a73e8;
+    background: var(--bg-secondary);
+    box-shadow: 0 1px 2px var(--shadow-medium);
+}
+
+.checkbox-item-icon input[type="checkbox"]:checked + i {
+    color: #1a73e8; /* Change icon color when checked */
+}
+
+.checkbox-item-icon input[type="checkbox"]:checked {
+    border-color: #1a73e8;
+    background: #e8f0fe;
+    box-shadow: 0 1px 3px rgba(26,115,232,0.2);
 }
