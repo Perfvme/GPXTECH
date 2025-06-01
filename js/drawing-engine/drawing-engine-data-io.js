@@ -63,6 +63,17 @@ DrawingEngine.prototype.loadFromGPX = function(elements) {
         lines: elements.lines || [],
         dimensions: elements.dimensions || []
     };
+
+    // Assign current default style to newly loaded dimensions if not already set by parser
+    this.elements.dimensions.forEach(dim => {
+        if (dim.type === 'aligned' && (!dim.style || Object.keys(dim.style).length === 0)) {
+            dim.style = { ...this.dimensionStyle.aligned }; // Assign a copy
+        } else if (dim.type === 'angle' && (!dim.style || Object.keys(dim.style).length === 0)) {
+            dim.style = { ...this.dimensionStyle.angle }; // Assign a copy
+        }
+        // Potentially initialize other dimension-specific properties if needed
+    });
+
     this.metadata = elements.metadata || {
         metersPerPixel: 1,
         coordinateSystem: 'Canvas',

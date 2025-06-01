@@ -578,6 +578,7 @@ class GPXParser {
         const elements = {
             poles: [],
             lines: [],
+            dimensions: [], // Initialize dimensions array
             metadata: {
                 metersPerPixel: this.metersPerPixel || 1,
                 coordinateSystem: 'UTM',
@@ -610,7 +611,7 @@ class GPXParser {
         
         let totalDistance = 0;
         
-        // Convert tracks to lines with real distance calculations
+        // Convert tracks to lines and create associated aligned dimensions
         this.tracks.forEach(track => {
             if (track.points.length > 1) {
                 for (let i = 0; i < track.points.length - 1; i++) {
@@ -625,8 +626,9 @@ class GPXParser {
                     
                     totalDistance += distanceMeters;
                     
+                    const lineId = `${track.id}_line_${i}`;
                     elements.lines.push({
-                        id: `${track.id}_line_${i}`,
+                        id: lineId,
                         startX: startPt.x,
                         startY: startPt.y,
                         endX: endPt.x,
@@ -636,16 +638,32 @@ class GPXParser {
                         trackId: track.id,
                         distanceMeters: Math.round(distanceMeters * 100) / 100, // Round to cm
                         startUtm: { x: startPt.utmX, y: startPt.utmY, zone: startPt.utmZone },
-                        endUtm: { x: endPt.utmX, y: endPt.utmY, zone: endPt.utmZone },
-                        dimensionX: (startPt.x + endPt.x) / 2, // Midpoint X for dimension text
-                        dimensionY: (startPt.y + endPt.y) / 2, // Midpoint Y for dimension text
-                        dimension: `${(Math.round(distanceMeters * 100) / 100).toLocaleString()} m` // Formatted dimension string
+                        endUtm: { x: endPt.utmX, y: endPt.utmY, zone: endPt.utmZone }
+                        // Removed: dimensionX, dimensionY, dimension
+                    });
+
+                    // Create corresponding aligned dimension object
+                    elements.dimensions.push({
+                        id: `dim_aligned_${lineId}`, // Unique ID for the dimension
+                        type: 'aligned',
+                        points: [ // Points in canvas coordinates
+                            { x: startPt.x, y: startPt.y },
+                            { x: endPt.x, y: endPt.y }
+                        ],
+                        distance: Math.round(distanceMeters * 100) / 100, // The real distance
+                        // Style will be applied by DrawingEngine on load
+                        // Default text position and offset can also be set here or by DrawingEngine
+                        offset: 20, // A default offset, can be part of style
+                        textPosition: { // Default relative placement; drawing engine can refine
+                            type: 'middle', // e.g. 'middle', 'above', 'below'
+                            offset: 10      // Perpendicular offset from dimension line
+                        }
                     });
                 }
             }
         });
         
-        // Convert routes to lines with real distance calculations
+        // Convert routes to lines and create associated aligned dimensions
         this.routes.forEach(route => {
             if (route.points.length > 1) {
                 for (let i = 0; i < route.points.length - 1; i++) {
@@ -660,8 +678,9 @@ class GPXParser {
                     
                     totalDistance += distanceMeters;
                     
+                    const lineId = `${route.id}_line_${i}`;
                     elements.lines.push({
-                        id: `${route.id}_line_${i}`,
+                        id: lineId,
                         startX: startPt.x,
                         startY: startPt.y,
                         endX: endPt.x,
@@ -671,10 +690,21 @@ class GPXParser {
                         routeId: route.id,
                         distanceMeters: Math.round(distanceMeters * 100) / 100, // Round to cm
                         startUtm: { x: startPt.utmX, y: startPt.utmY, zone: startPt.utmZone },
-                        endUtm: { x: endPt.utmX, y: endPt.utmY, zone: endPt.utmZone },
-                        dimensionX: (startPt.x + endPt.x) / 2, // Midpoint X for dimension text
-                        dimensionY: (startPt.y + endPt.y) / 2, // Midpoint Y for dimension text
-                        dimension: `${(Math.round(distanceMeters * 100) / 100).toLocaleString()} m` // Formatted dimension string
+                        endUtm: { x: endPt.utmX, y: endPt.utmY, zone: endPt.utmZone }
+                        // Removed: dimensionX, dimensionY, dimension
+                    });
+
+                    // Create corresponding aligned dimension object
+                    elements.dimensions.push({
+                        id: `dim_aligned_${lineId}`,
+                        type: 'aligned',
+                        points: [
+                            { x: startPt.x, y: startPt.y },
+                            { x: endPt.x, y: endPt.y }
+                        ],
+                        distance: Math.round(distanceMeters * 100) / 100,
+                        offset: 20,
+                        textPosition: { type: 'middle', offset: 10 }
                     });
                 }
             }

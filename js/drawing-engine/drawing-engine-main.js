@@ -343,15 +343,6 @@ class DrawingEngine {
                     dim.style = this.dimensionStyle[type];
                 }
             });
-            // If it's an aligned dimension, update GPX-loaded line dimensions too
-            if (type === 'aligned') {
-                this.elements.lines.forEach(line => {
-                    if (line.dimension && line.distanceMeters !== undefined) {
-                        // Re-format the dimension string based on new style
-                        line.dimension = this.formatDimensionText(line.distanceMeters, this.dimensionStyle.aligned, 'aligned');
-                    }
-                });
-            }
             this.render(); // Re-render to apply changes
         } else {
             console.warn(`Dimension style property '${property}' not found for type '${type}'.`);
@@ -373,15 +364,6 @@ class DrawingEngine {
                     dim.style = this.dimensionStyle[type];
                 }
             });
-            // If it's an aligned dimension, update GPX-loaded line dimensions too
-            if (type === 'aligned') {
-                this.elements.lines.forEach(line => {
-                    if (line.dimension && line.distanceMeters !== undefined) {
-                        // Re-format the dimension string based on new style
-                        line.dimension = this.formatDimensionText(line.distanceMeters, this.dimensionStyle.aligned, 'aligned');
-                    }
-                });
-            }
             this.render(); // Re-render to apply changes
         } else {
             console.warn(`Dimension style type '${type}' not found.`);

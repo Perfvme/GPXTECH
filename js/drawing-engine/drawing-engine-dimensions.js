@@ -145,12 +145,15 @@ DrawingEngine.prototype.formatDimensionText = function(value, style, type) {
                 break;
         }
     } else if (type === 'aligned') {
-        let realDistance = value; // Default to canvas value
+        let realDistance = value;
 
-        // Convert to real-world distance if real coordinates are enabled
-        if (this.coordinateSystem.isRealCoordinates && this.metadata.metersPerPixel) {
-            realDistance = value * this.metadata.metersPerPixel;
-        }
+        // The 'distance' value for aligned dimensions from GPX is already in real-world meters.
+        // No further conversion using metersPerPixel is needed here.
+        // The check for coordinateSystem.isRealCoordinates and metadata.metersPerPixel is implicitly handled
+        // by the fact that 'distance' is set to distanceMeters directly from gpx-parser.js.
+        // if (this.coordinateSystem.isRealCoordinates && this.metadata.metersPerPixel) {
+        //     realDistance = value * this.metadata.metersPerPixel;
+        // }
 
         switch (style.unit) {
             case 'm':
@@ -563,93 +566,85 @@ DrawingEngine.prototype.showAngleInstructions = function(message) {
  * Draw aligned dimension
  */
 DrawingEngine.prototype.drawAlignedDimension = function(dimensionData) {
-    let startX, startY, endX, endY, dimensionX, dimensionY, dimensionText;
-    const style = this.dimensionStyle.aligned;
-
-    if (dimensionData.points && dimensionData.points.length >= 2) {
-        // This is a dimension created by the aligned dimension tool
-        const p1 = dimensionData.points[0];
-        const p2 = dimensionData.points[1];
-        startX = p1.x;
-        startY = p1.y;
-        endX = p2.x;
-        endY = p2.y;
-        dimensionX = (p1.x + p2.x) / 2;
-        dimensionY = (p1.y + p2.y) / 2;
-        // Format the distance value from the dimension object
-        dimensionText = this.formatDimensionText(dimensionData.distance, style, 'aligned');
-    } else if (dimensionData.startX !== undefined && dimensionData.dimension !== undefined) {
-        // This is a line object from GPX parsing
-        startX = dimensionData.startX;
-        startY = dimensionData.startY;
-        endX = dimensionData.endX;
-        endY = dimensionData.endY;
-        dimensionX = dimensionData.dimensionX;
-        dimensionY = dimensionData.dimensionY;
-        dimensionText = dimensionData.dimension; // Already formatted string
-    } else {
-        // Invalid data, do nothing
+    // Ensure dimensionData is the dimension object itself, not a line object
+    if (!dimensionData || dimensionData.type !== 'aligned' || !dimensionData.points || dimensionData.points.length < 2) {
+        // console.warn("drawAlignedDimension called with invalid data for an aligned dimension:", dimensionData);
         return;
     }
 
+    const [p1, p2] = dimensionData.points;
+    // Use the dimension's own style object, or fallback to the engine's default if missing
+    const style = dimensionData.style || this.dimensionStyle.aligned; 
+    const realDistance = dimensionData.distance; // This is the actual measured distance
+
     this.ctx.save();
-    this.ctx.globalAlpha = style.lineOpacity / 100;
+    this.ctx.globalAlpha = (style.lineOpacity !== undefined ? style.lineOpacity : 100) / 100;
     this.ctx.strokeStyle = style.lineColor;
     this.ctx.lineWidth = style.lineWidth || 1;
     this.setLineStyle(style.lineStyle || 'solid');
 
-    // Calculate the angle of the line
-    const angle = Math.atan2(endY - startY, endX - startX);
+    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+    const dimensionText = this.formatDimensionText(realDistance, style, 'aligned');
 
-    // Draw dimension line (usually perpendicular to the measured line)
-    // For simplicity, let's draw it directly on top of the line for now
-    // A more advanced implementation would offset it.
+    // Calculate offset for the dimension line
+    const offsetValue = dimensionData.offset !== undefined ? dimensionData.offset : (style.offset || 20);
+    const offsetX = offsetValue * Math.sin(angle); // Perpendicular X component
+    const offsetY = -offsetValue * Math.cos(angle); // Perpendicular Y component
+
+    // Points for the dimension line itself (offset from the measured line p1-p2)
+    const dimLineP1 = { x: p1.x + offsetX, y: p1.y + offsetY };
+    const dimLineP2 = { x: p2.x + offsetX, y: p2.y + offsetY };
+
+    // Draw the main dimension line
     this.ctx.beginPath();
-    this.ctx.moveTo(startX, startY);
-    this.ctx.lineTo(endX, endY);
+    this.ctx.moveTo(dimLineP1.x, dimLineP1.y);
+    this.ctx.lineTo(dimLineP2.x, dimLineP2.y);
     this.ctx.stroke();
 
-    // Draw extension lines (small lines extending from the endpoints)
-    const extensionLineLength = 10; // Pixels
-    const offsetAngle = angle + Math.PI / 2; // Perpendicular angle
-
-    // Start extension line
+    // Draw extension lines
+    const extensionOvershoot = style.extensionOvershoot || 5; // How far extension lines go past the dimension line
+    // Extension line from p1
     this.ctx.beginPath();
-    this.ctx.moveTo(startX, startY);
-    this.ctx.lineTo(
-        startX + Math.cos(offsetAngle) * extensionLineLength,
-        startY + Math.sin(offsetAngle) * extensionLineLength
-    );
+    this.ctx.moveTo(p1.x, p1.y);
+    this.ctx.lineTo(dimLineP1.x - extensionOvershoot * Math.sin(angle), dimLineP1.y + extensionOvershoot * Math.cos(angle)); // Extend towards measured line
     this.ctx.stroke();
 
-    // End extension line
+    // Extension line from p2
     this.ctx.beginPath();
-    this.ctx.moveTo(endX, endY);
-    this.ctx.lineTo(
-        endX + Math.cos(offsetAngle) * extensionLineLength,
-        endY + Math.sin(offsetAngle) * extensionLineLength
-    );
+    this.ctx.moveTo(p2.x, p2.y);
+    this.ctx.lineTo(dimLineP2.x - extensionOvershoot * Math.sin(angle), dimLineP2.y + extensionOvershoot * Math.cos(angle)); // Extend towards measured line
     this.ctx.stroke();
 
-    // Draw arrows if enabled
+    // Draw arrows on the dimension line
     if (style.showArrows) {
-        this.drawArrowHead(startX, startY, angle + Math.PI, style);
-        this.drawArrowHead(endX, endY, angle, style);
+        this.drawArrowHead(dimLineP1.x, dimLineP1.y, angle + Math.PI, style); // Arrow at start of dim line
+        this.drawArrowHead(dimLineP2.x, dimLineP2.y, angle, style);         // Arrow at end of dim line
     }
 
-    // Draw text
-    // The text should be aligned with the line and offset slightly
-    const textOffset = 15; // Offset perpendicular to the line
-    const actualTextX = dimensionX + Math.cos(offsetAngle) * textOffset;
-    const actualTextY = dimensionY + Math.sin(offsetAngle) * textOffset;
-
-    // Adjust text angle to be readable (horizontal or vertical)
+    // Text placement
+    let textX, textY;
+    // Use textPosition from dimensionData if it exists (for user-dragged text)
+    if (dimensionData.textPosition && dimensionData.textPosition.x !== undefined) {
+         textX = dimensionData.textPosition.x;
+         textY = dimensionData.textPosition.y;
+    } else { // Default placement: centered on the dimension line, slightly offset
+        textX = (dimLineP1.x + dimLineP2.x) / 2;
+        textY = (dimLineP1.y + dimLineP2.y) / 2;
+        
+        const textOffsetFromDimLine = (dimensionData.textPosition && dimensionData.textPosition.offset !== undefined) 
+                                      ? dimensionData.textPosition.offset 
+                                      : (style.textOffsetFromLine || 10);
+        textX += textOffsetFromDimLine * Math.sin(angle);
+        textY -= textOffsetFromDimLine * Math.cos(angle);
+    }
+    
     let textAngle = angle;
+    // Adjust text angle for readability (e.g., always horizontal or ensure it's not upside down)
     if (textAngle > Math.PI / 2 || textAngle < -Math.PI / 2) {
-        textAngle += Math.PI; // Flip text for readability
+        textAngle += Math.PI; // Flip text
     }
 
-    this.drawDimensionText(dimensionText, actualTextX, actualTextY, style, textAngle);
+    this.drawDimensionText(dimensionText, textX, textY, style, textAngle);
 
     this.ctx.restore();
 };

@@ -43,17 +43,20 @@ DrawingEngine.prototype.render = function() {
     // Draw poles
     this.elements.poles.forEach(pole => this.drawPole(pole));
     
-    // Draw dimensions for lines from GPX
-    if (this.showDimensions) {
-        this.elements.lines.forEach(line => {
-            if (line.dimension && line.dimensionX && line.dimensionY) {
-                this.drawAlignedDimension(line);
+    // Draw ALL dimensions (manually created and GPX-generated)
+    if (this.showDimensions) { // General toggle for all dimensions
+        this.elements.dimensions.forEach(dimension => {
+            // Ensure dimension object has a style property; if not, assign default from its type
+            if (!dimension.style || Object.keys(dimension.style).length === 0) {
+                if (dimension.type === 'aligned') {
+                    dimension.style = { ...this.dimensionStyle.aligned };
+                } else if (dimension.type === 'angle') {
+                    dimension.style = { ...this.dimensionStyle.angle };
+                }
             }
+            this.drawDimension(dimension); // Centralized call to draw any dimension type
         });
     }
-
-    // Draw manually created dimensions (e.g., from dimension tool)
-    this.elements.dimensions.forEach(dimension => this.drawDimension(dimension));
     
     // Draw angle preview
     if (this.angleState.previewAngle) {

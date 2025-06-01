@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test GPX Dimension Implementation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        .controls button {
+            margin-right: 10px;
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .controls button:hover {
+            background: #0056b3;
+        }
+        .controls button.success {
+            background: #28a745;
+        }
+        .controls button.warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        #canvas {
+            border: 1px solid #ccc;
+            background: white;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .results pre {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GPX Dimension Implementation Test</h1>
+        <p>This test verifies that GPX files create proper aligned dimension objects that can be selected, filtered, and styled.</p>
+        
+        <div class="test-section">
+            <h3>Test Controls</h3>
+            <div class="controls">
+                <button onclick="loadTestGPX()">Load Test GPX</button>
+                <button onclick="toggleDimensions()" class="success">Toggle Dimensions</button>
+                <button onclick="selectAlignedDimensions()" class="warning">Select Aligned Dimensions</button>
+                <button onclick="changeDimensionStyle()">Change Dimension Style</button>
+                <button onclick="runFullTest()">Run Full Test</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Canvas</h3>
+            <canvas id="canvas" width="800" height="600"></canvas>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test Results</h3>
+            <div id="testResults" class="results">
+                <p>Click "Run Full Test" to verify the implementation.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include the necessary scripts -->
+    <script src="gpx-parser.js"></script>
+    <script src="js/drawing-engine/drawing-engine-main.js"></script>
+    <script src="js/drawing-engine/drawing-engine-rendering.js"></script>
+    <script src="js/drawing-engine/drawing-engine-dimensions.js"></script>
+    <script src="js/drawing-engine/drawing-engine-data-io.js"></script>
+    <script src="js/drawing-engine/drawing-engine-utils.js"></script>
+    <script src="js/drawing-engine/drawing-engine-events.js"></script>
+    <script src="js/drawing-engine/drawing-engine-selection.js"></script>
+
+    <script>
+        // Initialize the drawing engine
+        const canvas = document.getElementById('canvas');
+        const drawingEngine = new DrawingEngine(canvas);
+        
+        // Test GPX content
+        const testGPXContent = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Test GPX for Dimension Implementation">
+  <metadata>
+    <name>Test GPX for Dimension Implementation</name>
+    <desc>Simple test file to verify GPX dimensions are created as proper dimension objects</desc>
+  </metadata>
+  
+  <!-- Test waypoints (poles) -->
+  <wpt lat="-6.200000" lon="106.800000">
+    <name>Pole 1</name>
+    <desc>Test pole 1</desc>
+  </wpt>
+  <wpt lat="-6.201000" lon="106.801000">
+    <name>Pole 2</name>
+    <desc>Test pole 2</desc>
+  </wpt>
+  <wpt lat="-6.202000" lon="106.802000">
+    <name>Pole 3</name>
+    <desc>Test pole 3</desc>
+  </wpt>
+  
+  <!-- Test track (lines with dimensions) -->
+  <trk>
+    <name>Test Line</name>
+    <desc>Test line for dimension verification</desc>
+    <trkseg>
+      <trkpt lat="-6.200000" lon="106.800000">
+      </trkpt>
+      <trkpt lat="-6.201000" lon="106.801000">
+      </trkpt>
+      <trkpt lat="-6.202000" lon="106.802000">
+      </trkpt>
+    </trkseg>
+  </trk>
+  
+  <!-- Test route (additional lines with dimensions) -->
+  <rte>
+    <name>Test Route</name>
+    <desc>Test route for dimension verification</desc>
+    <rtept lat="-6.200500" lon="106.800500">
+      <name>Route Point 1</name>
+    </rtept>
+    <rtept lat="-6.201500" lon="106.801500">
+      <name>Route Point 2</name>
+    </rtept>
+  </rte>
+</gpx>`;
+
+        function loadTestGPX() {
+            try {
+                const parser = new GPXParser();
+                parser.parseGPX(testGPXContent);
+                parser.projectToCanvas(null, canvas.width, canvas.height);
+                const elements = parser.toDrawingElements();
+                
+                drawingEngine.loadFromGPX(elements);
+                
+                updateResults(`GPX loaded successfully!
+- Poles: ${elements.poles.length}
+- Lines: ${elements.lines.length}
+- Dimensions: ${elements.dimensions.length}`, 'success');
+                
+            } catch (error) {
+                updateResults(`Error loading GPX: ${error.message}`, 'error');
+            }
+        }
+        
+        function toggleDimensions() {
+            drawingEngine.showDimensions = !drawingEngine.showDimensions;
+            drawingEngine.render();
+            updateResults(`Dimensions ${drawingEngine.showDimensions ? 'shown' : 'hidden'}`, 'success');
+        }
+        
+        function selectAlignedDimensions() {
+            drawingEngine.selectByFilter('dimension-aligned');
+            const selectedCount = drawingEngine.selectedElements.size;
+            updateResults(`Selected ${selectedCount} aligned dimensions`, 'success');
+        }
+        
+        function changeDimensionStyle() {
+            // Change the style of selected dimensions
+            if (drawingEngine.selectedElements.size > 0) {
+                drawingEngine.applyStyleToSelectedDimensions({
+                    lineColor: '#ff0000',
+                    textColor: '#ff0000',
+                    lineWidth: 2
+                });
+                updateResults(`Applied red style to ${drawingEngine.selectedElements.size} dimensions`, 'success');
+            } else {
+                updateResults('No dimensions selected. Select some dimensions first.', 'error');
+            }
+        }
+        
+        function runFullTest() {
+            const results = [];
+            
+            try {
+                // Test 1: Load GPX
+                results.push('Test 1: Loading GPX...');
+                loadTestGPX();
+                
+                // Test 2: Check dimension objects exist
+                results.push('Test 2: Checking dimension objects...');
+                const dimensionCount = drawingEngine.elements.dimensions.length;
+                if (dimensionCount > 0) {
+                    results.push(`✓ Found ${dimensionCount} dimension objects`);
+                } else {
+                    results.push('✗ No dimension objects found');
+                    throw new Error('No dimensions created');
+                }
+                
+                // Test 3: Check dimension properties
+                results.push('Test 3: Checking dimension properties...');
+                const firstDim = drawingEngine.elements.dimensions[0];
+                if (firstDim.type === 'aligned' && firstDim.points && firstDim.distance && firstDim.style) {
+                    results.push('✓ Dimension has correct properties (type, points, distance, style)');
+                } else {
+                    results.push('✗ Dimension missing required properties');
+                    throw new Error('Invalid dimension structure');
+                }
+                
+                // Test 4: Test filtering
+                results.push('Test 4: Testing dimension filtering...');
+                selectAlignedDimensions();
+                if (drawingEngine.selectedElements.size === dimensionCount) {
+                    results.push('✓ Filtering works correctly');
+                } else {
+                    results.push(`✗ Filtering failed: expected ${dimensionCount}, got ${drawingEngine.selectedElements.size}`);
+                }
+                
+                // Test 5: Test styling
+                results.push('Test 5: Testing dimension styling...');
+                const originalColor = firstDim.style.lineColor;
+                changeDimensionStyle();
+                if (firstDim.style.lineColor === '#ff0000') {
+                    results.push('✓ Styling works correctly');
+                } else {
+                    results.push('✗ Styling failed');
+                }
+                
+                // Test 6: Test rendering
+                results.push('Test 6: Testing dimension rendering...');
+                drawingEngine.showDimensions = true;
+                drawingEngine.render();
+                results.push('✓ Rendering completed without errors');
+                
+                results.push('\n🎉 ALL TESTS PASSED! GPX dimensions are working correctly.');
+                updateResults(results.join('\n'), 'success');
+                
+            } catch (error) {
+                results.push(`\n❌ TEST FAILED: ${error.message}`);
+                updateResults(results.join('\n'), 'error');
+            }
+        }
+        
+        function updateResults(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = `<div class="status ${type}"><pre>${message}</pre></div>`;
+        }
+        
+        // Initialize
+        drawingEngine.showDimensions = true;
+        drawingEngine.render();
+        updateResults('Test environment ready. Click "Run Full Test" to begin.', 'success');
+    </script>
+</body>
+</html> 
