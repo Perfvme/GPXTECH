@@ -328,200 +328,200 @@
 .options-compact {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
 }
 
 .checkbox-label-compact {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
     cursor: pointer;
-    font-size: 10px;
-    color: #3c4043;
-    padding: 1px 0;
+    font-size: 9px;
+    color: var(--text-secondary);
+    padding: 0px 0;
 }
 
 .checkbox-label-compact input[type="checkbox"] {
-    width: 11px;
-    height: 11px;
+    width: 10px;
+    height: 10px;
     cursor: pointer;
-    accent-color: #1a73e8;
+    accent-color: var(--accent-color);
 }
 
 /* Compact Selection Controls */
 .selection-controls-compact {
     display: flex;
-    gap: 3px;
-    margin-bottom: 4px;
+    gap: 2px;
+    margin-bottom: 3px;
 }
 
 .selection-btn-compact {
     flex: 1;
-    height: 26px;
-    border: 1px solid #dadce0;
-    background: white;
-    border-radius: 4px;
+    height: 24px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    border-radius: 3px;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
-    color: #5f6368;
+    font-size: 10px;
+    color: var(--text-secondary);
 }
 
 .selection-btn-compact:hover {
-    border-color: #1a73e8;
-    background: #f8f9fa;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    border-color: var(--accent-color-hover);
+    background: var(--bg-secondary);
+    box-shadow: 0 1px 2px var(--shadow-small);
 }
 
 .filter-controls-compact {
-    margin-bottom: 4px;
+    margin-bottom: 3px;
 }
 
 .compact-select {
     width: 100%;
-    padding: 3px 5px;
-    border: 1px solid #dadce0;
-    border-radius: 4px;
+    padding: 2px 4px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
     font-size: 10px;
-    background: white;
-    color: #3c4043;
+    background: var(--bg-primary);
+    color: var(--text-primary);
 }
 
 /* Compact Batch Controls */
 .batch-controls-compact {
     display: flex;
-    gap: 3px;
-    margin-bottom: 4px;
+    gap: 2px;
+    margin-bottom: 3px;
 }
 
 .batch-btn-compact {
-    width: 26px;
-    height: 26px;
-    border: 1px solid #dadce0;
-    background: white;
-    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    border-radius: 3px;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 10px;
-    color: #5f6368;
+    font-size: 9px;
+    color: var(--text-secondary);
 }
 
 .batch-btn-compact:hover {
-    border-color: #1a73e8;
-    background: #f8f9fa;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    border-color: var(--accent-color-hover);
+    background: var(--bg-secondary);
+    box-shadow: 0 1px 2px var(--shadow-small);
 }
 
 .batch-name-controls {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
 }
 
 .compact-input {
     width: 100%;
-    padding: 3px 5px;
-    border: 1px solid #dadce0;
-    border-radius: 4px;
+    padding: 2px 4px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
     font-size: 10px;
-    color: #3c4043;
+    color: var(--text-primary);
 }
 
 .batch-name-options {
     display: flex;
     align-items: center;
-    gap: 3px;
+    gap: 2px;
 }
 
 .checkbox-item-compact {
     display: flex;
     align-items: center;
-    gap: 3px;
+    gap: 2px;
     flex: 1;
-    font-size: 9px;
-    color: #5f6368;
+    font-size: 8px;
+    color: var(--text-secondary);
 }
 
 .checkbox-item-compact input[type="checkbox"] {
-    width: 11px;
-    height: 11px;
-    accent-color: #1a73e8;
+    width: 10px;
+    height: 10px;
+    accent-color: var(--accent-color);
 }
 
 /* Tool Options */
 .tool-options {
-    margin: 6px 0;
-    padding: 6px;
+    margin: 4px 0;
+    padding: 4px;
     background: var(--bg-secondary);
-    border-radius: 4px;
-    border: 1px solid #e9ecef;
+    border-radius: 3px;
+    border: 1px solid var(--border-light);
 }
 
 .tool-options .checkbox-item {
     margin: 0;
-    font-size: 11px;
-    color: #3c4043;
-    padding: 2px 0;
+    font-size: 10px;
+    color: var(--text-primary);
+    padding: 1px 0;
 }
 
 .tool-options .checkbox-item input[type="checkbox"] {
-    width: 12px;
-    height: 12px;
-    accent-color: #1a73e8;
+    width: 11px;
+    height: 11px;
+    accent-color: var(--accent-color);
 }
 
 /* Undo/Redo Controls */
 .undo-redo-controls {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 3px;
-    margin-top: 6px;
-    padding: 6px;
-    background: #f8f9fa;
-    border-radius: 4px;
-    border: 1px solid #f1f3f4;
+    gap: 2px;
+    margin-top: 4px;
+    padding: 4px;
+    background: var(--bg-secondary-alt);
+    border-radius: 3px;
+    border: 1px solid var(--border-light);
 }
 
 .undo-redo-controls .tool-btn-icon {
-    height: 32px;
-    font-size: 12px;
+    height: 28px;
+    font-size: 11px;
 }
 
 .undo-redo-controls .tool-btn-icon:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
-    background: #f5f5f5;
+    background: var(--bg-disabled);
 }
 
 .undo-redo-controls .tool-btn-icon:disabled:hover {
-    border-color: #e0e0e0;
-    background: #f5f5f5;
+    border-color: var(--border-color);
+    background: var(--bg-disabled);
 }
 
 /* Selection Controls */
 .selection-controls {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-bottom: 15px;
+    gap: 6px;
+    margin-bottom: 10px;
 }
 
 .selection-btn {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
+    gap: 6px;
+    padding: 6px 10px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 3px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-primary);
     transition: all 0.2s ease;
 }
@@ -536,40 +536,40 @@
 }
 
 .selection-btn i {
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .filter-controls {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .filter-controls label {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     color: var(--text-primary);
 }
 
 .filter-controls select {
-    padding: 6px 8px;
+    padding: 5px 7px;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 3px;
     background: var(--bg-primary);
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-primary);
 }
 
 /* Batch Controls */
 .batch-controls {
-    margin-top: 15px;
-    padding-top: 15px;
+    margin-top: 10px;
+    padding-top: 10px;
     border-top: 1px solid var(--border-color);
 }
 
 .batch-controls h4 {
-    margin: 0 0 10px 0;
-    font-size: 13px;
+    margin: 0 0 8px 0;
+    font-size: 12px;
     color: var(--text-primary);
     font-weight: 600;
 }
@@ -578,23 +578,23 @@
 .batch-name-change {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-bottom: 12px;
+    gap: 5px;
+    margin-bottom: 10px;
 }
 
 .batch-type-change label,
 .batch-name-change label {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-secondary);
     font-weight: 500;
 }
 
 .batch-controls select,
 .batch-controls input {
-    padding: 6px 8px;
+    padding: 5px 7px;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 12px;
+    border-radius: 3px;
+    font-size: 11px;
     background: var(--bg-primary);
     color: var(--text-primary);
 }
@@ -602,44 +602,44 @@
 .batch-btn {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    background: #007bff;
-    color: white;
+    gap: 5px;
+    padding: 5px 9px;
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
     border: none;
-    border-radius: 4px;
+    border-radius: 3px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 11px;
     transition: all 0.2s ease;
 }
 
 .batch-btn:hover {
-    background: #0056b3;
+    background: var(--btn-primary-hover-bg);
 }
 
 .batch-btn:active {
-    background: #004085;
+    background: var(--btn-primary-active-bg);
 }
 
 .batch-btn:disabled {
-    background: #6c757d;
+    background: var(--btn-disabled-bg);
     cursor: not-allowed;
 }
 
 .batch-btn i {
-    font-size: 12px;
+    font-size: 11px;
 }
 
 .naming-options {
-    margin: 6px 0;
+    margin: 4px 0;
 }
 
 .naming-options .checkbox-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 11px;
-    color: #6c757d;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--text-secondary);
 }
 
 .naming-options .checkbox-item input[type="checkbox"] {
@@ -647,17 +647,17 @@
 }
 
 .naming-options .checkmark {
-    width: 16px;
-    height: 16px;
-    border: 1px solid #dee2e6;
-    border-radius: 3px;
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--border-light);
+    border-radius: 2px;
     position: relative;
-    background: white;
+    background: var(--bg-primary);
 }
 
 .naming-options .checkbox-item input[type="checkbox"]:checked + .checkmark {
-    background: #007bff;
-    border-color: #007bff;
+    background: var(--accent-color);
+    border-color: var(--accent-color);
 }
 
 .naming-options .checkbox-item input[type="checkbox"]:checked + .checkmark::after {
@@ -666,22 +666,22 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    color: white;
-    font-size: 10px;
+    color: var(--text-inverse);
+    font-size: 9px;
     font-weight: bold;
 }
 
 .filter-controls select:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px var(--shadow-accent);
 }
 
 /* Drag selection overlay */
 .drag-selection-overlay {
     position: absolute;
-    border: 2px dashed #007bff;
-    background: rgba(0, 123, 255, 0.1);
+    border: 2px dashed var(--accent-color);
+    background: var(--accent-color-light);
     pointer-events: none;
     z-index: 1000;
 }
@@ -690,22 +690,22 @@
 .options-compact-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr); /* Three icons in a row */
-    gap: 3px;
+    gap: 2px;
 }
 
 .checkbox-item-icon {
     width: 100%;
-    height: 32px;
+    height: 28px;
     border: 1px solid var(--border-color);
     background: var(--bg-tertiary);
     color: var(--text-secondary);
-    border-radius: 4px;
+    border-radius: 3px;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
+    font-size: 12px;
     position: relative; /* For absolute positioning of checkbox */
 }
 
@@ -719,23 +719,46 @@
 }
 
 .checkbox-item-icon i {
-    font-size: 16px;
+    font-size: 14px;
     color: var(--text-secondary);
     pointer-events: none; /* Allow clicks to pass through to the hidden checkbox */
 }
 
 .checkbox-item-icon:hover {
-    border-color: #1a73e8;
+    border-color: var(--accent-color-hover);
     background: var(--bg-secondary);
-    box-shadow: 0 1px 2px var(--shadow-medium);
+    box-shadow: 0 1px 2px var(--shadow-small);
 }
 
 .checkbox-item-icon input[type="checkbox"]:checked + i {
-    color: #1a73e8; /* Change icon color when checked */
+    color: var(--accent-color-active); /* Change icon color when checked */
 }
 
 .checkbox-item-icon input[type="checkbox"]:checked {
-    border-color: #1a73e8;
-    background: #e8f0fe;
-    box-shadow: 0 1px 3px rgba(26,115,232,0.2);
+    border-color: var(--accent-color-active);
+    background: var(--accent-color-lightest);
+    box-shadow: 0 1px 3px var(--shadow-accent);
+}
+
+.tool-section h3 {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.tool-section h4 {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-light);
 }

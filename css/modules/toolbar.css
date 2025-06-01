@@ -8,6 +8,7 @@
     padding: 8px;
     overflow-y: auto;
     box-shadow: 2px 0 8px var(--shadow-light);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .tool-section {

@@ -14,37 +14,38 @@
 .dimension-controls-new {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--dc-text-color);
-    padding: 10px;
+    padding: 8px;
     background-color: var(--dc-bg-color);
-    border-radius: 6px;
-    font-size: 13px;
+    border-radius: 5px;
+    font-size: 12px;
 }
 
 .dimension-controls-new h3 {
-    font-size: 16px;
-    margin-bottom: 15px;
+    font-size: 15px;
+    margin-bottom: 12px;
     color: var(--dc-text-color);
     border-bottom: 1px solid var(--dc-border-color);
-    padding-bottom: 8px;
+    padding-bottom: 6px;
 }
 
 /* Collapsible Groups */
 .dc-group {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     border: 1px solid var(--dc-border-color);
     border-radius: 4px;
-    overflow: hidden; /* Ensures border-radius is respected by children */
+    overflow: hidden;
 }
 
 .dc-group-header {
     background-color: var(--dc-header-bg);
-    padding: 8px 12px;
+    padding: 6px 10px;
     cursor: pointer;
     font-weight: 500;
     display: flex;
     justify-content: space-between;
     align-items: center;
     transition: background-color 0.2s;
+    font-size: 13px;
 }
 
 .dc-group-header:hover {
@@ -52,29 +53,29 @@
 }
 
 .dc-group-header::after {
-    content: '▼'; /* Collapsed state */
-    font-size: 10px;
+    content: '▼';
+    font-size: 9px;
     transition: transform 0.2s ease-out;
 }
 
 .dc-group[open] > .dc-group-header::after {
-    transform: rotate(-180deg); /* Expanded state */
+    transform: rotate(-180deg);
 }
 
 .dc-group > div:not(.dc-group-header) {
-    padding: 12px;
-    background-color: var(--dc-bg-color); /* Slightly different from main bg for depth */
+    padding: 10px;
+    background-color: var(--dc-bg-color);
 }
 
 /* Grid Layout for Controls */
 .dc-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 8px;
 }
 
 .dc-grid-display {
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
 }
 
 .dc-control {
@@ -83,13 +84,13 @@
 }
 
 .dc-control-full {
-    grid-column: 1 / -1; /* Span full width */
+    grid-column: 1 / -1;
 }
 
 .dc-label-sm {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--dc-label-color);
-    margin-bottom: 4px;
+    margin-bottom: 3px;
 }
 
 /* Input Styles */
@@ -100,8 +101,8 @@
     color: var(--dc-text-color);
     border: 1px solid var(--dc-input-border);
     border-radius: 3px;
-    padding: 6px 8px;
-    font-size: 12px;
+    padding: 4px 6px;
+    font-size: 11px;
     width: 100%;
     box-sizing: border-box;
 }
@@ -114,35 +115,35 @@
 }
 
 .dc-color-picker {
-    padding: 2px;
-    height: 28px; /* Consistent height with other inputs */
+    padding: 1px;
+    height: 26px;
 }
 
 .dc-slider {
-    width: calc(100% - 30px); /* Accommodate value display */
-    margin-right: 5px;
+    width: calc(100% - 25px);
+    margin-right: 4px;
 }
 
 .dc-control-full .dc-slider + span {
-    font-size: 12px;
-    min-width: 25px; /* Ensure space for value */
+    font-size: 11px;
+    min-width: 20px;
     text-align: right;
 }
 
 /* Checkbox Styles */
 .dc-checkbox-group {
     display: flex;
-    gap: 15px;
+    gap: 10px;
     align-items: center;
-    margin-bottom: 10px; /* If they are stacked */
-    grid-column: 1 / -1; /* Span full width in display grid */
+    margin-bottom: 8px;
+    grid-column: 1 / -1;
 }
 
 .dc-checkbox-label {
     display: flex;
     align-items: center;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--dc-label-color);
 }
 
@@ -155,12 +156,12 @@
 .dc-checkmark {
     position: relative;
     display: inline-block;
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     background-color: var(--dc-input-bg);
     border: 1px solid var(--dc-input-border);
-    border-radius: 3px;
-    margin-right: 6px;
+    border-radius: 2px;
+    margin-right: 5px;
     transition: background-color 0.2s, border-color 0.2s;
 }
 
@@ -173,12 +174,12 @@
     content: "";
     position: absolute;
     display: none;
-    left: 5px;
-    top: 2px;
-    width: 4px;
-    height: 8px;
+    left: 4px;
+    top: 1px;
+    width: 3px;
+    height: 7px;
     border: solid white;
-    border-width: 0 2px 2px 0;
+    border-width: 0 1.5px 1.5px 0;
     transform: rotate(45deg);
 }
 
@@ -187,12 +188,12 @@
 }
 
 /* Responsive adjustments if needed */
-@media (max-width: 350px) { /* Example breakpoint for very narrow panels */
+@media (max-width: 350px) {
     .dc-grid {
-        grid-template-columns: 1fr; /* Stack controls */
+        grid-template-columns: 1fr;
     }
     .dc-preset-buttons {
-        flex-wrap: wrap; /* Allow preset buttons to wrap */
+        flex-wrap: wrap;
     }
     .dc-btn {
         flex-grow: 1;
