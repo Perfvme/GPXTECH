@@ -577,7 +577,10 @@ DrawingEngine.prototype.drawAlignedDimension = function(dimensionData) {
     const style = dimensionData.style || this.dimensionStyle.aligned; 
     const realDistance = dimensionData.distance; // This is the actual measured distance
 
-    this.ctx.save();
+    this.ctx.save(); // Save context for the entire dimension drawing operation
+
+    // Draw the main dimension line and extension lines with line opacity
+    this.ctx.save(); // Save context for line opacity
     this.ctx.globalAlpha = (style.lineOpacity !== undefined ? style.lineOpacity : 100) / 100;
     this.ctx.strokeStyle = style.lineColor;
     this.ctx.lineWidth = style.lineWidth || 1;
@@ -620,6 +623,7 @@ DrawingEngine.prototype.drawAlignedDimension = function(dimensionData) {
         this.drawArrowHead(dimLineP1.x, dimLineP1.y, angle + Math.PI, style); // Arrow at start of dim line
         this.drawArrowHead(dimLineP2.x, dimLineP2.y, angle, style);         // Arrow at end of dim line
     }
+    this.ctx.restore(); // Restore context after line opacity has been applied
 
     // Text placement
     let textX, textY;
