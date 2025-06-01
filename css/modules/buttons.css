@@ -74,6 +74,41 @@
     background: #e0a800;
 }
 
+.icon-toggle {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.icon-toggle:hover {
+    background: var(--bg-tertiary);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.icon-toggle .fas {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .icon-toggle .fas {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .icon-toggle {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .icon-toggle:hover {
+    background: var(--bg-tertiary);
+}
+
 /* Control Buttons */
 .control-btn {
     width: 40px;

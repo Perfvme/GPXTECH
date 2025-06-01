@@ -163,6 +163,27 @@ DrawingEngine.prototype.utmToLatLon = function(utmX, utmY, zone) {
 };
 
 /**
+ * Calculate angle between three points (p1-p2-p3)
+ */
+DrawingEngine.prototype.calculateAngle3Points = function(p1, p2, p3) {
+    const v1 = { x: p1.x - p2.x, y: p1.y - p2.y };
+    const v2 = { x: p3.x - p2.x, y: p3.y - p2.y };
+
+    const dotProduct = v1.x * v2.x + v1.y * v2.y;
+    const magnitude1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
+    const magnitude2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+
+    if (magnitude1 === 0 || magnitude2 === 0) {
+        return 0; // Avoid division by zero
+    }
+
+    let angleRad = Math.acos(dotProduct / (magnitude1 * magnitude2));
+    let angleDeg = angleRad * 180 / Math.PI;
+
+    return angleDeg;
+};
+
+/**
  * Enable real coordinate system for manual drawing
  */
 DrawingEngine.prototype.enableRealCoordinates = function(referencePoint = null) {

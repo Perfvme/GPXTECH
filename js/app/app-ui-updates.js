@@ -144,20 +144,17 @@ ElectricalCADApp.prototype.toggleDarkMode = function() {
     const body = document.body;
     const darkModeBtn = document.getElementById('darkModeToggle');
     const icon = darkModeBtn.querySelector('i');
-    const text = darkModeBtn.childNodes[1];
     
     if (body.getAttribute('data-theme') === 'dark') {
         // Switch to light mode
         body.removeAttribute('data-theme');
-        icon.className = 'fas fa-moon';
-        darkModeBtn.childNodes[1].textContent = ' Dark Mode';
+        icon.className = 'fas fa-sun';
         localStorage.setItem('theme', 'light');
         this.showNotification('Switched to light mode', 'success');
     } else {
         // Switch to dark mode
         body.setAttribute('data-theme', 'dark');
-        icon.className = 'fas fa-sun';
-        darkModeBtn.childNodes[1].textContent = ' Light Mode';
+        icon.className = 'fas fa-moon';
         localStorage.setItem('theme', 'dark');
         this.showNotification('Switched to dark mode', 'success');
     }
@@ -179,8 +176,7 @@ ElectricalCADApp.prototype.initializeTheme = function() {
     if (savedTheme === 'dark') {
         document.body.setAttribute('data-theme', 'dark');
         if (icon) {
-            icon.className = 'fas fa-sun';
-            darkModeBtn.childNodes[1].textContent = ' Light Mode';
+            icon.className = 'fas fa-moon';
         }
     }
 };

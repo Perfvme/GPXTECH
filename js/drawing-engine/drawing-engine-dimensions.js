@@ -4,19 +4,21 @@
  */
 
 /**
- * Draw dimension (angle dimensions)
+ * Draw dimension (main entry for all types)
  */
 DrawingEngine.prototype.drawDimension = function(dimension) {
-    if (dimension.type !== 'angle') return;
-    
     this.ctx.save();
-    
-    if (dimension.method === '3-point') {
-        this.drawAngleDimension3Point(dimension);
-    } else if (dimension.method === '2-line') {
-        this.drawAngleDimension2Line(dimension);
+
+    if (dimension.type === 'angle') {
+        if (dimension.method === '3-point') {
+            this.drawAngleDimension3Point(dimension);
+        } else if (dimension.method === '2-line') {
+            this.drawAngleDimension2Line(dimension);
+        }
+    } else if (dimension.type === 'aligned') {
+        this.drawAlignedDimension(dimension);
     }
-    
+
     this.ctx.restore();
 };
 
@@ -148,7 +150,7 @@ DrawingEngine.prototype.formatAngleText = function(angle, style) {
 /**
  * Draw dimension text with background and styling
  */
-DrawingEngine.prototype.drawDimensionText = function(text, x, y, style) {
+DrawingEngine.prototype.drawDimensionText = function(text, x, y, style, angle = 0) {
     this.ctx.save();
     
     // Set font
@@ -162,6 +164,10 @@ DrawingEngine.prototype.drawDimensionText = function(text, x, y, style) {
     const textWidth = metrics.width;
     const textHeight = style.textSize;
     
+    // Translate and rotate for aligned text
+    this.ctx.translate(x, y);
+    this.ctx.rotate(angle);
+
     // Draw background if enabled
     if (style.showBackground) {
         const padding = 4;
@@ -171,8 +177,8 @@ DrawingEngine.prototype.drawDimensionText = function(text, x, y, style) {
         this.ctx.globalAlpha = bgOpacity;
         this.ctx.fillStyle = style.backgroundColor || '#ffffff';
         this.ctx.fillRect(
-            x - textWidth/2 - padding,
-            y - textHeight/2 - padding,
+            -textWidth/2 - padding,
+            -textHeight/2 - padding,
             textWidth + padding * 2,
             textHeight + padding * 2
         );
@@ -181,7 +187,7 @@ DrawingEngine.prototype.drawDimensionText = function(text, x, y, style) {
     
     // Draw text
     this.ctx.fillStyle = style.textColor;
-    this.ctx.fillText(text, x, y);
+    this.ctx.fillText(text, 0, 0);
     
     this.ctx.restore();
 };
@@ -248,17 +254,16 @@ DrawingEngine.prototype.drawAnglePreview = function(preview) {
         
         // Draw lines
         this.ctx.beginPath();
-        this.ctx.moveTo(p2.x, p2.y);
-        this.ctx.lineTo(p1.x, p1.y);
+        this.ctx.moveTo(p1.x, p1.y);
+        this.ctx.lineTo(p2.x, p2.y);
         this.ctx.moveTo(p2.x, p2.y);
         this.ctx.lineTo(p3.x, p3.y);
         this.ctx.stroke();
         
-        // Draw preview arc
+        // Draw arc
         const radius = 30;
         const angle1 = Math.atan2(p1.y - p2.y, p1.x - p2.x);
         const angle2 = Math.atan2(p3.y - p2.y, p3.x - p2.x);
-        
         this.ctx.beginPath();
         this.ctx.arc(p2.x, p2.y, radius, angle1, angle2);
         this.ctx.stroke();
@@ -269,11 +274,11 @@ DrawingEngine.prototype.drawAnglePreview = function(preview) {
         const textX = p2.x + Math.cos(midAngle) * (radius + 20);
         const textY = p2.y + Math.sin(midAngle) * (radius + 20);
         
-        this.ctx.fillStyle = '#ff6b6b';
-        this.ctx.font = `${this.dimensionStyle.textSize}px Arial`;
+        this.ctx.fillStyle = this.dimensionStyle.textColor;
+        this.ctx.font = `${this.dimensionStyle.textSize}px ${this.dimensionStyle.font}`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(`${angle}${this.dimensionStyle.unit}`, textX, textY);
+        this.ctx.fillText(`${angle.toFixed(this.dimensionStyle.precision)}°`, textX, textY);
     }
     
     this.ctx.restore();
@@ -534,3 +539,159 @@ DrawingEngine.prototype.showAngleInstructions = function(message) {
         }
     }, 3000);
 };
+
+/**
+ * Draw aligned dimension
+ */
+DrawingEngine.prototype.drawAlignedDimension = function(dimension) {
+    const [p1, p2] = dimension.points;
+    const style = dimension.style;
+    const distance = dimension.distance;
+
+    // Calculate angle for orientation
+    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+    // Set line style
+    this.ctx.save();
+    this.ctx.globalAlpha = (style.lineOpacity || 100) / 100;
+    this.ctx.strokeStyle = style.lineColor;
+    this.ctx.lineWidth = style.lineWidth || 1;
+    this.setLineStyle(style.lineStyle || 'solid');
+
+    // Draw dimension line (offset from the actual line)
+    const offset = style.offset || 20; // Default offset
+    const offsetX = offset * Math.sin(angle);
+    const offsetY = -offset * Math.cos(angle);
+
+    const dimP1 = { x: p1.x + offsetX, y: p1.y + offsetY };
+    const dimP2 = { x: p2.x + offsetX, y: p2.y + offsetY };
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(dimP1.x, dimP1.y);
+    this.ctx.lineTo(dimP2.x, dimP2.y);
+    this.ctx.stroke();
+
+    // Draw extension lines
+    const extension = style.extension || 10; // Default extension
+    this.ctx.beginPath();
+    this.ctx.moveTo(p1.x, p1.y);
+    this.ctx.lineTo(dimP1.x + extension * Math.sin(angle), dimP1.y - extension * Math.cos(angle)); // Adjusted extension line start
+    this.ctx.moveTo(p2.x, p2.y);
+    this.ctx.lineTo(dimP2.x + extension * Math.sin(angle), dimP2.y - extension * Math.cos(angle)); // Adjusted extension line start
+    this.ctx.stroke();
+
+    // Draw arrows if enabled
+    if (style.showArrows) {
+        this.drawArrowHead(dimP1.x, dimP1.y, angle + Math.PI, style);
+        this.drawArrowHead(dimP2.x, dimP2.y, angle, style);
+    }
+
+    this.ctx.restore(); // Restore context to remove line opacity for subsequent drawings
+
+    // Format distance text
+    const distanceText = this.formatDistanceText(distance, style);
+
+    // Draw text (with full opacity)
+    const textX = (dimP1.x + dimP2.x) / 2;
+    const textY = (dimP1.y + dimP2.y) / 2;
+
+    this.ctx.save(); // Save context before drawing text
+    this.ctx.globalAlpha = 1; // Ensure text is fully opaque
+    this.drawDimensionText(distanceText, textX, textY, style, angle); // Pass angle for rotation
+    this.ctx.restore(); // Restore context after drawing text
+};
+
+/**
+ * Format distance text with prefix, suffix, and unit
+ */
+DrawingEngine.prototype.formatDistanceText = function(distance, style) {
+    let formattedDistance = distance.toFixed(style.precision);
+    let displayUnit = style.unit;
+
+    // For aligned dimensions, distance is already in real-world units (meters).
+    // No further conversion needed, just formatting and unit display.
+    // If the style's unit is explicitly 'm', use 'm'. Otherwise, it defaults to 'px'.
+    if (style.unit === 'm') {
+        displayUnit = 'm';
+    } else if (style.unit === 'px') {
+        displayUnit = 'px';
+    }
+    
+    return `${style.prefix}${formattedDistance}${displayUnit}${style.suffix}`;
+};
+
+/**
+ * Draw aligned dimension preview
+ */
+DrawingEngine.prototype.drawAlignedDimensionPreview = function(preview) {
+    this.ctx.save();
+    this.ctx.strokeStyle = '#ff6b6b'; // Preview color
+    this.ctx.lineWidth = 2;
+    this.ctx.setLineDash([5, 5]); // Dashed line for preview
+
+    if (preview.points.length === 1) {
+        // Just draw the line from the first point to the cursor
+        const [p1, p2] = [preview.points[0], preview.currentPoint];
+        this.ctx.beginPath();
+        this.ctx.moveTo(p1.x, p1.y);
+        this.ctx.lineTo(p2.x, p2.y);
+        this.ctx.stroke();
+
+        // Optionally draw a temporary aligned dimension for live preview
+        const tempDimension = {
+            type: 'aligned',
+            points: [p1, p2],
+            style: preview.style, // Use the current style for preview
+            distance: this.calculateDistance(p1.x, p1.y, p2.x, p2.y)
+        };
+        this.drawAlignedDimension(tempDimension);
+
+    } else if (preview.points.length === 2) {
+        // Draw the full aligned dimension preview (already handled by drawAlignedDimension)
+        const [p1, p2] = preview.points;
+        const tempDimension = {
+            type: 'aligned',
+            points: [p1, p2],
+            style: preview.style,
+            distance: this.calculateDistance(p1.x, p1.y, p2.x, p2.y)
+        };
+        this.drawAlignedDimension(tempDimension);
+    }
+
+    this.ctx.restore();
+};
+
+/**
+ * Draw dimension preview (main entry for all types)
+ */
+DrawingEngine.prototype.drawDimensionPreview = function(preview) {
+    if (preview.type === 'angle') {
+        this.drawAnglePreview(preview);
+    } else if (preview.type === 'aligned') {
+        this.drawAlignedDimensionPreview(preview);
+    }
+};
+
+// Define conversion rates (example values, adjust as needed)
+DrawingEngine.conversions = {
+    pxToMm: 0.264583, // 1 pixel = 0.264583 mm (approx 96 DPI)
+    pxToCm: 0.0264583,
+    pxToM: 0.0000264583,
+    pxToKm: 0.0000000264583,
+    pxToIn: 0.0104167, // 1 pixel = 0.0104167 inches
+    pxToFt: 0.000868056,
+    pxToYd: 0.000289352,
+    pxToMi: 0.0000000164629
+};
+
+// Add new dimension type to supported types if necessary
+// DrawingEngine.supportedDimensionTypes.push('aligned'); // Assuming such an array exists
+
+// Example of how to integrate it into the main draw function
+// DrawingEngine.prototype.draw = function() {
+//     // ... existing drawing logic ...
+//     this.dimensions.forEach(dim => {
+//         this.drawDimension(dim);
+//     });
+//     // ... existing drawing logic ...
+// };

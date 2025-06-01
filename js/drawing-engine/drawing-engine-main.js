@@ -59,6 +59,12 @@ class DrawingEngine {
             lines: [],
             previewAngle: null
         };
+        // Aligned dimension tool state
+        this.alignedDimensionState = {
+            mode: 'none', // 'none', 'selecting-first', 'selecting-second'
+            points: [],
+            previewDistance: null
+        };
         this.dimensionStyle = {
             textSize: 14,
             textColor: '#000000',
@@ -128,6 +134,13 @@ class DrawingEngine {
             this.resetAngleTool();
         } else {
             this.angleState.mode = 'selecting-first';
+        }
+        
+        // Reset aligned dimension tool state when switching tools
+        if (tool !== 'aligned-dimension') {
+            this.resetAlignedDimensionTool();
+        } else {
+            this.alignedDimensionState.mode = 'selecting-first';
         }
         
         switch (tool) {
@@ -205,5 +218,28 @@ class DrawingEngine {
         this.panX = 0;
         this.panY = 0;
         this.render();
+    }
+
+    /**
+     * Reset angle tool state
+     */
+    resetAngleTool() {
+        this.angleState = {
+            mode: 'none',
+            points: [],
+            lines: [],
+            previewAngle: null
+        };
+    }
+
+    /**
+     * Reset aligned dimension tool state
+     */
+    resetAlignedDimensionTool() {
+        this.alignedDimensionState = {
+            mode: 'none',
+            points: [],
+            previewDistance: null
+        };
     }
 }
