@@ -255,39 +255,23 @@ DrawingEngine.prototype.selectByFilter = function(filterType) {
     let filteredElements = [];
 
     switch (filterType) {
-        case 'all':
-            filteredElements = [
-                ...this.elements.poles,
-                ...this.elements.lines,
-                ...this.elements.dimensions
-            ];
-            break;
-        case 'poles':
+        case 'pole':
             filteredElements = this.elements.poles;
             break;
-        case 'lines':
+        case 'line':
             filteredElements = this.elements.lines;
             break;
-        case 'tiang-baja':
-            filteredElements = this.elements.poles.filter(pole => pole.type === 'tiang-baja-existing' || pole.type === 'tiang-baja-rencana');
-            break;
-        case 'tiang-beton':
-            filteredElements = this.elements.poles.filter(pole => pole.type === 'tiang-beton-existing' || pole.type === 'tiang-beton-rencana');
-            break;
-        case 'gardu-portal':
-            filteredElements = this.elements.poles.filter(pole => pole.type === 'gardu-portal');
-            break;
-        case 'sutm':
-            filteredElements = this.elements.lines.filter(line => line.type === 'sutm-existing' || line.type === 'sutm-rencana');
-            break;
-        case 'sutr':
-            filteredElements = this.elements.lines.filter(line => line.type === 'sutr-existing' || line.type === 'sutr-rencana');
+        case 'all':
+            filteredElements = [...this.elements.poles, ...this.elements.lines, ...this.elements.dimensions];
             break;
         case 'dimension-aligned':
             filteredElements = this.elements.dimensions.filter(dim => dim.type === 'aligned');
             break;
         case 'dimension-angular':
-            filteredElements = this.elements.dimensions.filter(dim => dim.type === 'angular');
+            filteredElements = this.elements.dimensions.filter(dim => dim.type === 'angle');
+            break;
+        case 'selected':
+            filteredElements = Array.from(this.selectedElements);
             break;
     }
 
@@ -369,8 +353,13 @@ DrawingEngine.prototype.batchChangeName = function(newName, useNumberedNames = f
  */
 DrawingEngine.prototype.applyStyleToSelectedDimensions = function(styleUpdates) {
     this.selectedElements.forEach(element => {
-        if (element.type === 'aligned' || element.type === 'angular') {
-            // Apply style updates directly to the dimension
+        if (element.type === 'aligned' || element.type === 'angle') {
+            // Apply style updates directly to the dimension's style object
+            // If the dimension's style property references the global style object,
+            // this will modify the global style. If it's a copy, it modifies the local copy.
+            // For batch updates, it's often desirable to update the individual element's style
+            // to the new settings, effectively creating a local override if it was previously referencing global.
+            // Given the current structure, Object.assign is fine.
             Object.assign(element.style, styleUpdates);
         }
     });

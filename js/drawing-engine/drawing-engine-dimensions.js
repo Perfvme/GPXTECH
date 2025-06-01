@@ -36,7 +36,7 @@ DrawingEngine.prototype.drawAngleDimension3Point = function(dimension) {
     
     // Set line style with opacity
     this.ctx.save();
-    this.ctx.globalAlpha = (style.lineOpacity || 100) / 100;
+    this.ctx.globalAlpha = style.lineOpacity / 100;
     this.ctx.strokeStyle = style.lineColor;
     this.ctx.lineWidth = style.lineWidth || 1;
     this.setLineStyle(style.lineStyle || 'solid');
@@ -94,7 +94,7 @@ DrawingEngine.prototype.drawAngleDimension2Line = function(dimension) {
     // Draw angle arc
     const radius = style.arcSize || 40;
     this.ctx.save();
-    this.ctx.globalAlpha = (style.lineOpacity || 100) / 100;
+    this.ctx.globalAlpha = style.lineOpacity / 100;
     this.ctx.strokeStyle = style.lineColor;
     this.ctx.lineWidth = style.lineWidth || 1;
     this.setLineStyle(style.lineStyle || 'solid');
@@ -187,7 +187,7 @@ DrawingEngine.prototype.drawDimensionText = function(text, x, y, style, angle = 
     // Draw background if enabled
     if (style.showBackground) {
         const padding = 4;
-        const bgOpacity = (style.backgroundOpacity || 80) / 100;
+        const bgOpacity = style.backgroundOpacity / 100;
         
         this.ctx.save();
         this.ctx.globalAlpha = bgOpacity;
@@ -202,8 +202,11 @@ DrawingEngine.prototype.drawDimensionText = function(text, x, y, style, angle = 
     }
     
     // Draw text
+    this.ctx.save(); // Save context before setting globalAlpha for text
+    this.ctx.globalAlpha = (style.textOpacity !== undefined ? style.textOpacity : 100) / 100; // Set text opacity
     this.ctx.fillStyle = style.textColor;
     this.ctx.fillText(text, 0, 0);
+    this.ctx.restore(); // Restore context after drawing text
     
     this.ctx.restore();
 };
@@ -233,7 +236,7 @@ DrawingEngine.prototype.drawArrowHead = function(x, y, angle, style) {
     const size = 8;
     
     this.ctx.save();
-    this.ctx.globalAlpha = (style.lineOpacity || 100) / 100;
+    this.ctx.globalAlpha = style.lineOpacity / 100;
     this.ctx.translate(x, y);
     this.ctx.rotate(angle);
     
@@ -402,7 +405,7 @@ DrawingEngine.prototype.createAngleDimension = function() {
             method: '3-point',
             points: [p1, p2, p3],
             angle: angle,
-            style: { ...this.dimensionStyle }
+            style: this.dimensionStyle.angle
         };
         
         this.elements.dimensions.push(dimension);
@@ -423,7 +426,7 @@ DrawingEngine.prototype.createAngleDimension = function() {
                 lines: [line1, line2],
                 intersection: intersection,
                 angle: angle,
-                style: { ...this.dimensionStyle }
+                style: this.dimensionStyle.angle
             };
             
             this.elements.dimensions.push(dimension);
@@ -455,7 +458,7 @@ DrawingEngine.prototype.calculateAngle3Points = function(p1, p2, p3) {
     const cosAngle = dot / (mag1 * mag2);
     const angle = Math.acos(Math.max(-1, Math.min(1, cosAngle))) * 180 / Math.PI;
     
-    return Math.round(angle * Math.pow(10, this.dimensionStyle.precision)) / Math.pow(10, this.dimensionStyle.precision);
+    return angle;
 };
 
 /**
@@ -474,7 +477,7 @@ DrawingEngine.prototype.calculateAngle2Lines = function(line1, line2) {
     const cosAngle = Math.abs(dot) / (mag1 * mag2);
     const angle = Math.acos(Math.max(-1, Math.min(1, cosAngle))) * 180 / Math.PI;
     
-    return Math.round(angle * Math.pow(10, this.dimensionStyle.precision)) / Math.pow(10, this.dimensionStyle.precision);
+    return angle;
 };
 
 /**
@@ -559,73 +562,96 @@ DrawingEngine.prototype.showAngleInstructions = function(message) {
 /**
  * Draw aligned dimension
  */
-DrawingEngine.prototype.drawAlignedDimension = function(dimension) {
-    const [p1, p2] = dimension.points;
-    const style = dimension.style;
-    
-    // Calculate the midpoint for text placement
-    const midX = (p1.x + p2.x) / 2;
-    const midY = (p1.y + p2.y) / 2;
+DrawingEngine.prototype.drawAlignedDimension = function(dimensionData) {
+    let startX, startY, endX, endY, dimensionX, dimensionY, dimensionText;
+    const style = this.dimensionStyle.aligned;
 
-    // Calculate the angle of the line for text rotation
-    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+    if (dimensionData.points && dimensionData.points.length >= 2) {
+        // This is a dimension created by the aligned dimension tool
+        const p1 = dimensionData.points[0];
+        const p2 = dimensionData.points[1];
+        startX = p1.x;
+        startY = p1.y;
+        endX = p2.x;
+        endY = p2.y;
+        dimensionX = (p1.x + p2.x) / 2;
+        dimensionY = (p1.y + p2.y) / 2;
+        // Format the distance value from the dimension object
+        dimensionText = this.formatDimensionText(dimensionData.distance, style, 'aligned');
+    } else if (dimensionData.startX !== undefined && dimensionData.dimension !== undefined) {
+        // This is a line object from GPX parsing
+        startX = dimensionData.startX;
+        startY = dimensionData.startY;
+        endX = dimensionData.endX;
+        endY = dimensionData.endY;
+        dimensionX = dimensionData.dimensionX;
+        dimensionY = dimensionData.dimensionY;
+        dimensionText = dimensionData.dimension; // Already formatted string
+    } else {
+        // Invalid data, do nothing
+        return;
+    }
 
-    // Calculate perpendicular offset for the dimension line and text
-    const offsetDistance = 30; // Adjust as needed for visual spacing
-    const offsetX = Math.sin(angle) * offsetDistance;
-    const offsetY = -Math.cos(angle) * offsetDistance;
-
-    // Dimension line points (offset from the main line)
-    const dimLine1StartX = p1.x + offsetX;
-    const dimLine1StartY = p1.y + offsetY;
-    const dimLine1EndX = p2.x + offsetX;
-    const dimLine1EndY = p2.y + offsetY;
-
-    // Extension lines from original points to dimension line
-    const extLine1StartX = p1.x;
-    const extLine1StartY = p1.y;
-    const extLine1EndX = p1.x + offsetX;
-    const extLine1EndY = p1.y + offsetY;
-
-    const extLine2StartX = p2.x;
-    const extLine2StartY = p2.y;
-    const extLine2EndX = p2.x + offsetX;
-    const extLine2EndY = p2.y + offsetY;
-
-    // Draw dimension lines
     this.ctx.save();
-    this.ctx.globalAlpha = (style.lineOpacity || 100) / 100;
+    this.ctx.globalAlpha = style.lineOpacity / 100;
     this.ctx.strokeStyle = style.lineColor;
     this.ctx.lineWidth = style.lineWidth || 1;
     this.setLineStyle(style.lineStyle || 'solid');
 
+    // Calculate the angle of the line
+    const angle = Math.atan2(endY - startY, endX - startX);
+
+    // Draw dimension line (usually perpendicular to the measured line)
+    // For simplicity, let's draw it directly on top of the line for now
+    // A more advanced implementation would offset it.
     this.ctx.beginPath();
-    // Main dimension line
-    this.ctx.moveTo(dimLine1StartX, dimLine1StartY);
-    this.ctx.lineTo(dimLine1EndX, dimLine1EndY);
-    // Extension lines
-    this.ctx.moveTo(extLine1StartX, extLine1StartY);
-    this.ctx.lineTo(extLine1EndX, extLine1EndY);
-    this.ctx.moveTo(extLine2StartX, extLine2StartY);
-    this.ctx.lineTo(extLine2EndX, extLine2EndY);
+    this.ctx.moveTo(startX, startY);
+    this.ctx.lineTo(endX, endY);
     this.ctx.stroke();
-    this.ctx.restore();
+
+    // Draw extension lines (small lines extending from the endpoints)
+    const extensionLineLength = 10; // Pixels
+    const offsetAngle = angle + Math.PI / 2; // Perpendicular angle
+
+    // Start extension line
+    this.ctx.beginPath();
+    this.ctx.moveTo(startX, startY);
+    this.ctx.lineTo(
+        startX + Math.cos(offsetAngle) * extensionLineLength,
+        startY + Math.sin(offsetAngle) * extensionLineLength
+    );
+    this.ctx.stroke();
+
+    // End extension line
+    this.ctx.beginPath();
+    this.ctx.moveTo(endX, endY);
+    this.ctx.lineTo(
+        endX + Math.cos(offsetAngle) * extensionLineLength,
+        endY + Math.sin(offsetAngle) * extensionLineLength
+    );
+    this.ctx.stroke();
 
     // Draw arrows if enabled
     if (style.showArrows) {
-        this.drawArrowHead(dimLine1StartX, dimLine1StartY, angle + Math.PI, style);
-        this.drawArrowHead(dimLine1EndX, dimLine1EndY, angle, style);
+        this.drawArrowHead(startX, startY, angle + Math.PI, style);
+        this.drawArrowHead(endX, endY, angle, style);
     }
 
-    // Format distance text
-    const distance = this.calculateDistance(p1.x, p1.y, p2.x, p2.y);
-    const dimensionText = this.formatDimensionText(distance, style, 'aligned');
+    // Draw text
+    // The text should be aligned with the line and offset slightly
+    const textOffset = 15; // Offset perpendicular to the line
+    const actualTextX = dimensionX + Math.cos(offsetAngle) * textOffset;
+    const actualTextY = dimensionY + Math.sin(offsetAngle) * textOffset;
 
-    // Draw text (offset perpendicular to the line)
-    const textX = midX + offsetX;
-    const textY = midY + offsetY;
-    
-    this.drawDimensionText(dimensionText, textX, textY, style, angle);
+    // Adjust text angle to be readable (horizontal or vertical)
+    let textAngle = angle;
+    if (textAngle > Math.PI / 2 || textAngle < -Math.PI / 2) {
+        textAngle += Math.PI; // Flip text for readability
+    }
+
+    this.drawDimensionText(dimensionText, actualTextX, actualTextY, style, textAngle);
+
+    this.ctx.restore();
 };
 
 /**
@@ -649,7 +675,7 @@ DrawingEngine.prototype.drawAlignedDimensionPreview = function(preview) {
         const tempDimension = {
             type: 'aligned',
             points: [p1, p2],
-            style: preview.style, // Use the current style for preview
+            style: this.dimensionStyle.aligned,
             distance: this.calculateDistance(p1.x, p1.y, p2.x, p2.y)
         };
         this.drawAlignedDimension(tempDimension);
@@ -660,7 +686,7 @@ DrawingEngine.prototype.drawAlignedDimensionPreview = function(preview) {
         const tempDimension = {
             type: 'aligned',
             points: [p1, p2],
-            style: preview.style,
+            style: this.dimensionStyle.aligned,
             distance: this.calculateDistance(p1.x, p1.y, p2.x, p2.y)
         };
         this.drawAlignedDimension(tempDimension);
@@ -867,4 +893,15 @@ DrawingEngine.prototype.isDimensionIntersectingRect = function(dimension, minX, 
     }
 
     return false;
+};
+
+/**
+ * Reset aligned dimension tool state
+ */
+DrawingEngine.prototype.resetAlignedDimensionTool = function() {
+    this.alignedDimensionState = {
+        mode: 'none',
+        points: [],
+        previewDistance: null
+    };
 };

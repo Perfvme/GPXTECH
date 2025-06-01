@@ -50,6 +50,7 @@ class DrawingEngine {
         this.gridSize = 20;
         this.showGrid = true;
         this.showNameLabels = true;
+        this.showDimensions = true;
         this.onElementsChanged = null; // Callback for when elements change
         
         // Angular dimension tool state
@@ -66,23 +67,47 @@ class DrawingEngine {
             previewDistance: null
         };
         this.dimensionStyle = {
-            textSize: 14,
-            textColor: '#000000',
-            lineColor: '#0066cc',
-            lineWidth: 1,
-            lineStyle: 'solid',
-            lineOpacity: 100,
-            arcSize: 30,
-            font: 'Arial',
-            textStyle: 'normal',
-            unit: '°',
-            precision: 1,
-            prefix: '',
-            suffix: '',
-            showBackground: true,
-            showArrows: false,
-            backgroundColor: '#ffffff',
-            backgroundOpacity: 80
+            // Default style for angle dimensions
+            angle: {
+                textSize: 14,
+                textColor: '#000000',
+                lineColor: '#0066cc',
+                lineWidth: 1,
+                lineStyle: 'solid',
+                lineOpacity: 100,
+                arcSize: 30,
+                font: 'Arial',
+                textStyle: 'normal',
+                unit: '°',
+                precision: 1,
+                prefix: '',
+                suffix: '',
+                showBackground: true,
+                showArrows: false,
+                backgroundColor: '#ffffff',
+                backgroundOpacity: 80,
+                textOpacity: 100
+            },
+            // Default style for aligned dimensions
+            aligned: {
+                textSize: 12,
+                textColor: '#333333',
+                lineColor: '#666666',
+                lineWidth: 0.8,
+                lineStyle: 'solid',
+                lineOpacity: 90,
+                font: 'Arial',
+                textStyle: 'normal',
+                unit: 'm',
+                precision: 2,
+                prefix: '',
+                suffix: '',
+                showBackground: true,
+                showArrows: true,
+                backgroundColor: '#f8f8f8',
+                backgroundOpacity: 90,
+                textOpacity: 100
+            }
         };
         
         // Undo/Redo system
@@ -300,5 +325,66 @@ class DrawingEngine {
         }
         this.currentCommandIndex = this.commandHistory.length - 1;
         command.execute();
+    }
+
+    /**
+     * Set individual dimension style property
+     * @param {string} type - 'angle' or 'aligned'
+     * @param {string} property - Style property name (e.g., 'textColor', 'lineWidth')
+     * @param {*} value - New value for the property
+     */
+    setDimensionStyle(type, property, value) {
+        if (this.dimensionStyle[type] && this.dimensionStyle[type].hasOwnProperty(property)) {
+            this.dimensionStyle[type][property] = value;
+            // Update all existing dimensions of this type
+            this.elements.dimensions.forEach(dim => {
+                if (dim.type === type) {
+                    // Ensure it's a reference, not a copy
+                    dim.style = this.dimensionStyle[type];
+                }
+            });
+            // If it's an aligned dimension, update GPX-loaded line dimensions too
+            if (type === 'aligned') {
+                this.elements.lines.forEach(line => {
+                    if (line.dimension && line.distanceMeters !== undefined) {
+                        // Re-format the dimension string based on new style
+                        line.dimension = this.formatDimensionText(line.distanceMeters, this.dimensionStyle.aligned, 'aligned');
+                    }
+                });
+            }
+            this.render(); // Re-render to apply changes
+        } else {
+            console.warn(`Dimension style property '${property}' not found for type '${type}'.`);
+        }
+    }
+
+    /**
+     * Set multiple dimension style properties at once for a given type
+     * @param {string} type - 'angle' or 'aligned'
+     * @param {Object} properties - Object with style property names and new values
+     */
+    setBatchDimensionStyle(type, properties) {
+        if (this.dimensionStyle[type]) {
+            Object.assign(this.dimensionStyle[type], properties);
+            // Update all existing dimensions of this type
+            this.elements.dimensions.forEach(dim => {
+                if (dim.type === type) {
+                    // Ensure it's a reference, not a copy
+                    dim.style = this.dimensionStyle[type];
+                }
+            });
+            // If it's an aligned dimension, update GPX-loaded line dimensions too
+            if (type === 'aligned') {
+                this.elements.lines.forEach(line => {
+                    if (line.dimension && line.distanceMeters !== undefined) {
+                        // Re-format the dimension string based on new style
+                        line.dimension = this.formatDimensionText(line.distanceMeters, this.dimensionStyle.aligned, 'aligned');
+                    }
+                });
+            }
+            this.render(); // Re-render to apply changes
+        } else {
+            console.warn(`Dimension style type '${type}' not found.`);
+        }
     }
 }

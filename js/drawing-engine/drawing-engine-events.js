@@ -164,7 +164,7 @@ DrawingEngine.prototype.handleAngleToolClick = function(x, y) {
             method: '3-point',
             points: [p1, p2, p3],
             angle: angle,
-            style: { ...this.dimensionStyle } // Copy current style
+            style: this.dimensionStyle.angle
         });
         this.resetAngleTool();
     }
@@ -222,7 +222,7 @@ DrawingEngine.prototype.handleAlignedDimensionClick = function(x, y) {
                 type: 'aligned',
                 points: [p1, p2],
                 distance: realDistance,
-                style: { ...this.dimensionStyle, unit: 'm' } // Set default unit to meters
+                style: this.dimensionStyle.aligned
             });
             this.resetAlignedDimensionTool();
             this.showAngleInstructions('Aligned dimension created from line!');
@@ -252,7 +252,7 @@ DrawingEngine.prototype.handleAlignedDimensionClick = function(x, y) {
             type: 'aligned',
             points: [p1, p2],
             distance: realDistance,
-            style: { ...this.dimensionStyle, unit: 'm' } // Set default unit to meters
+            style: this.dimensionStyle.aligned
         });
         this.resetAlignedDimensionTool();
         this.showAngleInstructions('Aligned dimension created!');
@@ -280,7 +280,7 @@ DrawingEngine.prototype.updateAlignedDimensionPreview = function(x, y) {
             points: [p1, previewPoint],
             currentPoint: previewPoint,
             distance: realDistance,
-            style: { ...this.dimensionStyle, unit: 'm' } // Set default unit to meters for preview
+            style: this.dimensionStyle.aligned
         };
     }
     this.render();

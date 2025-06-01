@@ -169,6 +169,18 @@ ElectricalCADApp.prototype.setupDimensionStyleControlListeners = function() {
         });
     }
 
+    // Text opacity
+    const textOpacitySlider = document.getElementById('dimensionTextOpacity');
+    const textOpacityValue = document.getElementById('dimensionTextOpacityValue');
+    if (textOpacitySlider && textOpacityValue) {
+        textOpacitySlider.addEventListener('input', (e) => {
+            const opacity = parseInt(e.target.value);
+            textOpacityValue.textContent = opacity;
+            this.drawingEngine.dimensionStyle.textOpacity = opacity;
+            this.drawingEngine.render();
+        });
+    }
+
     // Apply style to selected dimensions
     const applyStyleButton = document.getElementById('applyDimensionStyleToSelection');
     if (applyStyleButton) {
@@ -190,7 +202,8 @@ ElectricalCADApp.prototype.setupDimensionStyleControlListeners = function() {
                 showBackground: document.getElementById('dimensionShowBackground')?.checked,
                 showArrows: document.getElementById('dimensionShowArrows')?.checked,
                 backgroundColor: document.getElementById('dimensionBackgroundColor')?.value,
-                backgroundOpacity: parseInt(document.getElementById('dimensionBackgroundOpacity')?.value)
+                backgroundOpacity: parseInt(document.getElementById('dimensionBackgroundOpacity')?.value),
+                textOpacity: parseInt(document.getElementById('dimensionTextOpacity')?.value)
             };
 
             this.drawingEngine.applyStyleToSelectedDimensions(styleUpdates);

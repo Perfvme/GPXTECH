@@ -636,7 +636,10 @@ class GPXParser {
                         trackId: track.id,
                         distanceMeters: Math.round(distanceMeters * 100) / 100, // Round to cm
                         startUtm: { x: startPt.utmX, y: startPt.utmY, zone: startPt.utmZone },
-                        endUtm: { x: endPt.utmX, y: endPt.utmY, zone: endPt.utmZone }
+                        endUtm: { x: endPt.utmX, y: endPt.utmY, zone: endPt.utmZone },
+                        dimensionX: (startPt.x + endPt.x) / 2, // Midpoint X for dimension text
+                        dimensionY: (startPt.y + endPt.y) / 2, // Midpoint Y for dimension text
+                        dimension: `${(Math.round(distanceMeters * 100) / 100).toLocaleString()} m` // Formatted dimension string
                     });
                 }
             }
@@ -668,7 +671,10 @@ class GPXParser {
                         routeId: route.id,
                         distanceMeters: Math.round(distanceMeters * 100) / 100, // Round to cm
                         startUtm: { x: startPt.utmX, y: startPt.utmY, zone: startPt.utmZone },
-                        endUtm: { x: endPt.utmX, y: endPt.utmY, zone: endPt.utmZone }
+                        endUtm: { x: endPt.utmX, y: endPt.utmY, zone: endPt.utmZone },
+                        dimensionX: (startPt.x + endPt.x) / 2, // Midpoint X for dimension text
+                        dimensionY: (startPt.y + endPt.y) / 2, // Midpoint Y for dimension text
+                        dimension: `${(Math.round(distanceMeters * 100) / 100).toLocaleString()} m` // Formatted dimension string
                     });
                 }
             }
