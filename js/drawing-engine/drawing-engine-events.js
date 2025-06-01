@@ -16,10 +16,12 @@ DrawingEngine.prototype.setupEventListeners = function() {
     // Handle canvas resize
     window.addEventListener('resize', this.handleResize.bind(this));
     
-    // Handle escape key to cancel line drawing
+    // Handle escape key to cancel line drawing and delete key for selected elements
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && this.tempLine) {
             this.cancelLine();
+        } else if (e.key === 'Delete') {
+            this.deleteSelectedElements();
         }
     });
 };

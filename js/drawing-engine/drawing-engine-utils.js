@@ -14,8 +14,7 @@ DrawingEngine.prototype.isPointInPole = function(x, y, pole) {
 /**
  * Check if point is on line
  */
-DrawingEngine.prototype.isPointOnLine = function(x, y, line) {
-    const tolerance = 5;
+DrawingEngine.prototype.isPointOnLine = function(x, y, line, tolerance = 5) {
     const A = { x: line.startX, y: line.startY };
     const B = { x: line.endX, y: line.endY };
     const P = { x, y };

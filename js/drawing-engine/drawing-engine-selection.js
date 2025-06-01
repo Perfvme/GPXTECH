@@ -37,6 +37,16 @@ DrawingEngine.prototype.handleSelect = function(x, y) {
         }
     }
     
+    // Check dimensions
+    for (let dimension of this.elements.dimensions) {
+        if (this.isPointInDimension(x, y, dimension)) {
+            this.selectedElement = dimension;
+            this.updatePropertiesPanel(dimension);
+            this.render();
+            return;
+        }
+    }
+    
     // Nothing selected
     this.updatePropertiesPanel(null);
     this.render();
@@ -90,6 +100,13 @@ DrawingEngine.prototype.finishDragSelection = function() {
         }
     }
 
+    // Check dimensions
+    for (let dimension of this.elements.dimensions) {
+        if (this.isDimensionIntersectingRect(dimension, minX, minY, maxX, maxY)) {
+            this.selectedElements.add(dimension);
+        }
+    }
+
     this.dragSelection.active = false;
     this.updatePropertiesPanel(this.selectedElements.size > 0 ? Array.from(this.selectedElements) : null);
     this.render();
@@ -140,6 +157,11 @@ DrawingEngine.prototype.selectAll = function() {
     // Add all lines
     for (let line of this.elements.lines) {
         this.selectedElements.add(line);
+    }
+    
+    // Add all dimensions
+    for (let dimension of this.elements.dimensions) {
+        this.selectedElements.add(dimension);
     }
     
     this.updatePropertiesPanel(this.selectedElements.size > 0 ? Array.from(this.selectedElements) : null);

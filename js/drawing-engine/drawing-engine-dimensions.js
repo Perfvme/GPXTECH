@@ -695,3 +695,168 @@ DrawingEngine.conversions = {
 //     });
 //     // ... existing drawing logic ...
 // };
+
+/**
+ * Check if point is within a dimension
+ */
+DrawingEngine.prototype.isPointInDimension = function(x, y, dimension) {
+    const hitTolerance = 5 / this.zoom;
+
+    if (dimension.type === 'angle') {
+        // For angle dimensions, check if point is near the arc or text
+        const [p1, p2, p3] = dimension.points;
+        const radius = dimension.style.arcSize || 30;
+        const angle1 = Math.atan2(p1.y - p2.y, p1.x - p2.x);
+        const angle2 = Math.atan2(p3.y - p2.y, p3.x - p2.x);
+
+        // Check arc
+        const distToCenter = Math.sqrt(Math.pow(x - p2.x, 2) + Math.pow(y - p2.y, 2));
+        const angleToPoint = Math.atan2(y - p2.y, x - p2.x);
+
+        const startAngle = Math.min(angle1, angle2);
+        const endAngle = Math.max(angle1, angle2);
+
+        const inAngleRange = angleToPoint >= startAngle && angleToPoint <= endAngle;
+        const nearArc = Math.abs(distToCenter - radius) < hitTolerance;
+
+        if (nearArc && inAngleRange) return true;
+
+        // Check text (simplified, assume text is near p2)
+        const textX = p2.x + Math.cos((angle1 + angle2) / 2) * (radius + 20);
+        const textY = p2.y + Math.sin((angle1 + angle2) / 2) * (radius + 20);
+        if (this.isPointNearText(x, y, textX, textY, dimension.angle, dimension.style)) return true;
+
+    } else if (dimension.type === 'aligned') {
+        if (!dimension.points || dimension.points.length < 2) {
+            return false; // Not enough points for an aligned dimension
+        }
+        const [p1, p2] = dimension.points;
+        const style = dimension.style;
+
+        // Calculate angle and offset for dimension line points
+        const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+        const offset = style.offset || 20;
+        const offsetX = offset * Math.sin(angle);
+        const offsetY = -offset * Math.cos(angle);
+
+        const dimP1 = { x: p1.x + offsetX, y: p1.y + offsetY };
+        const dimP2 = { x: p2.x + offsetX, y: p2.y + offsetY };
+
+        // Check dimension line
+        if (this.isPointOnLine(x, y, { startX: dimP1.x, startY: dimP1.y, endX: dimP2.x, endY: dimP2.y }, hitTolerance)) return true;
+
+        // Check extension lines
+        const extension = style.extension || 10;
+        const extLine1End = { x: dimP1.x + extension * Math.sin(angle), y: dimP1.y - extension * Math.cos(angle) };
+        const extLine2End = { x: dimP2.x + extension * Math.sin(angle), y: dimP2.y - extension * Math.cos(angle) };
+
+        if (this.isPointOnLine(x, y, { startX: p1.x, startY: p1.y, endX: extLine1End.x, endY: extLine1End.y }, hitTolerance)) return true;
+        if (this.isPointOnLine(x, y, { startX: p2.x, startY: p2.y, endX: extLine2End.x, endY: extLine2End.y }, hitTolerance)) return true;
+
+        // Check text
+        const textX = (dimP1.x + dimP2.x) / 2;
+        const textY = (dimP1.y + dimP2.y) / 2;
+        if (this.isPointNearText(x, y, textX, textY, angle, style)) return true;
+    }
+
+    return false;
+};
+
+/**
+ * Check if point is near text
+ */
+DrawingEngine.prototype.isPointNearText = function(px, py, textX, textY, angle, style) {
+    this.ctx.save();
+    const fontStyle = style.textStyle || 'normal';
+    this.ctx.font = `${fontStyle} ${style.textSize}px ${style.font || 'Arial'}`;
+    const metrics = this.ctx.measureText("000.00°"); // Use a representative text for measurement
+    const textWidth = metrics.width;
+    const textHeight = style.textSize;
+    this.ctx.restore();
+
+    // Transform point back to text's local coordinate system
+    const cos = Math.cos(-angle);
+    const sin = Math.sin(-angle);
+    const translatedPx = px - textX;
+    const translatedPy = py - textY;
+    const rotatedPx = translatedPx * cos - translatedPy * sin;
+    const rotatedPy = translatedPx * sin + translatedPy * cos;
+
+    const halfWidth = textWidth / 2;
+    const halfHeight = textHeight / 2;
+
+    return rotatedPx >= -halfWidth && rotatedPx <= halfWidth &&
+           rotatedPy >= -halfHeight && rotatedPy <= halfHeight;
+};
+
+/**
+ * Check if dimension intersects with rectangle
+ */
+DrawingEngine.prototype.isDimensionIntersectingRect = function(dimension, minX, minY, maxX, maxY) {
+    // Helper to check if a point is within the selection rectangle
+    const isPointInRect = (px, py) => px >= minX && px <= maxX && py >= minY && py <= maxY;
+
+    // Helper to check if a line segment intersects the rectangle
+    const isLineRectIntersecting = (line) => {
+        return this.isLineIntersectingRect(line, minX, minY, maxX, maxY);
+    };
+
+    if (dimension.type === 'angle') {
+        const [p1, p2, p3] = dimension.points;
+        // Check if the center point (p2) is within the rectangle
+        if (isPointInRect(p2.x, p2.y)) return true;
+
+        // Check if the lines forming the angle intersect the rectangle
+        if (isLineRectIntersecting({ startX: p1.x, startY: p1.y, endX: p2.x, endY: p2.y })) return true;
+        if (isLineRectIntersecting({ startX: p3.x, startY: p3.y, endX: p2.x, endY: p2.y })) return true;
+
+        // For simplicity, we can also check the bounding box of the arc and text
+        // This is a rough check, can be made more precise if needed
+        const radius = dimension.style.arcSize || 30;
+        const textOffset = radius + 20;
+        const angle1 = Math.atan2(p1.y - p2.y, p1.x - p2.x);
+        const angle2 = Math.atan2(p3.y - p2.y, p3.x - p2.x);
+        const midAngle = (angle1 + angle2) / 2;
+        const textX = p2.x + Math.cos(midAngle) * textOffset;
+        const textY = p2.y + Math.sin(midAngle) * textOffset;
+
+        if (isPointInRect(textX, textY)) return true;
+
+    } else if (dimension.type === 'aligned') {
+        if (!dimension.points || dimension.points.length < 2) {
+            return false; // Not enough points for an aligned dimension
+        }
+        const [p1, p2] = dimension.points;
+        const style = dimension.style;
+
+        // Calculate angle and offset for dimension line points
+        const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+        const offset = style.offset || 20;
+        const offsetX = offset * Math.sin(angle);
+        const offsetY = -offset * Math.cos(angle);
+
+        const dimP1 = { x: p1.x + offsetX, y: p1.y + offsetY };
+        const dimP2 = { x: p2.x + offsetX, y: p2.y + offsetY };
+
+        // Check if any of the four defining points (p1, p2, dimP1, dimP2) are within the rectangle
+        if (isPointInRect(p1.x, p1.y) || isPointInRect(p2.x, p2.y) ||
+            isPointInRect(dimP1.x, dimP1.y) || isPointInRect(dimP2.x, dimP2.y)) return true;
+
+        // Check if the dimension line (dimP1-dimP2) or extension lines intersect the rectangle
+        if (isLineRectIntersecting({ startX: dimP1.x, startY: dimP1.y, endX: dimP2.x, endY: dimP2.y })) return true;
+
+        const extension = style.extension || 10;
+        const extLine1End = { x: dimP1.x + extension * Math.sin(angle), y: dimP1.y - extension * Math.cos(angle) };
+        const extLine2End = { x: dimP2.x + extension * Math.sin(angle), y: dimP2.y - extension * Math.cos(angle) };
+
+        if (isLineRectIntersecting({ startX: p1.x, startY: p1.y, endX: extLine1End.x, endY: extLine1End.y })) return true;
+        if (isLineRectIntersecting({ startX: p2.x, startY: p2.y, endX: extLine2End.x, endY: extLine2End.y })) return true;
+
+        // Check the text position
+        const textX = (dimP1.x + dimP2.x) / 2;
+        const textY = (dimP1.y + dimP2.y) / 2;
+        if (isPointInRect(textX, textY)) return true;
+    }
+
+    return false;
+};

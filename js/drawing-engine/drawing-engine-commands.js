@@ -47,11 +47,14 @@ class DeleteElementCommand {
         this.drawingEngine = drawingEngine;
         this.element = element;
         this.isPole = element.type && element.type.includes('tiang');
+        this.isDimension = element.type && (element.type === 'angle' || element.type === 'aligned');
     }
 
     execute() {
         if (this.isPole) {
             this.drawingEngine.elements.poles = this.drawingEngine.elements.poles.filter(p => p.id !== this.element.id);
+        } else if (this.isDimension) {
+            this.drawingEngine.elements.dimensions = this.drawingEngine.elements.dimensions.filter(d => d.id !== this.element.id);
         } else {
             this.drawingEngine.elements.lines = this.drawingEngine.elements.lines.filter(l => l.id !== this.element.id);
         }
@@ -60,6 +63,8 @@ class DeleteElementCommand {
     undo() {
         if (this.isPole) {
             this.drawingEngine.elements.poles.push(this.element);
+        } else if (this.isDimension) {
+            this.drawingEngine.elements.dimensions.push(this.element);
         } else {
             this.drawingEngine.elements.lines.push(this.element);
         }

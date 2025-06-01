@@ -242,4 +242,63 @@ class DrawingEngine {
             previewDistance: null
         };
     }
+
+    /**
+     * Delete selected elements
+     */
+    deleteSelectedElements() {
+        if (this.selectedElement) {
+            this.executeCommand(new DeleteElementCommand(this, this.selectedElement));
+            this.selectedElement = null;
+        } else if (this.selectedElements.size > 0) {
+            // Convert Set to Array to allow iteration and modification within loop
+            const elementsToDelete = Array.from(this.selectedElements);
+            for (const element of elementsToDelete) {
+                this.executeCommand(new DeleteElementCommand(this, element));
+            }
+            this.selectedElements.clear();
+        }
+        this.render();
+        if (this.onElementsChanged) {
+            this.onElementsChanged();
+        }
+    }
+
+    /**
+     * Undo last command
+     */
+    undo() {
+        if (this.currentCommandIndex > 0) {
+            this.currentCommandIndex--;
+            this.commandHistory[this.currentCommandIndex].undo();
+            this.render();
+        }
+    }
+
+    /**
+     * Redo last command
+     */
+    redo() {
+        if (this.currentCommandIndex < this.commandHistory.length - 1) {
+            this.currentCommandIndex++;
+            this.commandHistory[this.currentCommandIndex].execute();
+            this.render();
+        }
+    }
+
+    /**
+     * Execute a command and add to history
+     */
+    executeCommand(command) {
+        // Clear redo history if a new command is executed
+        if (this.currentCommandIndex < this.commandHistory.length - 1) {
+            this.commandHistory = this.commandHistory.slice(0, this.currentCommandIndex + 1);
+        }
+        this.commandHistory.push(command);
+        if (this.commandHistory.length > this.maxHistorySize) {
+            this.commandHistory.shift(); // Remove oldest command
+        }
+        this.currentCommandIndex = this.commandHistory.length - 1;
+        command.execute();
+    }
 }
