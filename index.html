@@ -57,6 +57,21 @@
                 <button id="darkModeToggle" class="btn icon-toggle" title="Toggle Dark Mode">
                     <i class="fas fa-sun"></i>
                 </button>
+                <button id="exportBtn" class="btn btn-secondary" title="Export Drawing">
+                    <i class="fas fa-download"></i> Export
+                </button>
+                <button id="configureTitleBlockBtn" class="btn btn-secondary">
+                    <i class="fas fa-file-alt"></i> Title Block
+                </button>
+                <!-- Export Dropdown (add checkbox inside) -->
+                <div id="exportOptionsDropdown" class="dropdown-menu" style="display:none; position:absolute;">
+                    <label class="dropdown-item" style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="includeTitleBlockCheckbox" style="margin-right: 8px;"> Include Title Block
+                    </label>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" data-export-type="canvas-jpg">Canvas as JPG</button>
+                    <button class="dropdown-item" data-export-type="canvas-pdf">Canvas as PDF</button>
+                </div>
             </div>
         </header>
 
@@ -606,5 +621,67 @@
     
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js"></script>
     <script src="js/terrain-view-manager.js"></script>
+
+    <!-- Title Block Configuration Modal -->
+    <div id="titleBlockModal" class="modal" style="display:none;">
+        <div class="modal-content" style="background-color: var(--bg-secondary); padding: 20px; border-radius: 8px; width: 80%; max-width: 700px; margin: 5% auto; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 style="margin:0; color: var(--text-primary);">Configure Title Block</h3>
+                <span id="closeTitleBlockModal" class="close-button" style="font-size: 24px; cursor: pointer; color: var(--text-secondary);">×</span>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <h4 style="color: var(--text-primary); margin-top:0;">Header Information:</h4>
+                <div class="form-row">
+                    <label for="tb-companyName">Company Name:</label>
+                    <input type="text" id="tb-companyName" class="modal-input">
+                </div>
+                <div class="form-row">
+                    <label for="tb-projectUnit">Project Unit:</label>
+                    <input type="text" id="tb-projectUnit" class="modal-input">
+                </div>
+                <div class="form-row">
+                    <label for="tb-province">Province:</label>
+                    <input type="text" id="tb-province" class="modal-input">
+                </div>
+                <div class="form-row">
+                    <label for="tb-drawingTitle">Drawing Title:</label>
+                    <input type="text" id="tb-drawingTitle" class="modal-input">
+                </div>
+
+                <h4 style="color: var(--text-primary); margin-top: 20px;">Approval Table:</h4>
+                <table id="titleBlockTable" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                    <thead>
+                        <tr>
+                            <th style="border: 1px solid var(--border-color); padding: 5px; text-align: left;">Role</th>
+                            <th style="border: 1px solid var(--border-color); padding: 5px; text-align: left;">Nama</th>
+                            <th style="border: 1px solid var(--border-color); padding: 5px; text-align: left;">Paraf</th>
+                            <th style="border: 1px solid var(--border-color); padding: 5px; text-align: left;">Jabatan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows will be populated by JS -->
+                    </tbody>
+                </table>
+
+                <h4 style="color: var(--text-primary); margin-top: 20px;">Drawing Number:</h4>
+                <div class="form-row">
+                    <label for="tb-drawingNumber">Number:</label>
+                    <input type="text" id="tb-drawingNumber" class="modal-input" style="width: 100px;">
+                </div>
+            </div>
+            <div class="modal-footer" style="text-align: right; margin-top: 20px; padding-top: 10px; border-top: 1px solid var(--border-color);">
+                <button id="saveTitleBlockChanges" class="btn btn-primary">Save Changes</button>
+            </div>
+        </div>
+    </div>
+    <style>
+        /* Basic Modal Styles (can be moved to a CSS file) */
+        .modal { position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+        .modal-input { width: calc(100% - 16px); padding: 8px; margin-top: 5px; margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--bg-primary); color: var(--text-primary); }
+        #titleBlockTable input[type="text"] { width: calc(100% - 10px); padding: 4px; border: 1px solid var(--border-light); border-radius: 3px; background-color: var(--bg-primary); color: var(--text-primary); font-size:11px;}
+        #titleBlockTable th, #titleBlockTable td { border: 1px solid var(--border-color); padding: 5px; color: var(--text-primary); }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>

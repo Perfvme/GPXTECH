@@ -12,7 +12,8 @@ ElectricalCADApp.prototype.newProject = function() {
         this.currentProject = {
             name: 'Untitled Project',
             created: new Date(),
-            modified: new Date()
+            modified: new Date(),
+            titleBlockData: this.getDefaultTitleBlockData()
         };
         this.gpxRawData = null; // Clear GPX data on new project
         this.showNotification('New project created', 'success');
@@ -30,7 +31,8 @@ ElectricalCADApp.prototype.saveProject = function() {
         const projectData = {
             ...this.currentProject,
             modified: new Date(),
-            drawing: this.drawingEngine.exportData()
+            drawing: this.drawingEngine.exportData(),
+            titleBlockData: this.currentProject.titleBlockData
         };
         
         const dataStr = JSON.stringify(projectData, null, 2);
@@ -56,7 +58,8 @@ ElectricalCADApp.prototype.loadProject = function(projectData) {
         this.currentProject = {
             name: projectData.name || 'Loaded Project',
             created: new Date(projectData.created) || new Date(),
-            modified: new Date(projectData.modified) || new Date()
+            modified: new Date(projectData.modified) || new Date(),
+            titleBlockData: projectData.titleBlockData || this.getDefaultTitleBlockData()
         };
         
         if (projectData.drawing) {

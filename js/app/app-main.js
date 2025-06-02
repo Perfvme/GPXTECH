@@ -13,12 +13,30 @@ class ElectricalCADApp {
         this.currentProject = {
             name: 'Untitled Project',
             created: new Date(),
-            modified: new Date()
+            modified: new Date(),
+            titleBlockData: this.getDefaultTitleBlockData()
         };
         this.currentView = 'canvas';
         this.gpxRawData = null;
         
         this.init();
+    }
+
+    getDefaultTitleBlockData() {
+        return {
+            companyName: "PT PLN (PERSERO)",
+            projectUnit: "UNIT PELAKSANA PROYEK KETENAGALISTRIKAN",
+            province: "PROVINSI SULAWESI UTARA",
+            drawingTitle: "GAMBAR RENCANA PEMBANGUNAN JARINGAN SUTR DESA TORAUT, BOLAANG MONGONDOW",
+            rows: [
+                { label: "DIRENCANA", nama: "UP2K SULUT", paraf: "", jabatan: "", noGbrPart: "" },
+                { label: "DIGAMBAR", nama: "NN", paraf: "", jabatan: "NN", noGbrPart: "" },
+                { label: "DIPERIKSA", nama: "", paraf: "", jabatan: "", noGbrPart: "" },
+                { label: "DISETUJUI", nama: "", paraf: "", jabatan: "", noGbrPart: "" }
+            ],
+            drawingNumber: "01",
+            includeInExport: false
+        };
     }
 
     /**
@@ -90,6 +108,9 @@ class ElectricalCADApp {
         
         // Initialize status bar
         this.updateStatusBar();
+        
+        // Setup title block modal
+        this.setupTitleBlockModal();
         
         console.log('Electrical CAD Application initialized successfully');
     }

@@ -180,3 +180,83 @@ ElectricalCADApp.prototype.initializeTheme = function() {
         }
     }
 };
+
+ElectricalCADApp.prototype.setupTitleBlockModal = function() {
+    const modal = document.getElementById('titleBlockModal');
+    const configureBtn = document.getElementById('configureTitleBlockBtn');
+    const closeBtn = document.getElementById('closeTitleBlockModal');
+    const saveBtn = document.getElementById('saveTitleBlockChanges');
+    const tableBody = document.querySelector('#titleBlockTable tbody');
+
+    const populateModal = () => {
+        const data = this.currentProject.titleBlockData;
+        document.getElementById('tb-companyName').value = data.companyName;
+        document.getElementById('tb-projectUnit').value = data.projectUnit;
+        document.getElementById('tb-province').value = data.province;
+        document.getElementById('tb-drawingTitle').value = data.drawingTitle;
+        document.getElementById('tb-drawingNumber').value = data.drawingNumber;
+
+        tableBody.innerHTML = '';
+        data.rows.forEach((row, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.label}</td>
+                <td><input type="text" data-row-index="${index}" data-field="nama" value="${row.nama}"></td>
+                <td><input type="text" data-row-index="${index}" data-field="paraf" value="${row.paraf}"></td>
+                <td><input type="text" data-row-index="${index}" data-field="jabatan" value="${row.jabatan}"></td>
+            `;
+            tableBody.appendChild(tr);
+        });
+        document.getElementById('includeTitleBlockCheckbox').checked = data.includeInExport;
+    };
+
+    if (configureBtn) {
+        configureBtn.onclick = () => {
+            populateModal();
+            modal.style.display = 'block';
+        };
+    }
+
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
+    }
+
+    if (saveBtn) {
+        saveBtn.onclick = () => {
+            const data = this.currentProject.titleBlockData;
+            data.companyName = document.getElementById('tb-companyName').value;
+            data.projectUnit = document.getElementById('tb-projectUnit').value;
+            data.province = document.getElementById('tb-province').value;
+            data.drawingTitle = document.getElementById('tb-drawingTitle').value;
+            data.drawingNumber = document.getElementById('tb-drawingNumber').value;
+
+            tableBody.querySelectorAll('tr').forEach(tr => {
+                const inputs = tr.querySelectorAll('input[type="text"]');
+                inputs.forEach(input => {
+                    const rowIndex = parseInt(input.dataset.rowIndex);
+                    const field = input.dataset.field;
+                    data.rows[rowIndex][field] = input.value;
+                });
+            });
+            this.showNotification('Title block data saved.', 'success');
+            modal.style.display = 'none';
+        };
+    }
+
+    // Close modal if clicked outside content
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    // Handle "Include Title Block" checkbox change
+    const includeCheckbox = document.getElementById('includeTitleBlockCheckbox');
+    if (includeCheckbox) {
+        includeCheckbox.onchange = (e) => {
+            this.currentProject.titleBlockData.includeInExport = e.target.checked;
+        };
+    }
+};

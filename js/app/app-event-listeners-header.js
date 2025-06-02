@@ -29,3 +29,40 @@ ElectricalCADApp.prototype.setupHeaderEventListeners = function() {
     // GPX file input
     document.getElementById('gpxFileInput')?.addEventListener('change', (e) => this.handleGPXFile(e));
 };
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Export dropdown event listeners
+    const exportDropdown = document.getElementById('exportOptionsDropdown');
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn && exportDropdown) {
+        exportBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            // Position dropdown below the button
+            const rect = exportBtn.getBoundingClientRect();
+            exportDropdown.style.display = (exportDropdown.style.display === 'block') ? 'none' : 'block';
+            exportDropdown.style.position = 'absolute';
+            exportDropdown.style.left = rect.left + 'px';
+            exportDropdown.style.top = (rect.bottom + window.scrollY) + 'px';
+            exportDropdown.style.minWidth = rect.width + 'px';
+        });
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!exportDropdown.contains(e.target) && e.target !== exportBtn) {
+                exportDropdown.style.display = 'none';
+            }
+        });
+    }
+    if (exportDropdown) {
+        exportDropdown.addEventListener('click', function(e) {
+            const btn = e.target.closest('button[data-export-type]');
+            if (!btn) return;
+            const type = btn.getAttribute('data-export-type');
+            if (type === 'canvas-jpg') {
+                window.app.exportCanvasAsJPG();
+            } else if (type === 'canvas-pdf') {
+                window.app.exportCanvasAsPDF();
+            }
+            exportDropdown.style.display = 'none';
+        });
+    }
+});
