@@ -214,25 +214,68 @@ ElectricalCADApp.prototype._drawTitleBlockOnPDF = function(pdf, pageHeight, page
 };
 
 // Export canvas as JPG with title block if enabled
-ElectricalCADApp.prototype.exportCanvasAsJPG = function() {
+ElectricalCADApp.prototype.exportCanvasAsJPG = async function() {
     try {
-        const canvas = this.drawingEngine.canvas;
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        const tempCtx = tempCanvas.getContext('2d');
-        
-        tempCtx.fillStyle = '#FFFFFF';
-        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-        tempCtx.drawImage(canvas, 0, 0);
+        const mainCanvas = this.drawingEngine.canvas;
+        const legendElement = document.getElementById('legend');
+        let legendImage = null;
+        let legendWasCaptured = false;
 
-        // Draw title block if checked
+        if (legendElement) {
+            try {
+                const legendCanvasCapture = await window.html2canvas(legendElement, {
+                    backgroundColor: null, // For transparency
+                    useCORS: true,
+                    logging: false
+                });
+                legendImage = new window.Image();
+                legendImage.src = legendCanvasCapture.toDataURL();
+                await new Promise(resolve => { legendImage.onload = resolve; legendImage.onerror = resolve; });
+                legendWasCaptured = legendImage.complete && legendImage.naturalWidth > 0;
+                if (legendWasCaptured) {
+                    this.showNotification('Legend captured for export.', 'success');
+                } else {
+                    this.showNotification('Legend image not loaded, exporting without it.', 'warning');
+                }
+            } catch (e) {
+                console.error("Error capturing legend with html2canvas for JPG:", e);
+                this.showNotification('Could not capture legend, exporting without it.', 'warning');
+                legendImage = null;
+            }
+        }
+
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = mainCanvas.width;
+        exportCanvas.height = mainCanvas.height;
+        const exportCtx = exportCanvas.getContext('2d');
+
+        exportCtx.fillStyle = '#FFFFFF'; // JPG background
+        exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+        exportCtx.drawImage(mainCanvas, 0, 0); // Draw main content
+
         const titleBlockData = this.currentProject.titleBlockData;
         if (titleBlockData.includeInExport) {
-            this._drawTitleBlockOnCanvas(tempCtx, tempCanvas.width, tempCanvas.height, titleBlockData);
+            this._drawTitleBlockOnCanvas(exportCtx, exportCanvas.width, exportCanvas.height, titleBlockData);
         }
-        
-        const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.9);
+
+        if (legendImage && legendImage.complete && legendImage.naturalWidth > 0) {
+            const mainCanvasRect = mainCanvas.getBoundingClientRect();
+            const legendRect = legendElement.getBoundingClientRect();
+            const legendRelX = legendRect.left - mainCanvasRect.left;
+            const legendRelY = legendRect.top - mainCanvasRect.top;
+            console.log('Legend rect:', legendRect);
+            console.log('Canvas rect:', mainCanvasRect);
+            console.log('Legend relative position:', legendRelX, legendRelY);
+            exportCtx.drawImage(legendImage, legendRelX, legendRelY);
+            // Debug: Draw a black border where the legend is drawn
+            exportCtx.save();
+            exportCtx.strokeStyle = 'black';
+            exportCtx.lineWidth = 2;
+            exportCtx.strokeRect(legendRelX, legendRelY, legendImage.width, legendImage.height);
+            exportCtx.restore();
+        }
+
+        const dataUrl = exportCanvas.toDataURL('image/jpeg', 0.9);
         const link = document.createElement('a');
         link.download = `${this.currentProject.name.replace(/[^a-z0-9]/gi, '_')}_canvas.jpg`;
         link.href = dataUrl;
@@ -256,12 +299,40 @@ ElectricalCADApp.prototype.exportCanvasAsPDF = async function() {
     }
     this.showNotification('Generating PDF... please wait.', 'info');
     try {
-        const canvas = this.drawingEngine.canvas;
+        const mainCanvas = this.drawingEngine.canvas;
+        const legendElement = document.getElementById('legend');
         const { jsPDF } = window.jspdf;
-        
+        let legendImage = null;
+        let legendImageDataUrl = null;
+        let legendWasCaptured = false;
+
+        if (legendElement) {
+            try {
+                const legendCanvasCapture = await window.html2canvas(legendElement, {
+                    backgroundColor: null, // For transparency
+                    useCORS: true,
+                    logging: false
+                });
+                legendImage = new window.Image();
+                legendImageDataUrl = legendCanvasCapture.toDataURL('image/png');
+                legendImage.src = legendImageDataUrl;
+                await new Promise(resolve => { legendImage.onload = resolve; legendImage.onerror = resolve; });
+                legendWasCaptured = legendImage.complete && legendImage.naturalWidth > 0;
+                if (legendWasCaptured) {
+                    this.showNotification('Legend captured for export.', 'success');
+                } else {
+                    this.showNotification('Legend image not loaded, exporting without it.', 'warning');
+                }
+            } catch (e) {
+                console.error("Error capturing legend with html2canvas for PDF:", e);
+                this.showNotification('Could not capture legend, exporting without it.', 'warning');
+                legendImage = null;
+            }
+        }
+
         // Determine PDF orientation and dimensions
         let pdfWidth, pdfHeight, orientation;
-        if (canvas.width > canvas.height) { orientation = 'l'; pdfWidth = 841.89; pdfHeight = 595.28; } 
+        if (mainCanvas.width > mainCanvas.height) { orientation = 'l'; pdfWidth = 841.89; pdfHeight = 595.28; } 
         else { orientation = 'p'; pdfWidth = 595.28; pdfHeight = 841.89; }
 
         const pdf = new jsPDF({ orientation: orientation, unit: 'pt', format: 'a4' });
@@ -278,11 +349,11 @@ ElectricalCADApp.prototype.exportCanvasAsPDF = async function() {
         }
 
         // Use html2canvas to capture the main drawing
-        const canvasImage = await window.html2canvas(canvas, { backgroundColor: '#ffffff', useCORS: true });
-        const imgData = canvasImage.toDataURL('image/png');
+        const drawingCaptureCanvas = await window.html2canvas(mainCanvas, { backgroundColor: '#ffffff', useCORS: true, logging: false });
+        const drawingImgData = drawingCaptureCanvas.toDataURL('image/png');
 
         let imgDisplayWidth, imgDisplayHeight;
-        const canvasAspectRatio = canvas.width / canvas.height;
+        const canvasAspectRatio = mainCanvas.width / mainCanvas.height;
         const availableAspectRatio = availableWidth / availableHeight;
 
         if (canvasAspectRatio > availableAspectRatio) {
@@ -295,13 +366,30 @@ ElectricalCADApp.prototype.exportCanvasAsPDF = async function() {
         
         pdf.setFontSize(16);
         pdf.text(this.currentProject.name, margin, margin + 10);
-        pdf.addImage(imgData, 'PNG', margin, margin + 30, imgDisplayWidth, imgDisplayHeight);
+        pdf.addImage(drawingImgData, 'PNG', margin, margin + 30, imgDisplayWidth, imgDisplayHeight);
 
         // Draw title block if checked
         if (titleBlockData.includeInExport) {
             this._drawTitleBlockOnPDF(pdf, pdfHeight, pdfWidth, titleBlockData);
         }
-        
+
+        if (legendImage && legendImage.complete && legendImage.naturalWidth > 0 && legendImageDataUrl) {
+            const mainCanvasRect = mainCanvas.getBoundingClientRect();
+            const legendRect = legendElement.getBoundingClientRect();
+            const legendRelX_px = legendRect.left - mainCanvasRect.left;
+            const legendRelY_px = legendRect.top - mainCanvasRect.top;
+            const pdfScaleX = imgDisplayWidth / mainCanvas.width;
+            const pdfScaleY = imgDisplayHeight / mainCanvas.height;
+            const legendPdfX = margin + (legendRelX_px * pdfScaleX);
+            const legendPdfY = (margin + 30) + (legendRelY_px * pdfScaleY);
+            const legendPdfWidth = legendImage.width * pdfScaleX;
+            const legendPdfHeight = legendImage.height * pdfScaleY;
+            console.log('Legend rect:', legendRect);
+            console.log('Canvas rect:', mainCanvasRect);
+            console.log('Legend relative position:', legendRelX_px, legendRelY_px);
+            pdf.addImage(legendImageDataUrl, 'PNG', legendPdfX, legendPdfY, legendPdfWidth, legendPdfHeight);
+        }
+
         const filename = `${this.currentProject.name}_canvas.pdf`;
         pdf.save(filename);
         this.showNotification('Canvas exported as PDF.', 'success');
