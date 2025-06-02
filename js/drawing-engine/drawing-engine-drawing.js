@@ -15,7 +15,8 @@ DrawingEngine.prototype.addPole = function(x, y) {
         name: `Pole ${this.elements.poles.length + 1}`,
         description: '',
         hasGrounding: this.addGrounding,
-        hasGuywire: this.addGuywire
+        hasGuywire: this.addGuywire,
+        elevation: 0 // Always initialize elevation
     };
     
     // Add real coordinate information if using real coordinate system
@@ -29,6 +30,7 @@ DrawingEngine.prototype.addPole = function(x, y) {
         const latLon = this.utmToLatLon(utmCoords.x, utmCoords.y, this.coordinateSystem.utmZone);
         pole.originalLat = latLon.lat;
         pole.originalLon = latLon.lon;
+        if (typeof pole.elevation !== 'number') pole.elevation = 0;
     }
     
     // Use command system for undo/redo support
@@ -87,15 +89,19 @@ DrawingEngine.prototype.finishLine = function(x, y) {
             endX: endX,
             endY: endY,
             type: this.currentLineType,
-            name: `Line ${this.elements.lines.length + 1}`
+            name: `Line ${this.elements.lines.length + 1}`,
+            startElevation: 0,
+            endElevation: 0
         };
         
         // Assign pole references if snapped to poles
         if (startSnapPoint && startSnapPoint.type === 'endpoint-pole') {
             line.startPole = startSnapPoint.element.id;
+            line.startElevation = startSnapPoint.element.elevation || 0;
         }
         if (endSnapPoint && endSnapPoint.type === 'endpoint-pole') {
             line.endPole = endSnapPoint.element.id;
+            line.endElevation = endSnapPoint.element.elevation || 0;
         }
         
         // Add real coordinate information and distance calculation if using real coordinate system
