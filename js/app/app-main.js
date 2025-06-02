@@ -8,6 +8,7 @@ class ElectricalCADApp {
         this.drawingEngine = null;
         this.mapManager = new MapManager();
         this.elevationProfileManager = null;
+        this.terrainViewManager = null;
         this.gpxParser = new GPXParser();
         this.currentProject = {
             name: 'Untitled Project',
@@ -59,8 +60,12 @@ class ElectricalCADApp {
         // Elevation profile manager
         this.elevationProfileManager = new ElevationProfileManager('elevationChartCanvas');
         this.elevationProfileManager.setDrawingEngine(this.drawingEngine);
+
+        // Terrain view manager
+        this.terrainViewManager = new TerrainViewManager();
+        this.terrainViewManager.setDrawingEngine(this.drawingEngine);
         
-        // Set up callback for status bar updates and map/elevation updates
+        // Set up callback for status bar updates and map/elevation/terrain updates
         this.drawingEngine.onElementsChanged = () => {
             this.updateStatusBar();
             if (this.mapManager.isMapView) {
@@ -68,6 +73,9 @@ class ElectricalCADApp {
             }
             if (this.elevationProfileManager.isProfileView) {
                 this.elevationProfileManager.updateProfileData(this.gpxRawData, this.drawingEngine.elements);
+            }
+            if (this.terrainViewManager.isTerrainView) {
+                this.terrainViewManager.updateTerrainViewFromDrawing();
             }
         };
         
@@ -176,6 +184,52 @@ class ElectricalCADApp {
             this.elevationProfileManager.isProfileView = false;
         }
         this.mapManager.isMapView = false;
+    }
+
+    // Toggle 3D Terrain View
+    toggleTerrainView() {
+        const canvasContainer = document.getElementById('canvasContainer');
+        const mapContainer = document.getElementById('mapContainer');
+        const elevationContainer = document.getElementById('elevationProfileContainer');
+        const terrainContainer = document.getElementById('terrainViewContainer');
+        const terrainToggleButton = document.getElementById('toggleTerrainView');
+        const mapToggleButton = document.getElementById('toggleMapView');
+        const elevationToggleButton = document.getElementById('toggleElevationView');
+        const terrainZoomBtn = document.getElementById('terrainZoomAllBtn');
+        if (this.currentView !== 'terrain') {
+            this.currentView = 'terrain';
+            canvasContainer.style.display = 'none';
+            mapContainer.style.display = 'none';
+            elevationContainer.style.display = 'none';
+            terrainContainer.style.display = 'flex';
+            terrainToggleButton.innerHTML = '<i class="fas fa-drafting-compass"></i> Canvas View';
+            terrainToggleButton.classList.add('active');
+            mapToggleButton.classList.remove('active');
+            mapToggleButton.innerHTML = '<i class="fas fa-map"></i> Map View';
+            elevationToggleButton.classList.remove('active');
+            elevationToggleButton.innerHTML = '<i class="fas fa-chart-line"></i> Elevation Profile';
+            if (!this.terrainViewManager.viewer) {
+                this.terrainViewManager.initializeTerrainView();
+            } else {
+                this.terrainViewManager.viewer.resize();
+            }
+            this.terrainViewManager.isTerrainView = true;
+            this.terrainViewManager.updateTerrainViewFromDrawing();
+            this.mapManager.isMapView = false;
+            this.elevationProfileManager.isProfileView = false;
+            if (terrainZoomBtn) {
+                terrainZoomBtn.style.display = '';
+                terrainZoomBtn.onclick = () => this.terrainViewManager.flyToElements();
+            }
+        } else {
+            this.currentView = 'canvas';
+            terrainContainer.style.display = 'none';
+            canvasContainer.style.display = 'flex';
+            terrainToggleButton.innerHTML = '<i class="fas fa-globe-americas"></i> 3D Terrain';
+            terrainToggleButton.classList.remove('active');
+            this.terrainViewManager.isTerrainView = false;
+            if (terrainZoomBtn) terrainZoomBtn.style.display = 'none';
+        }
     }
 }
 

@@ -106,8 +106,10 @@ DrawingEngine.prototype.finishLine = function(x, y) {
             line.startUtm = { x: startUtm.x, y: startUtm.y, zone: this.coordinateSystem.utmZone };
             line.endUtm = { x: endUtm.x, y: endUtm.y, zone: this.coordinateSystem.utmZone };
             
-            // Calculate real distance in meters
-            line.distanceMeters = this.calculateDistance(startUtm.x, startUtm.y, endUtm.x, endUtm.y);
+            // Calculate real distance in meters (3D with elevation)
+            const startElev = (this.selectedElement && this.selectedElement.elevation) || 0;
+            const endElev = (endSnapPoint && endSnapPoint.element && endSnapPoint.element.elevation) || 0;
+            line.distanceMeters = this.calculateDistance3D(startUtm.x, startUtm.y, startElev, endUtm.x, endUtm.y, endElev);
             line.distanceMeters = Math.round(line.distanceMeters * 100) / 100; // Round to cm
         }
         

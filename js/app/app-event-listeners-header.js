@@ -11,6 +11,7 @@ ElectricalCADApp.prototype.setupHeaderEventListeners = function() {
     document.getElementById('toggleMapView')?.addEventListener('click', () => this.toggleMapView());
     document.getElementById('toggleElevationView')?.addEventListener('click', () => this.toggleElevationProfileView());
     document.getElementById('darkModeToggle')?.addEventListener('click', () => this.toggleDarkMode());
+    document.getElementById('toggleTerrainView')?.addEventListener('click', () => this.toggleTerrainView());
     
     // Add button to enable real coordinates for manual drawing
     const enableRealCoordsBtn = document.createElement('button');
