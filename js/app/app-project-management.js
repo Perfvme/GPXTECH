@@ -14,7 +14,11 @@ ElectricalCADApp.prototype.newProject = function() {
             created: new Date(),
             modified: new Date()
         };
+        this.gpxRawData = null; // Clear GPX data on new project
         this.showNotification('New project created', 'success');
+        // Update views if active
+        if (this.currentView === 'map') this.mapManager.updateMapFromDrawing();
+        if (this.currentView === 'elevation') this.elevationProfileManager.updateProfileData(null, this.drawingEngine.elements);
     }
 };
 
@@ -109,9 +113,11 @@ ElectricalCADApp.prototype.processGPXContent = function(gpxContent) {
     try {
         // Parse GPX
         const gpxData = this.gpxParser.parseGPX(gpxContent);
+        this.gpxRawData = gpxData; // Store for elevation profile
         
         if (gpxData.waypoints.length === 0 && gpxData.tracks.length === 0 && gpxData.routes.length === 0) {
             this.showNotification('No waypoints, tracks, or routes found in GPX file', 'warning');
+            this.gpxRawData = null; // Clear if no data
             return;
         }
         
@@ -169,8 +175,14 @@ ElectricalCADApp.prototype.processGPXContent = function(gpxContent) {
         // Reset view to fit content
         this.drawingEngine.resetView();
         
+        // After loading into drawing engine, if elevation view is active, update it
+        if (this.currentView === 'elevation') {
+            this.elevationProfileManager.updateProfileData(this.gpxRawData, this.drawingEngine.elements);
+        }
+        
     } catch (error) {
         console.error('Error processing GPX:', error);
         this.showNotification('Error processing GPX file: ' + error.message, 'error');
+        this.gpxRawData = null; // Clear on error
     }
 };

@@ -7,12 +7,15 @@ class ElectricalCADApp {
     constructor() {
         this.drawingEngine = null;
         this.mapManager = new MapManager();
+        this.elevationProfileManager = null;
         this.gpxParser = new GPXParser();
         this.currentProject = {
             name: 'Untitled Project',
             created: new Date(),
             modified: new Date()
         };
+        this.currentView = 'canvas';
+        this.gpxRawData = null;
         
         this.init();
     }
@@ -53,10 +56,19 @@ class ElectricalCADApp {
         // Connect map manager with drawing engine
         this.mapManager.setDrawingEngine(this.drawingEngine);
         
-        // Set up callback for status bar updates and map updates
+        // Elevation profile manager
+        this.elevationProfileManager = new ElevationProfileManager('elevationChartCanvas');
+        this.elevationProfileManager.setDrawingEngine(this.drawingEngine);
+        
+        // Set up callback for status bar updates and map/elevation updates
         this.drawingEngine.onElementsChanged = () => {
             this.updateStatusBar();
-            this.mapManager.onDrawingChanged();
+            if (this.mapManager.isMapView) {
+                this.mapManager.onDrawingChanged();
+            }
+            if (this.elevationProfileManager.isProfileView) {
+                this.elevationProfileManager.updateProfileData(this.gpxRawData, this.drawingEngine.elements);
+            }
         };
         
         // Setup event listeners
@@ -86,6 +98,84 @@ class ElectricalCADApp {
         if (this.drawingEngine) {
             this.drawingEngine.render();
         }
+    }
+
+    // Method to provide data for the elevation profile
+    getGpxDataForProfile() {
+        return {
+            gpxData: this.gpxRawData,
+            drawingElements: this.drawingEngine.elements
+        };
+    }
+
+    // Toggle Map View
+    toggleMapView() {
+        const canvasContainer = document.getElementById('canvasContainer');
+        const mapContainer = document.getElementById('mapContainer');
+        const elevationContainer = document.getElementById('elevationProfileContainer');
+        const mapToggleButton = document.getElementById('toggleMapView');
+        const elevationToggleButton = document.getElementById('toggleElevationView');
+        if (this.currentView !== 'map') {
+            canvasContainer.style.display = 'none';
+            elevationContainer.style.display = 'none';
+            mapContainer.style.display = 'flex';
+            mapToggleButton.innerHTML = '<i class="fas fa-drafting-compass"></i> Canvas View';
+            mapToggleButton.classList.add('active');
+            elevationToggleButton.classList.remove('active');
+            elevationToggleButton.innerHTML = '<i class="fas fa-chart-line"></i> Elevation Profile';
+            if (!this.mapManager.map) {
+                this.mapManager.initializeMap();
+            }
+            this.mapManager.isMapView = true;
+            setTimeout(() => {
+                this.mapManager.map.invalidateSize();
+                this.mapManager.updateMapFromDrawing();
+            }, 100);
+            this.currentView = 'map';
+        } else {
+            mapContainer.style.display = 'none';
+            canvasContainer.style.display = 'flex';
+            mapToggleButton.innerHTML = '<i class="fas fa-map"></i> Map View';
+            mapToggleButton.classList.remove('active');
+            this.currentView = 'canvas';
+            this.mapManager.isMapView = false;
+        }
+        this.elevationProfileManager.isProfileView = false;
+    }
+
+    // Toggle Elevation Profile View
+    toggleElevationProfileView() {
+        const canvasContainer = document.getElementById('canvasContainer');
+        const mapContainer = document.getElementById('mapContainer');
+        const elevationContainer = document.getElementById('elevationProfileContainer');
+        const elevationToggleButton = document.getElementById('toggleElevationView');
+        const mapToggleButton = document.getElementById('toggleMapView');
+        if (this.currentView !== 'elevation') {
+            canvasContainer.style.display = 'none';
+            mapContainer.style.display = 'none';
+            elevationContainer.style.display = 'flex';
+            elevationToggleButton.innerHTML = '<i class="fas fa-drafting-compass"></i> Canvas View';
+            elevationToggleButton.classList.add('active');
+            mapToggleButton.classList.remove('active');
+            mapToggleButton.innerHTML = '<i class="fas fa-map"></i> Map View';
+            if (!this.elevationProfileManager.chart) {
+                this.elevationProfileManager.initializeChart();
+            }
+            this.elevationProfileManager.isProfileView = true;
+            this.elevationProfileManager.updateProfileData(this.gpxRawData, this.drawingEngine.elements);
+            setTimeout(() => {
+                if (this.elevationProfileManager.chart) this.elevationProfileManager.chart.resize();
+            }, 100);
+            this.currentView = 'elevation';
+        } else {
+            elevationContainer.style.display = 'none';
+            canvasContainer.style.display = 'flex';
+            elevationToggleButton.innerHTML = '<i class="fas fa-chart-line"></i> Elevation Profile';
+            elevationToggleButton.classList.remove('active');
+            this.currentView = 'canvas';
+            this.elevationProfileManager.isProfileView = false;
+        }
+        this.mapManager.isMapView = false;
     }
 }
 

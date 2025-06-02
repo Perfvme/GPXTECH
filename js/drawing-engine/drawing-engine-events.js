@@ -48,19 +48,7 @@ DrawingEngine.prototype.handleMouseDown = function(e) {
             this.canvas.style.cursor = 'grabbing';
             break;
         case 'pole':
-            let poleX, poleY;
-            // Use the current polePreviewCoordinates as it's already snapped or at cursor
-            if (this.polePreviewCoordinates) {
-                poleX = this.polePreviewCoordinates.x;
-                poleY = this.polePreviewCoordinates.y;
-            } else {
-                // Fallback: if polePreviewCoordinates is somehow null, calculate snap on click
-                const clickSnapPoint = this.findSnapPoint(x, y);
-                poleX = clickSnapPoint ? clickSnapPoint.x : x;
-                poleY = clickSnapPoint ? clickSnapPoint.y : y;
-            }
-            this.addPole(poleX, poleY);
-            // The polePreviewCoordinates will be updated by the next mouseMove event
+            this.addPole(x, y);
             break;
         case 'line':
             if (this.tempLine) {
@@ -99,19 +87,6 @@ DrawingEngine.prototype.handleMouseMove = function(e) {
         this.updateLineDrawing(x, y);
     } else if (this.currentTool === 'drag-select' && this.dragSelection.active) {
         this.updateDragSelection(x, y);
-    } else if (this.currentTool === 'pole') {
-        if (this.snapEnabled) {
-            this.updateSnapPoint(x, y);
-            if (this.snapPoint) {
-                this.polePreviewCoordinates = { x: this.snapPoint.x, y: this.snapPoint.y };
-            } else {
-                this.polePreviewCoordinates = { x: x, y: y };
-            }
-        } else {
-            this.polePreviewCoordinates = { x: x, y: y };
-            this.snapPoint = null;
-        }
-        this.render();
     } else if (this.currentTool === 'line' && this.snapEnabled) {
         this.updateSnapPoint(x, y);
         this.render();

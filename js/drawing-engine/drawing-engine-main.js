@@ -145,8 +145,6 @@ class DrawingEngine {
         this.lastSnapUpdate = 0;
         this.snapUpdateThrottle = 16; // ~60fps
         
-        this.polePreviewCoordinates = null;
-        
         this.setupEventListeners();
         this.render();
     }
@@ -158,9 +156,6 @@ class DrawingEngine {
         this.currentTool = tool;
         this.tempLine = null;
         
-        if (tool !== 'pole') {
-            this.polePreviewCoordinates = null;
-        }
         // Reset angle tool state when switching tools
         if (tool !== 'angle') {
             this.resetAngleTool();
@@ -173,11 +168,6 @@ class DrawingEngine {
             this.resetAlignedDimensionTool();
         } else {
             this.alignedDimensionState.mode = 'selecting-first';
-        }
-        
-        // Clear snapPoint if the tool is not one that uses snapping for previewing placement
-        if (tool !== 'line' && tool !== 'pole' && tool !== 'angle' && tool !== 'aligned-dimension') {
-            this.snapPoint = null;
         }
         
         switch (tool) {

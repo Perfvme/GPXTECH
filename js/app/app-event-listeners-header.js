@@ -8,7 +8,8 @@ ElectricalCADApp.prototype.setupHeaderEventListeners = function() {
     document.getElementById('newProject')?.addEventListener('click', () => this.newProject());
     document.getElementById('saveProject')?.addEventListener('click', () => this.saveProject());
     document.getElementById('loadGpx')?.addEventListener('click', () => this.loadGPXFile());
-    document.getElementById('toggleMapView')?.addEventListener('click', () => this.mapManager.toggleMapView());
+    document.getElementById('toggleMapView')?.addEventListener('click', () => this.toggleMapView());
+    document.getElementById('toggleElevationView')?.addEventListener('click', () => this.toggleElevationProfileView());
     document.getElementById('darkModeToggle')?.addEventListener('click', () => this.toggleDarkMode());
     
     // Add button to enable real coordinates for manual drawing
