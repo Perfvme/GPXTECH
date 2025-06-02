@@ -195,6 +195,8 @@ ElectricalCADApp.prototype.setupTitleBlockModal = function() {
         document.getElementById('tb-province').value = data.province;
         document.getElementById('tb-drawingTitle').value = data.drawingTitle;
         document.getElementById('tb-drawingNumber').value = data.drawingNumber;
+        document.getElementById('tb-titleBlockWidth').value = data.titleBlockWidth || 450;
+        document.getElementById('tb-titleBlockHeight').value = data.titleBlockHeight || 200;
 
         tableBody.innerHTML = '';
         data.rows.forEach((row, index) => {
@@ -231,6 +233,8 @@ ElectricalCADApp.prototype.setupTitleBlockModal = function() {
             data.province = document.getElementById('tb-province').value;
             data.drawingTitle = document.getElementById('tb-drawingTitle').value;
             data.drawingNumber = document.getElementById('tb-drawingNumber').value;
+            data.titleBlockWidth = parseInt(document.getElementById('tb-titleBlockWidth').value) || 450;
+            data.titleBlockHeight = parseInt(document.getElementById('tb-titleBlockHeight').value) || 200;
 
             tableBody.querySelectorAll('tr').forEach(tr => {
                 const inputs = tr.querySelectorAll('input[type="text"]');

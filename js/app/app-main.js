@@ -35,7 +35,9 @@ class ElectricalCADApp {
                 { label: "DISETUJUI", nama: "", paraf: "", jabatan: "", noGbrPart: "" }
             ],
             drawingNumber: "01",
-            includeInExport: false
+            includeInExport: false,
+            titleBlockWidth: 450,
+            titleBlockHeight: 200
         };
     }
 
