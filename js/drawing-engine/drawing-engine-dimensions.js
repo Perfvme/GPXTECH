@@ -131,41 +131,45 @@ DrawingEngine.prototype.drawAngleDimension2Line = function(dimension) {
  */
 DrawingEngine.prototype.formatDimensionText = function(value, style, type) {
     let formattedValue;
+    const precision = style.precision !== undefined ? style.precision : (type === 'aligned' ? 2 : 1);
+    const unit = style.unit || (type === 'aligned' ? 'm' : '°');
+    const prefix = style.prefix || '';
+    const suffix = style.suffix || '';
     
-    // Convert value based on unit and type
     if (type === 'angle') {
-        switch (style.unit) {
+        switch (unit) {
             case 'rad':
-                formattedValue = (value * Math.PI / 180).toFixed(style.precision);
+                formattedValue = (value * Math.PI / 180).toFixed(precision);
                 break;
             case 'grad':
-                formattedValue = (value * 10 / 9).toFixed(style.precision);
+                formattedValue = (value * 10 / 9).toFixed(precision);
                 break;
             case '°':
             default:
-                formattedValue = value.toFixed(style.precision);
+                formattedValue = value.toFixed(precision);
                 break;
         }
     } else if (type === 'aligned') {
-        let realDistance = value;
-
-        // The 'distance' value for aligned dimensions from GPX is already in real-world meters.
-        // No further conversion using metersPerPixel is needed here.
-        // The check for coordinateSystem.isRealCoordinates and metadata.metersPerPixel is implicitly handled
-        // by the fact that 'distance' is set to distanceMeters directly from gpx-parser.js.
-        // if (this.coordinateSystem.isRealCoordinates && this.metadata.metersPerPixel) {
-        //     realDistance = value * this.metadata.metersPerPixel;
-        // }
-
-        switch (style.unit) {
+        switch (unit) {
+            case 'km':
+                formattedValue = (value / 1000).toFixed(precision);
+                break;
+            case 'cm':
+                formattedValue = (value * 100).toFixed(precision);
+                break;
+            case 'mm':
+                formattedValue = (value * 1000).toFixed(precision);
+                break;
             case 'm':
             default:
-                formattedValue = realDistance.toFixed(style.precision);
+                formattedValue = value.toFixed(precision);
                 break;
         }
+    } else {
+        formattedValue = value.toFixed(precision); // Fallback
     }
     
-    return `${style.prefix}${formattedValue}${style.unit}${style.suffix}`;
+    return `${prefix}${formattedValue}${unit}${suffix}`;
 };
 
 /**
@@ -576,8 +580,8 @@ DrawingEngine.prototype.drawAlignedDimension = function(dimensionData) {
 
     const [p1, p2] = dimensionData.points;
     // Use the dimension's own style object, or fallback to the engine's default if missing
-    const style = dimensionData.style || this.dimensionStyle.aligned; 
-    const realDistance = dimensionData.distance; // This is the actual measured distance
+    const style = dimensionData.style && Object.keys(dimensionData.style).length > 0 ? dimensionData.style : this.dimensionStyle.aligned;
+    const realDistance = dimensionData.distance; // This is the actual measured 3D distance
 
     this.ctx.save(); // Save context for the entire dimension drawing operation
 
@@ -592,7 +596,7 @@ DrawingEngine.prototype.drawAlignedDimension = function(dimensionData) {
     const dimensionText = this.formatDimensionText(realDistance, style, 'aligned');
 
     // Calculate offset for the dimension line
-    const offsetValue = dimensionData.offset !== undefined ? dimensionData.offset : (style.offset || 20);
+    const offsetValue = dimensionData.offset !== undefined ? dimensionData.offset : (style.textOffset || 20);
     const offsetX = offsetValue * Math.sin(angle); // Perpendicular X component
     const offsetY = -offsetValue * Math.cos(angle); // Perpendicular Y component
 
@@ -637,17 +641,10 @@ DrawingEngine.prototype.drawAlignedDimension = function(dimensionData) {
         textX = (dimLineP1.x + dimLineP2.x) / 2;
         textY = (dimLineP1.y + dimLineP2.y) / 2;
         
-        let textOffsetValue;
-        if (dimensionData.textPosition && dimensionData.textPosition.offset !== undefined) {
-            textOffsetValue = dimensionData.textPosition.offset; // User-dragged specific offset for this dimension instance
-        } else if (style.textOffset !== undefined) {
-            textOffsetValue = style.textOffset; // From global dimension style (or instance style if overridden)
-        } else {
-            textOffsetValue = 10; // Fallback default if no specific or global textOffset is found
-        }
+        let textOffsetValueFromStyle = style.textOffset !== undefined ? style.textOffset : 10;
         
-        textX += textOffsetValue * Math.sin(angle); // Apply perpendicular offset
-        textY -= textOffsetValue * Math.cos(angle); // Apply perpendicular offset
+        textX += textOffsetValueFromStyle * Math.sin(angle); // Apply perpendicular offset
+        textY -= textOffsetValueFromStyle * Math.cos(angle); // Apply perpendicular offset
     }
     
     let textAngle = angle;
@@ -665,39 +662,35 @@ DrawingEngine.prototype.drawAlignedDimension = function(dimensionData) {
  * Draw aligned dimension preview
  */
 DrawingEngine.prototype.drawAlignedDimensionPreview = function(preview) {
-    this.ctx.save();
-    this.ctx.strokeStyle = '#ff6b6b'; // Preview color
-    this.ctx.lineWidth = 2;
-    this.ctx.setLineDash([5, 5]); // Dashed line for preview
-
-    if (preview.points.length === 1) {
-        // Just draw the line from the first point to the cursor
-        const [p1, p2] = [preview.points[0], preview.currentPoint];
-        this.ctx.beginPath();
-        this.ctx.moveTo(p1.x, p1.y);
-        this.ctx.lineTo(p2.x, p2.y);
-        this.ctx.stroke();
-
-        // Optionally draw a temporary aligned dimension for live preview
-        const tempDimension = {
-            type: 'aligned',
-            points: [p1, p2],
-            style: this.dimensionStyle.aligned,
-            distance: this.calculateDistance(p1.x, p1.y, p2.x, p2.y)
-        };
-        this.drawAlignedDimension(tempDimension);
-
-    } else if (preview.points.length === 2) {
-        // Draw the full aligned dimension preview (already handled by drawAlignedDimension)
-        const [p1, p2] = preview.points;
-        const tempDimension = {
-            type: 'aligned',
-            points: [p1, p2],
-            style: this.dimensionStyle.aligned,
-            distance: this.calculateDistance(p1.x, p1.y, p2.x, p2.y)
-        };
-        this.drawAlignedDimension(tempDimension);
+    if (!preview || !preview.points || preview.points.length < 1 || !preview.currentPoint) {
+         this.alignedDimensionState.previewDistance = null; // Clear previous preview
+         return;
     }
+    this.ctx.save();
+    this.ctx.strokeStyle = '#ff6b6b'; 
+    this.ctx.lineWidth = 1; // Thinner for preview
+    this.ctx.setLineDash([3, 3]); 
+
+    const p1 = preview.points[0];
+    const p2 = preview.currentPoint; // The cursor position
+
+    // Draw the line being measured (from first click to cursor)
+    this.ctx.beginPath();
+    this.ctx.moveTo(p1.x, p1.y);
+    this.ctx.lineTo(p2.x, p2.y);
+    this.ctx.stroke();
+
+    // Use the distance already calculated in updateAlignedDimensionPreview
+    const realDistance = preview.distance; 
+    
+    const tempDimension = {
+        type: 'aligned',
+        points: [p1, p2],
+        style: { ...this.dimensionStyle.aligned, lineColor: '#ff6b6b', textColor: '#ff6b6b', lineWidth: 1 }, // Preview style
+        distance: realDistance,
+        textOffset: (this.dimensionStyle.aligned.textOffset || 10) * -1 // Place text on other side for preview
+    };
+    this.drawAlignedDimension(tempDimension); // Re-use the main drawing logic
 
     this.ctx.restore();
 };

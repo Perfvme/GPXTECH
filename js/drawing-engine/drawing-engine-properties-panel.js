@@ -21,7 +21,7 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
     
     let html = '';
     
-    if (element.type && element.type.includes('tiang')) {
+    if (element.type && (element.type.includes('tiang') || element.type.includes('gardu'))) {
         // It's a pole
         const typeDisplayNames = {
             'tiang-baja-existing': 'Steel Pole (Existing)',
@@ -43,7 +43,7 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
             <div class="properties-form">
                 <div class="form-row">
                     <label><i class="fas fa-tag"></i> Name</label>
-                    <input type="text" value="${element.name}" onchange="drawingEngine.updateElementProperty('name', this.value)" placeholder="Enter pole name">
+                    <input type="text" value="${element.name || ''}" onchange="drawingEngine.updateElementProperty('name', this.value)" placeholder="Enter pole name">
                 </div>
                 
                 <div class="form-row">
@@ -80,22 +80,26 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
                             <span class="coord-label">Canvas</span>
                             <span class="coord-value">X: ${Math.round(element.x)}, Y: ${Math.round(element.y)}</span>
                         </div>
-                        ${element.utmX ? `
+                        ${element.utmX !== undefined ? `
                         <div class="coord-item">
                             <span class="coord-label">UTM</span>
-                            <span class="coord-value">${Math.round(element.utmX)}, ${Math.round(element.utmY)} (${element.utmZone})</span>
+                            <span class="coord-value">${Math.round(element.utmX)}, ${Math.round(element.utmY)} (Z${element.utmZone || 'N/A'})</span>
                         </div>` : ''}
-                        ${element.originalLat ? `
+                        ${element.originalLat !== undefined ? `
                         <div class="coord-item">
                             <span class="coord-label">GPS</span>
                             <span class="coord-value">${element.originalLat.toFixed(6)}, ${element.originalLon.toFixed(6)}</span>
+                        </div>` : ''}
+                        ${element.elevation !== undefined && element.elevation !== null ? `
+                        <div class="coord-item">
+                            <span class="coord-label">Elevation</span>
+                            <span class="coord-value">${element.elevation.toFixed(2)} m</span>
                         </div>` : ''}
                     </div>
                 </div>
             </div>
         `;
-    } else {
-        // It's a line
+    } else if (element.type && (element.type.includes('sutm') || element.type.includes('sutr'))) {
         const typeDisplayNames = {
             'sutm-existing': 'Medium Voltage (Existing)',
             'sutm-rencana': 'Medium Voltage (Planned)',
@@ -117,7 +121,7 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
             <div class="properties-form">
                 <div class="form-row">
                     <label><i class="fas fa-tag"></i> Name</label>
-                    <input type="text" value="${element.name}" onchange="drawingEngine.updateElementProperty('name', this.value)" placeholder="Enter line name">
+                    <input type="text" value="${element.name || ''}" onchange="drawingEngine.updateElementProperty('name', this.value)" placeholder="Enter line name">
                 </div>
                 
                 <div class="form-row">
@@ -137,14 +141,24 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
                             <span class="measure-label">Canvas Length</span>
                             <span class="measure-value">${canvasLength} px</span>
                         </div>
-                        ${element.distanceMeters ? `
+                        ${element.distanceMeters !== undefined ? `
                         <div class="measure-item primary">
-                            <span class="measure-label">Real Distance</span>
+                            <span class="measure-label">3D Distance</span>
                             <span class="measure-value">${element.distanceMeters} m</span>
                         </div>
                         <div class="measure-item">
                             <span class="measure-label">Kilometers</span>
                             <span class="measure-value">${(element.distanceMeters / 1000).toFixed(3)} km</span>
+                        </div>` : ''}
+                        ${element.startElevation !== undefined && element.startElevation !== null ? `
+                        <div class="measure-item">
+                            <span class="measure-label">Start Elevation</span>
+                            <span class="measure-value">${element.startElevation.toFixed(2)} m</span>
+                        </div>` : ''}
+                        ${element.endElevation !== undefined && element.endElevation !== null ? `
+                        <div class="measure-item">
+                            <span class="measure-label">End Elevation</span>
+                            <span class="measure-value">${element.endElevation.toFixed(2)} m</span>
                         </div>` : ''}
                     </div>
                 </div>
@@ -155,16 +169,45 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
                     <div class="location-info">
                         <div class="coord-item">
                             <span class="coord-label">Start UTM</span>
-                            <span class="coord-value">${Math.round(element.startUtm.x)}, ${Math.round(element.startUtm.y)} (${element.startUtm.zone})</span>
+                            <span class="coord-value">${Math.round(element.startUtm.x)}, ${Math.round(element.startUtm.y)} (Z${element.startUtm.zone || 'N/A'})</span>
                         </div>
                         <div class="coord-item">
                             <span class="coord-label">End UTM</span>
-                            <span class="coord-value">${Math.round(element.endUtm.x)}, ${Math.round(element.endUtm.y)} (${element.endUtm.zone})</span>
+                            <span class="coord-value">${Math.round(element.endUtm.x)}, ${Math.round(element.endUtm.y)} (Z${element.endUtm.zone || 'N/A'})</span>
                         </div>
                     </div>
                 </div>` : ''}
             </div>
         `;
+    } else if (element.type === 'aligned' || element.type === 'angle') {
+        // Properties for dimensions
+        const isAligned = element.type === 'aligned';
+        const dimName = isAligned ? 'Aligned Dimension' : 'Angular Dimension';
+        const valueLabel = isAligned ? 'Distance' : 'Angle';
+        const valueDisplay = isAligned ? `${element.distance.toFixed(element.style?.precision || 2)} ${element.style?.unit || 'm'}`
+                                       : `${element.angle.toFixed(element.style?.precision || 1)} ${element.style?.unit || '°'}`;
+        html = `
+            <div class="element-header">
+                <div class="element-icon ${isAligned ? 'line-icon' : 'pole-icon'}"></div>
+                <div class="element-info">
+                    <h4>${dimName} Properties</h4>
+                    <span class="element-type">${element.id}</span>
+                </div>
+            </div>
+            <div class="properties-form">
+                <div class="form-row">
+                    <label><i class="fas fa-ruler-combined"></i> ${valueLabel}</label>
+                    <input type="text" value="${valueDisplay}" readonly>
+                </div>
+                 <div class="form-row">
+                    <label><i class="fas fa-palette"></i> Style Options</label>
+                    <p style="font-size:12px; color: var(--text-secondary);">Use Dimension Style panel in toolbar to change style. Apply to selection if needed.</p>
+                </div>
+            </div>
+        `;
+    } else {
+        panel.innerHTML = `<p>Selected element type not fully supported in properties panel yet.</p>`;
+        return;
     }
     
     html += `

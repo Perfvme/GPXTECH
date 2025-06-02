@@ -199,61 +199,57 @@ DrawingEngine.prototype.updateAnglePreview = function(x, y) {
  * Handle clicks for the aligned dimension tool
  */
 DrawingEngine.prototype.handleAlignedDimensionClick = function(x, y) {
-    const snapPoint = this.findSnapPoint(x, y); // Find snap point
-    const clickPoint = snapPoint ? { x: snapPoint.x, y: snapPoint.y } : { x, y };
+    const snapPoint = this.findSnapPoint(x, y);
+    const clickPoint = snapPoint ? { x: snapPoint.x, y: snapPoint.y, element: snapPoint.element } : { x, y, element: null };
 
-    // Try to find clicked element (line or pole)
-    const clickedLine = this.findLineAt(clickPoint.x, clickPoint.y);
-    const clickedPole = this.findPoleAt(clickPoint.x, clickPoint.y);
+    const clickedLine = !snapPoint?.element && this.findLineAt(clickPoint.x, clickPoint.y); // Prefer snap point's element
+    const clickedPole = snapPoint?.element?.type?.includes('tiang') ? snapPoint.element : null;
 
     if (this.alignedDimensionState.mode === 'selecting-first') {
         if (clickedLine) {
-            // If a line is clicked, create dimension from its start and end points
             const p1 = { x: clickedLine.startX, y: clickedLine.startY };
             const p2 = { x: clickedLine.endX, y: clickedLine.endY };
-
-            // Get real-world coordinates for calculation
             const utmP1 = this.canvasToUTM(p1.x, p1.y);
             const utmP2 = this.canvasToUTM(p2.x, p2.y);
-            const realDistance = this.calculateDistance(utmP1.x, utmP1.y, utmP2.x, utmP2.y);
+            const elev1 = clickedLine.startElevation || 0;
+            const elev2 = clickedLine.endElevation || 0;
+            const realDistance = this.calculateDistance3D(utmP1.x, utmP1.y, elev1, utmP2.x, utmP2.y, elev2);
 
-            this.elements.dimensions.push({
+            const dimension = {
                 id: 'aligned_' + Date.now(),
                 type: 'aligned',
                 points: [p1, p2],
-                distance: realDistance,
-                style: this.dimensionStyle.aligned
-            });
+                distance: Math.round(realDistance * 100) / 100,
+                style: { ...this.dimensionStyle.aligned }
+            };
+            this.elements.dimensions.push(dimension);
+            this.executeCommand(new AddDimensionCommand(this, dimension)); // Add command
             this.resetAlignedDimensionTool();
             this.showAngleInstructions('Aligned dimension created from line!');
-        } else if (clickedPole) {
-            // If a pole is clicked, start two-point selection
+        } else { // Handles clickedPole or general point click
             this.alignedDimensionState.points = [clickPoint];
             this.alignedDimensionState.mode = 'selecting-second';
-            this.showAngleInstructions('Click second point or line');
-        } else {
-            // If nothing is clicked, reset or show error
-            this.resetAlignedDimensionTool();
-            this.showAngleInstructions('Click a point or a line to start aligned dimension.');
+            this.showAngleInstructions('Click second point or line for aligned dimension');
         }
     } else if (this.alignedDimensionState.mode === 'selecting-second') {
-        // This part handles the second point selection (either a pole or a general click point)
         this.alignedDimensionState.points.push(clickPoint);
-        // Create aligned dimension
-        const [p1, p2] = this.alignedDimensionState.points;
+        const [p1Data, p2Data] = this.alignedDimensionState.points;
         
-        // Get real-world coordinates for calculation
-        const utmP1 = this.canvasToUTM(p1.x, p1.y);
-        const utmP2 = this.canvasToUTM(p2.x, p2.y);
-        const realDistance = this.calculateDistance(utmP1.x, utmP1.y, utmP2.x, utmP2.y);
+        const utmP1 = this.canvasToUTM(p1Data.x, p1Data.y);
+        const utmP2 = this.canvasToUTM(p2Data.x, p2Data.y);
+        const elev1 = p1Data.element?.elevation || 0;
+        const elev2 = p2Data.element?.elevation || 0;
+        const realDistance = this.calculateDistance3D(utmP1.x, utmP1.y, elev1, utmP2.x, utmP2.y, elev2);
 
-        this.elements.dimensions.push({
+        const dimension = {
             id: 'aligned_' + Date.now(),
             type: 'aligned',
-            points: [p1, p2],
-            distance: realDistance,
-            style: this.dimensionStyle.aligned
-        });
+            points: [{x: p1Data.x, y: p1Data.y}, {x: p2Data.x, y: p2Data.y}],
+            distance: Math.round(realDistance * 100) / 100,
+            style: { ...this.dimensionStyle.aligned }
+        };
+        this.elements.dimensions.push(dimension);
+        this.executeCommand(new AddDimensionCommand(this, dimension)); // Add command
         this.resetAlignedDimensionTool();
         this.showAngleInstructions('Aligned dimension created!');
     }
@@ -264,23 +260,29 @@ DrawingEngine.prototype.handleAlignedDimensionClick = function(x, y) {
  * Update aligned dimension preview during mouse move
  */
 DrawingEngine.prototype.updateAlignedDimensionPreview = function(x, y) {
-    if (this.alignedDimensionState.mode === 'none') return;
+    if (this.alignedDimensionState.mode === 'none' || this.alignedDimensionState.points.length === 0) {
+        this.alignedDimensionState.previewDistance = null;
+        this.render();
+        return;
+    }
 
     const snapPoint = this.findSnapPoint(x, y);
-    const previewPoint = snapPoint ? { x: snapPoint.x, y: snapPoint.y } : { x, y };
+    const previewPoint = snapPoint ? { x: snapPoint.x, y: snapPoint.y, element: snapPoint.element } : { x, y, element: null };
 
     if (this.alignedDimensionState.points.length === 1) {
-        const p1 = this.alignedDimensionState.points[0];
-        const utmP1 = this.canvasToUTM(p1.x, p1.y);
+        const p1Data = this.alignedDimensionState.points[0];
+        const utmP1 = this.canvasToUTM(p1Data.x, p1Data.y);
         const utmPreviewPoint = this.canvasToUTM(previewPoint.x, previewPoint.y);
-        const realDistance = this.calculateDistance(utmP1.x, utmP1.y, utmPreviewPoint.x, utmPreviewPoint.y);
+        const elev1 = p1Data.element?.elevation || 0;
+        const elevPreview = previewPoint.element?.elevation || 0;
+        const realDistance = this.calculateDistance3D(utmP1.x, utmP1.y, elev1, utmPreviewPoint.x, utmPreviewPoint.y, elevPreview);
 
         this.alignedDimensionState.previewDistance = {
             type: 'aligned',
-            points: [p1, previewPoint],
-            currentPoint: previewPoint,
-            distance: realDistance,
-            style: this.dimensionStyle.aligned
+            points: [{x: p1Data.x, y: p1Data.y}, {x: previewPoint.x, y: previewPoint.y}],
+            currentPoint: {x: previewPoint.x, y: previewPoint.y}, // For drawing the line to cursor
+            distance: Math.round(realDistance * 100) / 100,
+            style: { ...this.dimensionStyle.aligned }
         };
     }
     this.render();

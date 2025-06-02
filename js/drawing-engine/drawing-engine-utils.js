@@ -29,10 +29,22 @@ DrawingEngine.prototype.isPointOnLine = function(x, y, line, tolerance = 5) {
 };
 
 /**
- * Calculate distance between two points in meters
+ * Calculate 2D distance between two points (UTM or canvas)
  */
-DrawingEngine.prototype.calculateDistance = function(x1, y1, x2, y2) {
+DrawingEngine.prototype.calculateDistance2D = function(x1, y1, x2, y2) {
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+};
+
+/**
+ * Calculate 3D distance between two points (UTM coordinates and elevations)
+ */
+DrawingEngine.prototype.calculateDistance3D = function(x1, y1, z1, x2, y2, z2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const elev1 = z1 || 0;
+    const elev2 = z2 || 0;
+    const dz = elev2 - elev1;
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
 };
 
 /**

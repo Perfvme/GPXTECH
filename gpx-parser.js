@@ -375,15 +375,22 @@ class GPXParser {
     }
     
     /**
-     * Calculate distance between two points in meters
+     * Calculate 3D distance between two points in meters
      * @param {number} x1 - First point X coordinate (UTM)
      * @param {number} y1 - First point Y coordinate (UTM)
+     * @param {number} z1 - First point Z coordinate (elevation in meters)
      * @param {number} x2 - Second point X coordinate (UTM)
      * @param {number} y2 - Second point Y coordinate (UTM)
-     * @returns {number} Distance in meters
+     * @param {number} z2 - Second point Z coordinate (elevation in meters)
+     * @returns {number} 3D distance in meters
      */
-    calculateDistance(x1, y1, x2, y2) {
-        return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    calculateDistance3D(x1, y1, z1, x2, y2, z2) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const elev1 = z1 || 0; // Default to 0 if elevation is null/undefined
+        const elev2 = z2 || 0; // Default to 0 if elevation is null/undefined
+        const dz = elev2 - elev1;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
     /**
@@ -578,7 +585,7 @@ class GPXParser {
         const elements = {
             poles: [],
             lines: [],
-            dimensions: [], // Initialize dimensions array
+            dimensions: [],
             metadata: {
                 metersPerPixel: this.metersPerPixel || 1,
                 coordinateSystem: 'UTM',
@@ -609,7 +616,7 @@ class GPXParser {
             });
         });
         
-        let totalDistance = 0;
+        let totalDistance3D = 0;
         
         // Convert tracks to lines and create associated aligned dimensions
         this.tracks.forEach(track => {
@@ -618,13 +625,16 @@ class GPXParser {
                     const startPt = track.points[i];
                     const endPt = track.points[i + 1];
                     
-                    // Calculate real distance in meters
-                    const distanceMeters = this.calculateDistance(
-                        startPt.utmX, startPt.utmY,
-                        endPt.utmX, endPt.utmY
+                    const startElevation = startPt.elevation || 0;
+                    const endElevation = endPt.elevation || 0;
+
+                    // Calculate real 3D distance in meters
+                    const distanceMeters3D = this.calculateDistance3D(
+                        startPt.utmX, startPt.utmY, startElevation,
+                        endPt.utmX, endPt.utmY, endElevation
                     );
                     
-                    totalDistance += distanceMeters;
+                    totalDistance3D += distanceMeters3D;
                     
                     const lineId = `${track.id}_line_${i}`;
                     elements.lines.push({
@@ -636,20 +646,21 @@ class GPXParser {
                         type: track.type,
                         name: `${track.name} - Segment ${i + 1}`,
                         trackId: track.id,
-                        distanceMeters: Math.round(distanceMeters * 100) / 100, // Round to cm
+                        distanceMeters: Math.round(distanceMeters3D * 100) / 100, // Store 3D distance
+                        startElevation: startPt.elevation, // Store original elevation
+                        endElevation: endPt.elevation,     // Store original elevation
                         startUtm: { x: startPt.utmX, y: startPt.utmY, zone: startPt.utmZone },
                         endUtm: { x: endPt.utmX, y: endPt.utmY, zone: endPt.utmZone }
                     });
 
-                    // Create corresponding aligned dimension object
                     elements.dimensions.push({
-                        id: `dim_aligned_${lineId}`, // Unique ID for the dimension
+                        id: `dim_aligned_${lineId}`,
                         type: 'aligned',
-                        points: [ // Points in canvas coordinates
+                        points: [
                             { x: startPt.x, y: startPt.y },
                             { x: endPt.x, y: endPt.y }
                         ],
-                        distance: Math.round(distanceMeters * 100) / 100 // The real distance
+                        distance: Math.round(distanceMeters3D * 100) / 100 // Use 3D distance
                     });
                 }
             }
@@ -661,14 +672,16 @@ class GPXParser {
                 for (let i = 0; i < route.points.length - 1; i++) {
                     const startPt = route.points[i];
                     const endPt = route.points[i + 1];
+
+                    const startElevation = startPt.elevation || 0;
+                    const endElevation = endPt.elevation || 0;
                     
-                    // Calculate real distance in meters
-                    const distanceMeters = this.calculateDistance(
-                        startPt.utmX, startPt.utmY,
-                        endPt.utmX, endPt.utmY
+                    const distanceMeters3D = this.calculateDistance3D(
+                        startPt.utmX, startPt.utmY, startElevation,
+                        endPt.utmX, endPt.utmY, endElevation
                     );
                     
-                    totalDistance += distanceMeters;
+                    totalDistance3D += distanceMeters3D;
                     
                     const lineId = `${route.id}_line_${i}`;
                     elements.lines.push({
@@ -680,12 +693,13 @@ class GPXParser {
                         type: route.type,
                         name: `${route.name} - Segment ${i + 1}`,
                         routeId: route.id,
-                        distanceMeters: Math.round(distanceMeters * 100) / 100, // Round to cm
+                        distanceMeters: Math.round(distanceMeters3D * 100) / 100, // Store 3D distance
+                        startElevation: startPt.elevation,
+                        endElevation: endPt.elevation,
                         startUtm: { x: startPt.utmX, y: startPt.utmY, zone: startPt.utmZone },
                         endUtm: { x: endPt.utmX, y: endPt.utmY, zone: endPt.utmZone }
                     });
 
-                    // Create corresponding aligned dimension object
                     elements.dimensions.push({
                         id: `dim_aligned_${lineId}`,
                         type: 'aligned',
@@ -693,15 +707,27 @@ class GPXParser {
                             { x: startPt.x, y: startPt.y },
                             { x: endPt.x, y: endPt.y }
                         ],
-                        distance: Math.round(distanceMeters * 100) / 100
+                        distance: Math.round(distanceMeters3D * 100) / 100 // Use 3D distance
                     });
                 }
             }
         });
         
-        elements.metadata.totalDistance = Math.round(totalDistance * 100) / 100;
+        elements.metadata.totalDistance = Math.round(totalDistance3D * 100) / 100;
         
         return elements;
+    }
+
+    /**
+     * Calculate distance between two points in meters (2D for fallback or specific 2D needs)
+     * @param {number} x1 - First point X coordinate (UTM)
+     * @param {number} y1 - First point Y coordinate (UTM)
+     * @param {number} x2 - Second point X coordinate (UTM)
+     * @param {number} y2 - Second point Y coordinate (UTM)
+     * @returns {number} Distance in meters
+     */
+    calculateDistance2D(x1, y1, x2, y2) { // Renamed original to calculateDistance2D
+        return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
     }
 }
 
