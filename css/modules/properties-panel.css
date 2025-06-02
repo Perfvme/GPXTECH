@@ -143,7 +143,7 @@
 .form-section {
     margin-bottom: 24px;
     padding-bottom: 20px;
-    border-bottom: 1px solid #f1f3f4;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .form-section:last-child {
@@ -233,53 +233,141 @@
     font-size: 12px;
 }
 
-/* Location and Measurement Info */
-.location-info,
+/* Compact form styles for Location and general input groups */
+.properties-form-compact .form-row {
+    margin-bottom: 15px;
+}
+
+.properties-form-compact .form-row:last-child {
+    margin-bottom: 0;
+}
+
+.input-group {
+    display: flex;
+    gap: 8px; /* Space between input items */
+    width: 100%;
+    flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+}
+
+.input-group-item {
+    flex: 1; /* Distribute space evenly */
+    display: flex;
+    align-items: center;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px 10px; /* Adjust padding for compact feel */
+}
+
+.input-group-item-inline {
+    flex: none; /* Do not grow/shrink */
+    width: auto; /* Auto width based on content */
+}
+
+.input-group-item .input-label {
+    color: var(--text-secondary);
+    margin-right: 6px; /* Space between label and input */
+    white-space: nowrap; /* Prevent label from wrapping */
+}
+
+.input-group-item input.compact-input {
+    flex: 1; /* Input takes remaining space */
+    border: none;
+    padding: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 13px;
+    min-width: 40px; /* Ensure input is not too small */
+}
+
+.input-group-item input.compact-input:focus {
+    outline: none;
+}
+
+.input-group-item input.utm-zone-input {
+    width: 35px; /* Fixed width for UTM zone input */
+    text-align: center;
+    padding: 0;
+}
+
+/* Measurement Info Styles (for lines) */
 .measurement-info {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.coord-item,
 .measure-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
-    background: #f8f9fa;
-    border-radius: 4px;
-    font-size: 12px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
 }
 
 .measure-item.primary {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
+    background: var(--color-blue-light);
+    border-color: var(--color-blue);
+    color: var(--color-blue-dark);
 }
 
 .measure-item.primary .measure-label,
 .measure-item.primary .measure-value {
-    color: white;
+    color: var(--color-blue-dark);
 }
 
-.coord-label,
 .measure-label {
-    font-weight: 600;
-    color: #6c757d;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
 }
 
-.coord-value,
 .measure-value {
-    font-family: 'Courier New', monospace;
-    font-weight: 500;
-    color: #495057;
+    text-align: right;
+    font-family: 'Roboto Mono', monospace;
+    color: var(--text-primary);
 }
 
 /* Property Actions */
 .property-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
     padding: 20px;
-    background: #f8f9fa;
-    border-top: 1px solid #e1e8ed;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-color);
+}
+
+.property-actions button {
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.property-actions .btn-delete {
+    background: #dc3545;
+    color: white;
+    border: 1px solid #dc3545;
+}
+
+.property-actions .btn-delete:hover {
+    background: #c82333;
+    border-color: #bd2130;
+}
+
+.property-actions .btn-export {
+    background: #007bff;
+    color: white;
+    border: 1px solid #007bff;
+}
+
+.property-actions .btn-export:hover {
+    background: #0069d9;
+    border-color: #0062cc;
 }

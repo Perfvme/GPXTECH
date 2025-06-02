@@ -19,11 +19,13 @@
     <link rel="stylesheet" href="css/modules/snap.css">
     <link rel="stylesheet" href="css/modules/dimension-controls.css">
     <link rel="stylesheet" href="css/modules/styles-responsive.css">
+    <link rel="stylesheet" href="css/modules/terrain-view.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
 </head>
 <body>
     <div class="app-container">
@@ -48,6 +50,9 @@
                 </button>
                 <button id="toggleElevationView" class="btn btn-info">
                     <i class="fas fa-chart-line"></i> Elevation Profile
+                </button>
+                <button id="toggleTerrainView" class="btn btn-warning">
+                    <i class="fas fa-globe-americas"></i> 3D Terrain
                 </button>
                 <button id="darkModeToggle" class="btn icon-toggle" title="Toggle Dark Mode">
                     <i class="fas fa-sun"></i>
@@ -450,6 +455,12 @@
                 -->
             </div>
 
+            <!-- 3D Terrain View Container -->
+            <div class="terrain-view-container" id="terrainViewContainer" style="display: none; flex:1; position:relative;">
+                <div id="cesiumContainer" style="width:100%; height:100%;"></div>
+                <button id="terrainZoomAllBtn" class="terrain-zoom-btn" title="Zoom to all elements" style="display:none;"><i class="fas fa-expand"></i> Zoom to All</button>
+            </div>
+
             <!-- Properties Panel -->
             <div class="properties-panel">
                 <h3>Properties</h3>
@@ -593,5 +604,7 @@
     <script src="js/app/app-tool-management.js"></script>
     <script src="js/app/app-ui-updates.js"></script>
     
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js"></script>
+    <script src="js/terrain-view-manager.js"></script>
 </body>
 </html>

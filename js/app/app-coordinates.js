@@ -33,9 +33,19 @@ ElectricalCADApp.prototype.updateStatusBar = function() {
     // Update total distance
     const totalDistanceEl = document.getElementById('totalDistance');
     if (totalDistanceEl) {
-        const distance = metadata.totalDistance || 0;
-        const distanceText = distance > 0 
-            ? `Total Distance: ${distance}m (${(distance / 1000).toFixed(3)}km)`
+        // Sum actualLengthMeters if present, else distanceMeters
+        let total = 0;
+        if (elements.lines && elements.lines.length > 0) {
+            total = elements.lines.reduce((sum, line) => {
+                if (typeof line.actualLengthMeters === 'number') return sum + line.actualLengthMeters;
+                if (typeof line.chordLengthMeters === 'number') return sum + line.chordLengthMeters;
+                if (typeof line.distanceMeters === 'number') return sum + line.distanceMeters;
+                return sum;
+            }, 0);
+        }
+        this.drawingEngine.metadata.totalDistance = total;
+        const distanceText = total > 0 
+            ? `Total Distance: ${total.toFixed(2)}m (${(total / 1000).toFixed(3)}km)`
             : 'Total Distance: 0m';
         totalDistanceEl.textContent = distanceText;
     }

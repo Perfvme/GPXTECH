@@ -238,13 +238,34 @@ DrawingEngine.prototype.enableRealCoordinates = function(referencePoint = null) 
  * Update element property
  */
 DrawingEngine.prototype.updateElementProperty = function(property, value) {
-    if (this.selectedElement) {
-        const oldValue = this.selectedElement[property];
-        
-        // Use command system for undo/redo support
-        const command = new UpdatePropertyCommand(this, this.selectedElement, property, value, oldValue);
-        this.executeCommand(command);
+    if (!this.selectedElement) {
+        console.warn("No element selected to update property.");
+        return;
     }
+
+    const oldValue = this.selectedElement[property];
+
+    // Type coercion for specific properties
+    if (property === 'hasGrounding' || property === 'hasGuywire') {
+        value = Boolean(value);
+    }
+    // Add more type coercions if necessary for other properties (e.g., numbers for coordinates)
+    // Example: if (property === 'elevation') value = Number(value);
+
+    if (oldValue === value) {
+        return; // No change, no need to create a command
+    }
+
+    const command = new UpdatePropertyCommand(this, this.selectedElement, property, value, oldValue);
+    this.executeCommand(command); // This will call command.execute(), render, and onElementsChanged
+
+    // Potentially, if a coordinate or dimension-affecting property changes,
+    // you might need to specifically update related dimensions here.
+    // For now, we'll assume rendering handles visual updates.
+    
+    // If the selected element is part of a multi-selection,
+    // this change only applies to the primary `selectedElement`.
+    // Batch property updates for multi-selected items would require a different approach.
 };
 
 /**
@@ -375,5 +396,183 @@ DrawingEngine.prototype.applyStyleToSelectedDimensions = function(styleUpdates) 
             Object.assign(element.style, styleUpdates);
         }
     });
+    this.render();
+};
+
+/**
+ * Convert Lat/Lon to UTM (approximate, for Indonesia, zone 48-54)
+ * For high-accuracy, use a geospatial library.
+ * Returns { x, y, zone }
+ */
+DrawingEngine.prototype.latLonToUTM = function(lat, lon) {
+    // WGS84 constants
+    const a = 6378137.0;
+    const f = 1 / 298.257223563;
+    const k0 = 0.9996;
+    const e = Math.sqrt(f * (2 - f));
+    // UTM zone
+    const zone = Math.floor((lon + 180) / 6) + 1;
+    const lambda0 = ((zone - 1) * 6 - 180 + 3) * Math.PI / 180;
+    const phi = lat * Math.PI / 180;
+    const lambda = lon * Math.PI / 180;
+    const N = a / Math.sqrt(1 - Math.pow(e * Math.sin(phi), 2));
+    const T = Math.pow(Math.tan(phi), 2);
+    const C = Math.pow(e, 2) / (1 - Math.pow(e, 2)) * Math.pow(Math.cos(phi), 2);
+    const A = Math.cos(phi) * (lambda - lambda0);
+    const M = a * ((1 - Math.pow(e, 2) / 4 - 3 * Math.pow(e, 4) / 64 - 5 * Math.pow(e, 6) / 256) * phi
+        - (3 * Math.pow(e, 2) / 8 + 3 * Math.pow(e, 4) / 32 + 45 * Math.pow(e, 6) / 1024) * Math.sin(2 * phi)
+        + (15 * Math.pow(e, 4) / 256 + 45 * Math.pow(e, 6) / 1024) * Math.sin(4 * phi)
+        - (35 * Math.pow(e, 6) / 3072) * Math.sin(6 * phi));
+    const x = k0 * N * (A + (1 - T + C) * Math.pow(A, 3) / 6 + (5 - 18 * T + T * T + 72 * C - 58 * Math.pow(e, 2) / (1 - Math.pow(e, 2))) * Math.pow(A, 5) / 120) + 500000;
+    let y = k0 * (M + N * Math.tan(phi) * (A * A / 2 + (5 - T + 9 * C + 4 * C * C) * Math.pow(A, 4) / 24 + (61 - 58 * T + T * T + 600 * C - 330 * Math.pow(e, 2) / (1 - Math.pow(e, 2))) * Math.pow(A, 6) / 720));
+    if (lat < 0) y += 10000000; // southern hemisphere
+    return { x, y, zone };
+};
+
+/**
+ * Update pole location from properties panel (any coordinate system)
+ */
+DrawingEngine.prototype.updatePoleLocationFromPanel = function(field, value) {
+    if (!this.selectedElement || !(this.selectedElement.type && (this.selectedElement.type.includes('tiang') || this.selectedElement.type.includes('gardu')))) {
+        return;
+    }
+    const pole = this.selectedElement;
+    value = parseFloat(value);
+    if (isNaN(value)) return;
+    let newX = pole.x, newY = pole.y, newUtmX = pole.utmX, newUtmY = pole.utmY, newUtmZone = pole.utmZone, newLat = pole.originalLat, newLon = pole.originalLon, newElevation = pole.elevation;
+    const isReal = this.coordinateSystem.isRealCoordinates;
+    // Update based on which field was changed
+    if (field === 'x' || field === 'y') {
+        if (field === 'x') newX = value;
+        if (field === 'y') newY = value;
+        if (isReal) {
+            const utm = this.canvasToUTM(newX, newY);
+            newUtmX = utm.x;
+            newUtmY = utm.y;
+            newUtmZone = this.coordinateSystem.utmZone;
+            const latlon = this.utmToLatLon(newUtmX, newUtmY, newUtmZone);
+            newLat = latlon.lat;
+            newLon = latlon.lon;
+        }
+    } else if (field === 'utmX' || field === 'utmY' || field === 'utmZone') {
+        if (field === 'utmX') newUtmX = value;
+        if (field === 'utmY') newUtmY = value;
+        if (field === 'utmZone') newUtmZone = value;
+        if (isReal) {
+            const canvas = this.utmToCanvas(newUtmX, newUtmY);
+            newX = canvas.x;
+            newY = canvas.y;
+            const latlon = this.utmToLatLon(newUtmX, newUtmY, newUtmZone);
+            newLat = latlon.lat;
+            newLon = latlon.lon;
+        }
+    } else if (field === 'originalLat' || field === 'originalLon') {
+        if (field === 'originalLat') newLat = value;
+        if (field === 'originalLon') newLon = value;
+        if (isReal) {
+            const utm = this.latLonToUTM(newLat, newLon);
+            newUtmX = utm.x;
+            newUtmY = utm.y;
+            newUtmZone = utm.zone;
+            const canvas = this.utmToCanvas(newUtmX, newUtmY);
+            newX = canvas.x;
+            newY = canvas.y;
+        }
+    } else if (field === 'elevation') {
+        newElevation = value;
+    }
+    // Only update if changed
+    if (pole.x !== newX) this.updateElementProperty('x', newX);
+    if (pole.y !== newY) this.updateElementProperty('y', newY);
+    if (pole.utmX !== newUtmX) this.updateElementProperty('utmX', newUtmX);
+    if (pole.utmY !== newUtmY) this.updateElementProperty('utmY', newUtmY);
+    if (pole.utmZone !== newUtmZone) this.updateElementProperty('utmZone', newUtmZone);
+    if (pole.originalLat !== newLat) this.updateElementProperty('originalLat', newLat);
+    if (pole.originalLon !== newLon) this.updateElementProperty('originalLon', newLon);
+    if (pole.elevation !== newElevation) this.updateElementProperty('elevation', newElevation);
+    // Refresh panel
+    this.updatePropertiesPanel(this.selectedElement);
+};
+
+// Helper to get absolute sag depth in meters
+DrawingEngine.prototype.getAbsoluteSagDepth = function(line) {
+    if (!line.sag || !line.sag.enabled || !line.chordLengthMeters) {
+        return 0;
+    }
+    if (line.sag.type === 'absolute') {
+        return line.sag.value;
+    } else if (line.sag.type === 'percentage') {
+        return line.chordLengthMeters * line.sag.value;
+    }
+    return 0;
+};
+
+// Calculate arc length of sagged cable (parabolic approximation)
+DrawingEngine.prototype.calculateSaggedLineLength = function(line) {
+    if (!line.sag || !line.sag.enabled || !line.chordLengthMeters) {
+        return line.chordLengthMeters || 0;
+    }
+    const L = line.chordLengthMeters;
+    const h = this.getAbsoluteSagDepth(line);
+    if (h === 0 || L === 0) {
+        return L;
+    }
+    const sagRatio = h / L;
+    const arcLength = L * (1 + (8/3) * Math.pow(sagRatio, 2));
+    return Math.round(arcLength * 100) / 100;
+};
+
+// Generate intermediate points for a sagged cable between two 3D points
+DrawingEngine.prototype.generateSaggedPoints = function(startPt3D, endPt3D, sagDepth, numPoints = 20) {
+    const points = [];
+    const L_chord_3d = Math.sqrt(
+        Math.pow(endPt3D.x - startPt3D.x, 2) +
+        Math.pow(endPt3D.y - startPt3D.y, 2) +
+        Math.pow(endPt3D.z - startPt3D.z, 2)
+    );
+    if (L_chord_3d === 0 || sagDepth === 0) {
+        for (let i = 0; i <= numPoints; i++) {
+            const t = i / numPoints;
+            points.push({
+                x: startPt3D.x + t * (endPt3D.x - startPt3D.x),
+                y: startPt3D.y + t * (endPt3D.y - startPt3D.y),
+                z: startPt3D.z + t * (endPt3D.z - startPt3D.z)
+            });
+        }
+        return points;
+    }
+    for (let i = 0; i <= numPoints; i++) {
+        const t = i / numPoints;
+        const x_chord = startPt3D.x + t * (endPt3D.x - startPt3D.x);
+        const y_chord = startPt3D.y + t * (endPt3D.y - startPt3D.y);
+        const z_chord = startPt3D.z + t * (endPt3D.z - startPt3D.z);
+        const x_local_for_sag = t * L_chord_3d;
+        const y_parabolic_drop = (4 * sagDepth * x_local_for_sag * (L_chord_3d - x_local_for_sag)) / (L_chord_3d * L_chord_3d);
+        const z_sagged = z_chord - y_parabolic_drop;
+        points.push({ x: x_chord, y: y_chord, z: z_sagged });
+    }
+    return points;
+};
+
+// Update sag property on a line element, using UpdatePropertyCommand for undo/redo
+DrawingEngine.prototype.updateElementSagProperty = function(key, value) {
+    if (!this.selectedElement || !(this.selectedElement.type && (this.selectedElement.type.includes('sutm') || this.selectedElement.type.includes('sutr')))) {
+        return;
+    }
+    const line = this.selectedElement;
+    const oldSag = JSON.parse(JSON.stringify(line.sag || { value: 0.01, type: 'percentage', enabled: false }));
+    const newSag = { ...oldSag, [key]: value };
+    // If enabling/disabling, recalculate lengths
+    if (key === 'enabled' || key === 'value' || key === 'type') {
+        // Recalculate actualLengthMeters
+        line.sag = newSag;
+        if (line.chordLengthMeters) {
+            line.actualLengthMeters = this.calculateSaggedLineLength({ ...line, sag: newSag });
+        }
+    }
+    // Use UpdatePropertyCommand for undo/redo
+    const command = new UpdatePropertyCommand(this, line, 'sag', newSag, oldSag);
+    this.executeCommand(command);
+    this.updatePropertiesPanel(line);
     this.render();
 };

@@ -15,7 +15,8 @@ DrawingEngine.prototype.addPole = function(x, y) {
         name: `Pole ${this.elements.poles.length + 1}`,
         description: '',
         hasGrounding: this.addGrounding,
-        hasGuywire: this.addGuywire
+        hasGuywire: this.addGuywire,
+        elevation: 0 // Always initialize elevation
     };
     
     // Add real coordinate information if using real coordinate system
@@ -29,6 +30,7 @@ DrawingEngine.prototype.addPole = function(x, y) {
         const latLon = this.utmToLatLon(utmCoords.x, utmCoords.y, this.coordinateSystem.utmZone);
         pole.originalLat = latLon.lat;
         pole.originalLon = latLon.lon;
+        if (typeof pole.elevation !== 'number') pole.elevation = 0;
     }
     
     // Use command system for undo/redo support
@@ -87,15 +89,21 @@ DrawingEngine.prototype.finishLine = function(x, y) {
             endX: endX,
             endY: endY,
             type: this.currentLineType,
-            name: `Line ${this.elements.lines.length + 1}`
+            name: `Line ${this.elements.lines.length + 1}`,
+            startElevation: 0,
+            endElevation: 0,
+            // Initialize sag property
+            sag: { value: 0.01, type: 'percentage', enabled: false }
         };
         
         // Assign pole references if snapped to poles
         if (startSnapPoint && startSnapPoint.type === 'endpoint-pole') {
             line.startPole = startSnapPoint.element.id;
+            line.startElevation = startSnapPoint.element.elevation || 0;
         }
         if (endSnapPoint && endSnapPoint.type === 'endpoint-pole') {
             line.endPole = endSnapPoint.element.id;
+            line.endElevation = endSnapPoint.element.elevation || 0;
         }
         
         // Add real coordinate information and distance calculation if using real coordinate system
@@ -106,9 +114,13 @@ DrawingEngine.prototype.finishLine = function(x, y) {
             line.startUtm = { x: startUtm.x, y: startUtm.y, zone: this.coordinateSystem.utmZone };
             line.endUtm = { x: endUtm.x, y: endUtm.y, zone: this.coordinateSystem.utmZone };
             
-            // Calculate real distance in meters
-            line.distanceMeters = this.calculateDistance(startUtm.x, startUtm.y, endUtm.x, endUtm.y);
-            line.distanceMeters = Math.round(line.distanceMeters * 100) / 100; // Round to cm
+            // Calculate real distance in meters (3D with elevation)
+            const startElev = (this.selectedElement && this.selectedElement.elevation) || 0;
+            const endElev = (endSnapPoint && endSnapPoint.element && endSnapPoint.element.elevation) || 0;
+            line.chordLengthMeters = this.calculateDistance3D(startUtm.x, startUtm.y, startElev, endUtm.x, endUtm.y, endElev);
+            line.chordLengthMeters = Math.round(line.chordLengthMeters * 100) / 100;
+            // Calculate actual sagged length
+            line.actualLengthMeters = this.calculateSaggedLineLength(line);
         }
         
         // Use command system for undo/redo support

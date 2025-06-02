@@ -79,16 +79,27 @@ class UpdatePropertyCommand {
         this.drawingEngine = drawingEngine;
         this.element = element;
         this.property = property;
-        this.newValue = newValue;
-        this.oldValue = oldValue;
+        // Deep copy for objects (e.g., sag)
+        if (typeof newValue === 'object' && newValue !== null) {
+            this.newValue = JSON.parse(JSON.stringify(newValue));
+        } else {
+            this.newValue = newValue;
+        }
+        if (typeof oldValue === 'object' && oldValue !== null) {
+            this.oldValue = JSON.parse(JSON.stringify(oldValue));
+        } else {
+            this.oldValue = oldValue;
+        }
     }
 
     execute() {
-        this.element[this.property] = this.newValue;
+        this.element[this.property] = (typeof this.newValue === 'object' && this.newValue !== null)
+            ? JSON.parse(JSON.stringify(this.newValue)) : this.newValue;
     }
 
     undo() {
-        this.element[this.property] = this.oldValue;
+        this.element[this.property] = (typeof this.oldValue === 'object' && this.oldValue !== null)
+            ? JSON.parse(JSON.stringify(this.oldValue)) : this.oldValue;
     }
 }
 
