@@ -78,37 +78,60 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
                 
                 <div class="form-section">
                     <label class="section-label"><i class="fas fa-map-marker-alt"></i> Location</label>
-                    <div class="location-info">
-                        <div class="coord-item">
-                            <span class="coord-label">Canvas</span>
-                            <span class="coord-value">
-                                X: <input type="number" step="0.01" value="${element.x}" onchange="window.drawingEngine.updatePoleLocationFromPanel('x', this.value)">
-                                , Y: <input type="number" step="0.01" value="${element.y}" onchange="window.drawingEngine.updatePoleLocationFromPanel('y', this.value)">
-                            </span>
+                    <div class="properties-form-compact">
+                        <div class="form-row">
+                            <label for="prop-canvas-x"><i class="fas fa-ruler-combined"></i> Canvas</label>
+                            <div class="input-group">
+                                <div class="input-group-item">
+                                    <span class="input-label">X:</span>
+                                    <input type="number" step="0.01" value="${element.x}" onchange="window.drawingEngine.updatePoleLocationFromPanel('x', this.value)" class="compact-input">
+                                </div>
+                                <div class="input-group-item">
+                                    <span class="input-label">Y:</span>
+                                    <input type="number" step="0.01" value="${element.y}" onchange="window.drawingEngine.updatePoleLocationFromPanel('y', this.value)" class="compact-input">
+                                </div>
+                            </div>
                         </div>
                         ${element.utmX !== undefined ? `
-                        <div class="coord-item">
-                            <span class="coord-label">UTM</span>
-                            <span class="coord-value">
-                                <input type="number" step="0.01" value="${element.utmX}" onchange="window.drawingEngine.updatePoleLocationFromPanel('utmX', this.value)">
-                                , <input type="number" step="0.01" value="${element.utmY}" onchange="window.drawingEngine.updatePoleLocationFromPanel('utmY', this.value)">
-                                (Z<input type="number" step="1" min="1" max="60" value="${element.utmZone || ''}" onchange="window.drawingEngine.updatePoleLocationFromPanel('utmZone', this.value)">)
-                            </span>
+                        <div class="form-row">
+                            <label for="prop-utm-x"><i class="fas fa-globe-europe"></i> UTM</label>
+                            <div class="input-group">
+                                <div class="input-group-item">
+                                    <input type="number" step="0.01" value="${element.utmX}" onchange="window.drawingEngine.updatePoleLocationFromPanel('utmX', this.value)" class="compact-input">
+                                </div>
+                                <div class="input-group-item">
+                                    <span class="input-label">,</span>
+                                    <input type="number" step="0.01" value="${element.utmY}" onchange="window.drawingEngine.updatePoleLocationFromPanel('utmY', this.value)" class="compact-input">
+                                </div>
+                                <div class="input-group-item input-group-item-inline">
+                                    <span class="input-label">(Z</span>
+                                    <input type="number" step="1" min="1" max="60" value="${element.utmZone || ''}" onchange="window.drawingEngine.updatePoleLocationFromPanel('utmZone', this.value)" class="compact-input utm-zone-input">
+                                    <span class="input-label">)</span>
+                                </div>
+                            </div>
                         </div>` : ''}
                         ${element.originalLat !== undefined ? `
-                        <div class="coord-item">
-                            <span class="coord-label">GPS</span>
-                            <span class="coord-value">
-                                <input type="number" step="0.000001" value="${element.originalLat}" onchange="window.drawingEngine.updatePoleLocationFromPanel('originalLat', this.value)">
-                                , <input type="number" step="0.000001" value="${element.originalLon}" onchange="window.drawingEngine.updatePoleLocationFromPanel('originalLon', this.value)">
-                            </span>
+                        <div class="form-row">
+                            <label for="prop-gps-lat"><i class="fas fa-location-arrow"></i> GPS</label>
+                            <div class="input-group">
+                                <div class="input-group-item">
+                                    <input type="number" step="0.000001" value="${element.originalLat}" onchange="window.drawingEngine.updatePoleLocationFromPanel('originalLat', this.value)" class="compact-input">
+                                </div>
+                                <div class="input-group-item">
+                                    <span class="input-label">,</span>
+                                    <input type="number" step="0.000001" value="${element.originalLon}" onchange="window.drawingEngine.updatePoleLocationFromPanel('originalLon', this.value)" class="compact-input">
+                                </div>
+                            </div>
                         </div>` : ''}
                         ${element.elevation !== undefined && element.elevation !== null ? `
-                        <div class="coord-item">
-                            <span class="coord-label">Elevation</span>
-                            <span class="coord-value">
-                                <input type="number" step="0.01" value="${element.elevation}" onchange="window.drawingEngine.updatePoleLocationFromPanel('elevation', this.value)"> m
-                            </span>
+                        <div class="form-row">
+                            <label for="prop-elevation"><i class="fas fa-mountain"></i> Elevation</label>
+                            <div class="input-group">
+                                <div class="input-group-item">
+                                    <input type="number" step="0.01" value="${element.elevation}" onchange="window.drawingEngine.updatePoleLocationFromPanel('elevation', this.value)" class="compact-input">
+                                    <span class="input-label">m</span>
+                                </div>
+                            </div>
                         </div>` : ''}
                     </div>
                 </div>
