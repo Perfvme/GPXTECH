@@ -91,7 +91,9 @@ DrawingEngine.prototype.finishLine = function(x, y) {
             type: this.currentLineType,
             name: `Line ${this.elements.lines.length + 1}`,
             startElevation: 0,
-            endElevation: 0
+            endElevation: 0,
+            // Initialize sag property
+            sag: { value: 0.01, type: 'percentage', enabled: false }
         };
         
         // Assign pole references if snapped to poles
@@ -115,8 +117,10 @@ DrawingEngine.prototype.finishLine = function(x, y) {
             // Calculate real distance in meters (3D with elevation)
             const startElev = (this.selectedElement && this.selectedElement.elevation) || 0;
             const endElev = (endSnapPoint && endSnapPoint.element && endSnapPoint.element.elevation) || 0;
-            line.distanceMeters = this.calculateDistance3D(startUtm.x, startUtm.y, startElev, endUtm.x, endUtm.y, endElev);
-            line.distanceMeters = Math.round(line.distanceMeters * 100) / 100; // Round to cm
+            line.chordLengthMeters = this.calculateDistance3D(startUtm.x, startUtm.y, startElev, endUtm.x, endUtm.y, endElev);
+            line.chordLengthMeters = Math.round(line.chordLengthMeters * 100) / 100;
+            // Calculate actual sagged length
+            line.actualLengthMeters = this.calculateSaggedLineLength(line);
         }
         
         // Use command system for undo/redo support

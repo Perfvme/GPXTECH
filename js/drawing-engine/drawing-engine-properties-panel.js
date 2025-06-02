@@ -181,7 +181,16 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
                             <span class="measure-label">Canvas Length</span>
                             <span class="measure-value">${canvasLength} px</span>
                         </div>
-                        ${element.distanceMeters !== undefined ? `
+                        ${element.chordLengthMeters !== undefined ? `
+                        <div class="measure-item primary">
+                            <span class="measure-label">Chord Length</span>
+                            <span class="measure-value">${element.chordLengthMeters} m</span>
+                        </div>
+                        <div class="measure-item">
+                            <span class="measure-label">Actual Cable Length (Sagged)</span>
+                            <span class="measure-value">${element.actualLengthMeters} m</span>
+                        </div>` : ''}
+                        ${element.distanceMeters !== undefined && element.chordLengthMeters === undefined ? `
                         <div class="measure-item primary">
                             <span class="measure-label">3D Distance</span>
                             <span class="measure-value">${element.distanceMeters} m</span>
@@ -200,6 +209,26 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
                             <span class="measure-label">End Elevation</span>
                             <span class="measure-value">${element.endElevation.toFixed(2)} m</span>
                         </div>` : ''}
+                    </div>
+                </div>
+                <div class="form-section">
+                    <label class="section-label"><i class="fas fa-sort-amount-down"></i> Cable Sag</label>
+                    <div class="form-row">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="prop-line-sag-enabled" ${element.sag?.enabled ? 'checked' : ''} onchange="window.drawingEngine.updateElementSagProperty('enabled', this.checked)">
+                            <span class="checkmark"></span> Enable Sag
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <label for="prop-line-sag-value">Sag Value:</label>
+                        <input type="number" id="prop-line-sag-value" value="${element.sag?.value || 0.01}" step="0.01" ${!element.sag?.enabled ? 'disabled' : ''} onchange="window.drawingEngine.updateElementSagProperty('value', parseFloat(this.value))">
+                    </div>
+                    <div class="form-row">
+                        <label for="prop-line-sag-type">Sag Type:</label>
+                        <select id="prop-line-sag-type" ${!element.sag?.enabled ? 'disabled' : ''} onchange="window.drawingEngine.updateElementSagProperty('type', this.value)">
+                            <option value="percentage" ${element.sag?.type === 'percentage' ? 'selected' : ''}>Percentage of Span</option>
+                            <option value="absolute" ${element.sag?.type === 'absolute' ? 'selected' : ''}>Absolute (meters)</option>
+                        </select>
                     </div>
                 </div>
                 

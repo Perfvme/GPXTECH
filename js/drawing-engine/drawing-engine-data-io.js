@@ -7,6 +7,23 @@
  * Export drawing data
  */
 DrawingEngine.prototype.exportData = function() {
+    // Ensure all lines have sag, chordLengthMeters, actualLengthMeters
+    this.elements.lines.forEach(line => {
+        if (!line.sag) line.sag = { value: 0.01, type: 'percentage', enabled: false };
+        if (line.startUtm && line.endUtm) {
+            // Recalculate chordLengthMeters if missing
+            if (typeof line.chordLengthMeters !== 'number') {
+                const startElev = line.startElevation || 0;
+                const endElev = line.endElevation || 0;
+                line.chordLengthMeters = this.calculateDistance3D(line.startUtm.x, line.startUtm.y, startElev, line.endUtm.x, line.endUtm.y, endElev);
+                line.chordLengthMeters = Math.round(line.chordLengthMeters * 100) / 100;
+            }
+            // Recalculate actualLengthMeters if missing
+            if (typeof line.actualLengthMeters !== 'number') {
+                line.actualLengthMeters = this.calculateSaggedLineLength(line);
+            }
+        }
+    });
     return {
         elements: this.elements,
         zoom: this.zoom,
@@ -20,6 +37,21 @@ DrawingEngine.prototype.exportData = function() {
  */
 DrawingEngine.prototype.importData = function(data) {
     this.elements = data.elements || { poles: [], lines: [], dimensions: [] };
+    // Ensure all lines have sag, chordLengthMeters, actualLengthMeters
+    this.elements.lines.forEach(line => {
+        if (!line.sag) line.sag = { value: 0.01, type: 'percentage', enabled: false };
+        if (line.startUtm && line.endUtm) {
+            const startElev = line.startElevation || 0;
+            const endElev = line.endElevation || 0;
+            if (typeof line.chordLengthMeters !== 'number') {
+                line.chordLengthMeters = this.calculateDistance3D(line.startUtm.x, line.startUtm.y, startElev, line.endUtm.x, line.endUtm.y, endElev);
+                line.chordLengthMeters = Math.round(line.chordLengthMeters * 100) / 100;
+            }
+            if (typeof line.actualLengthMeters !== 'number') {
+                line.actualLengthMeters = this.calculateSaggedLineLength(line);
+            }
+        }
+    });
     this.zoom = data.zoom || 1;
     this.panX = data.panX || 0;
     this.panY = data.panY || 0;
@@ -63,6 +95,21 @@ DrawingEngine.prototype.loadFromGPX = function(elements) {
         lines: elements.lines || [],
         dimensions: elements.dimensions || []
     };
+    // Ensure all lines have sag, chordLengthMeters, actualLengthMeters
+    this.elements.lines.forEach(line => {
+        if (!line.sag) line.sag = { value: 0.01, type: 'percentage', enabled: false };
+        if (line.startUtm && line.endUtm) {
+            const startElev = line.startElevation || 0;
+            const endElev = line.endElevation || 0;
+            if (typeof line.chordLengthMeters !== 'number') {
+                line.chordLengthMeters = this.calculateDistance3D(line.startUtm.x, line.startUtm.y, startElev, line.endUtm.x, line.endUtm.y, endElev);
+                line.chordLengthMeters = Math.round(line.chordLengthMeters * 100) / 100;
+            }
+            if (typeof line.actualLengthMeters !== 'number') {
+                line.actualLengthMeters = this.calculateSaggedLineLength(line);
+            }
+        }
+    });
 
     // Assign current default style to newly loaded dimensions if not already set by parser
     this.elements.dimensions.forEach(dim => {

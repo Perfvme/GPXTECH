@@ -141,10 +141,20 @@ class TerrainViewManager {
             hasValidElements = true;
             startElev = Number(startElev) || 0;
             endElev = Number(endElev) || 0;
-            const positions = Cesium.Cartesian3.fromDegreesArrayHeights([
-                startLon, startLat, startElev,
-                endLon, endLat, endElev
-            ]);
+            let positions;
+            if (line.sag && line.sag.enabled && typeof line.chordLengthMeters === 'number') {
+                // Generate sagged points in world coordinates
+                const sagDepth = this.drawingEngine.getAbsoluteSagDepth(line);
+                const startPt = { x: startLon, y: startLat, z: startElev };
+                const endPt = { x: endLon, y: endLat, z: endElev };
+                const saggedPoints = this.drawingEngine.generateSaggedPoints(startPt, endPt, sagDepth, 20);
+                positions = saggedPoints.map(pt => Cesium.Cartesian3.fromDegrees(pt.x, pt.y, pt.z));
+            } else {
+                positions = Cesium.Cartesian3.fromDegreesArrayHeights([
+                    startLon, startLat, startElev,
+                    endLon, endLat, endElev
+                ]);
+            }
             const lineEntity = this.viewer.entities.add({
                 name: line.name || `Line ${line.id}`,
                 polyline: {
@@ -153,7 +163,7 @@ class TerrainViewManager {
                     material: this.getCesiumColorForLine(line.type),
                     arcType: Cesium.ArcType.NONE
                 },
-                description: `<h4>${line.name}</h4><p>Type: ${line.type}</p><p>Length: ${line.distanceMeters ? line.distanceMeters.toFixed(2) + 'm' : 'N/A'}</p>`
+                description: `<h4>${line.name}</h4><p>Type: ${line.type}</p><p>Length: ${line.chordLengthMeters ? line.chordLengthMeters.toFixed(2) + 'm' : 'N/A'}</p>`
             });
             this.entities.push(lineEntity);
         });

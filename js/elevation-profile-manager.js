@@ -195,22 +195,41 @@ class ElevationProfileManager {
                 });
             }
         } else if (drawingElements && drawingElements.lines && drawingElements.lines.length > 0) {
-            const gpxLines = drawingElements.lines.filter(line => line.trackId || line.routeId);
-            if (gpxLines.length > 0) {
-                gpxLines.forEach(line => {
-                    // Always add a pole marker at the start of the line
-                    if (profilePoints.length === 0 && line.startElevation !== null && line.startElevation !== undefined) {
-                        profilePoints.push({ x: cumulativeDistance, y: line.startElevation });
-                        poleMarkers.push({ x: cumulativeDistance, y: line.startElevation });
-                    }
-                    if (line.distanceMeters && line.endElevation !== null && line.endElevation !== undefined) {
-                        cumulativeDistance += line.distanceMeters;
-                        profilePoints.push({ x: cumulativeDistance, y: line.endElevation });
-                        // Always add a pole marker at the end of the line
-                        poleMarkers.push({ x: cumulativeDistance, y: line.endElevation });
-                    }
-                });
-            }
+            // Use sagged points for each line if sag is enabled
+            let prevEnd = null;
+            drawingElements.lines.forEach(line => {
+                let startX = 0, endX = 0;
+                let startElev = line.startElevation || 0;
+                let endElev = line.endElevation || 0;
+                if (profilePoints.length > 0) {
+                    startX = profilePoints[profilePoints.length - 1].x;
+                }
+                if (typeof line.chordLengthMeters === 'number') {
+                    endX = startX + line.chordLengthMeters;
+                } else if (typeof line.distanceMeters === 'number') {
+                    endX = startX + line.distanceMeters;
+                } else {
+                    endX = startX + 1;
+                }
+                // Generate sagged points if sag enabled
+                let points = [];
+                if (line.sag && line.sag.enabled && typeof line.chordLengthMeters === 'number') {
+                    const sagDepth = this.drawingEngine.getAbsoluteSagDepth(line);
+                    const startPt = { x: startX, y: 0, z: startElev };
+                    const endPt = { x: endX, y: 0, z: endElev };
+                    points = this.drawingEngine.generateSaggedPoints(startPt, endPt, sagDepth, 20);
+                    // Map to profile points: x = horizontal distance, y = sagged elevation
+                    points.forEach(pt => {
+                        profilePoints.push({ x: pt.x, y: pt.z });
+                    });
+                } else {
+                    // No sag: just straight line
+                    profilePoints.push({ x: startX, y: startElev });
+                    profilePoints.push({ x: endX, y: endElev });
+                }
+                // Always add a pole marker at the end of the line
+                poleMarkers.push({ x: endX, y: endElev });
+            });
             // Try to find poles at line endpoints
             if (drawingElements && drawingElements.poles && drawingElements.poles.length > 0) {
                 drawingElements.poles.forEach(pole => {
@@ -218,7 +237,7 @@ class ElevationProfileManager {
                         const line = drawingElements.lines[pole.lineIndex];
                         let dist = 0;
                         for (let i = 0; i < pole.lineIndex; i++) {
-                            dist += drawingElements.lines[i].distanceMeters || 0;
+                            dist += drawingElements.lines[i].chordLengthMeters || drawingElements.lines[i].distanceMeters || 0;
                         }
                         const elev = (pole.elevation !== undefined) ? pole.elevation : (line.startElevation || line.endElevation);
                         if (typeof elev === 'number') {

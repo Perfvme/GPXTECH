@@ -493,3 +493,86 @@ DrawingEngine.prototype.updatePoleLocationFromPanel = function(field, value) {
     // Refresh panel
     this.updatePropertiesPanel(this.selectedElement);
 };
+
+// Helper to get absolute sag depth in meters
+DrawingEngine.prototype.getAbsoluteSagDepth = function(line) {
+    if (!line.sag || !line.sag.enabled || !line.chordLengthMeters) {
+        return 0;
+    }
+    if (line.sag.type === 'absolute') {
+        return line.sag.value;
+    } else if (line.sag.type === 'percentage') {
+        return line.chordLengthMeters * line.sag.value;
+    }
+    return 0;
+};
+
+// Calculate arc length of sagged cable (parabolic approximation)
+DrawingEngine.prototype.calculateSaggedLineLength = function(line) {
+    if (!line.sag || !line.sag.enabled || !line.chordLengthMeters) {
+        return line.chordLengthMeters || 0;
+    }
+    const L = line.chordLengthMeters;
+    const h = this.getAbsoluteSagDepth(line);
+    if (h === 0 || L === 0) {
+        return L;
+    }
+    const sagRatio = h / L;
+    const arcLength = L * (1 + (8/3) * Math.pow(sagRatio, 2));
+    return Math.round(arcLength * 100) / 100;
+};
+
+// Generate intermediate points for a sagged cable between two 3D points
+DrawingEngine.prototype.generateSaggedPoints = function(startPt3D, endPt3D, sagDepth, numPoints = 20) {
+    const points = [];
+    const L_chord_3d = Math.sqrt(
+        Math.pow(endPt3D.x - startPt3D.x, 2) +
+        Math.pow(endPt3D.y - startPt3D.y, 2) +
+        Math.pow(endPt3D.z - startPt3D.z, 2)
+    );
+    if (L_chord_3d === 0 || sagDepth === 0) {
+        for (let i = 0; i <= numPoints; i++) {
+            const t = i / numPoints;
+            points.push({
+                x: startPt3D.x + t * (endPt3D.x - startPt3D.x),
+                y: startPt3D.y + t * (endPt3D.y - startPt3D.y),
+                z: startPt3D.z + t * (endPt3D.z - startPt3D.z)
+            });
+        }
+        return points;
+    }
+    for (let i = 0; i <= numPoints; i++) {
+        const t = i / numPoints;
+        const x_chord = startPt3D.x + t * (endPt3D.x - startPt3D.x);
+        const y_chord = startPt3D.y + t * (endPt3D.y - startPt3D.y);
+        const z_chord = startPt3D.z + t * (endPt3D.z - startPt3D.z);
+        const x_local_for_sag = t * L_chord_3d;
+        const y_parabolic_drop = (4 * sagDepth * x_local_for_sag * (L_chord_3d - x_local_for_sag)) / (L_chord_3d * L_chord_3d);
+        const z_sagged = z_chord - y_parabolic_drop;
+        points.push({ x: x_chord, y: y_chord, z: z_sagged });
+    }
+    return points;
+};
+
+// Update sag property on a line element, using UpdatePropertyCommand for undo/redo
+DrawingEngine.prototype.updateElementSagProperty = function(key, value) {
+    if (!this.selectedElement || !(this.selectedElement.type && (this.selectedElement.type.includes('sutm') || this.selectedElement.type.includes('sutr')))) {
+        return;
+    }
+    const line = this.selectedElement;
+    const oldSag = JSON.parse(JSON.stringify(line.sag || { value: 0.01, type: 'percentage', enabled: false }));
+    const newSag = { ...oldSag, [key]: value };
+    // If enabling/disabling, recalculate lengths
+    if (key === 'enabled' || key === 'value' || key === 'type') {
+        // Recalculate actualLengthMeters
+        line.sag = newSag;
+        if (line.chordLengthMeters) {
+            line.actualLengthMeters = this.calculateSaggedLineLength({ ...line, sag: newSag });
+        }
+    }
+    // Use UpdatePropertyCommand for undo/redo
+    const command = new UpdatePropertyCommand(this, line, 'sag', newSag, oldSag);
+    this.executeCommand(command);
+    this.updatePropertiesPanel(line);
+    this.render();
+};
