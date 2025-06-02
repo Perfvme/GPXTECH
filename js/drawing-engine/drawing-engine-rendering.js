@@ -22,6 +22,11 @@ DrawingEngine.prototype.render = function() {
         this.drawGrid();
     }
     
+    // Draw pole preview if applicable
+    if (this.currentTool === 'pole' && this.polePreviewCoordinates) {
+        this.drawPolePreview(this.polePreviewCoordinates.x, this.polePreviewCoordinates.y);
+    }
+    
     // Draw lines first (so they appear behind poles)
     this.elements.lines.forEach(line => this.drawLine(line));
     
@@ -36,7 +41,7 @@ DrawingEngine.prototype.render = function() {
     }
     
     // Draw snap point for cursor (when not drawing)
-    if (this.currentTool === 'line' && !this.tempLine && this.snapPoint) {
+    if (this.currentTool === 'line' && !this.tempLine && this.snapPoint && this.snapEnabled) {
         this.drawSnapIndicator(this.snapPoint);
     }
     
@@ -552,5 +557,42 @@ DrawingEngine.prototype.drawDimension = function(dimension) {
             console.warn("Unknown dimension type:", dimension.type);
             break;
     }
+    this.ctx.restore();
+};
+
+DrawingEngine.prototype.drawPolePreview = function(x, y) {
+    this.ctx.save();
+    this.ctx.globalAlpha = 0.5; // Make preview semi-transparent
+    this.ctx.translate(x, y);
+
+    // Draw pole symbol based on currentPoleType
+    switch (this.currentPoleType) {
+        case 'tiang-baja-existing':
+            this.drawTiangBajaExisting();
+            break;
+        case 'tiang-baja-rencana':
+            this.drawTiangBajaRencana();
+            break;
+        case 'tiang-beton-existing':
+            this.drawTiangBetonExisting();
+            break;
+        case 'tiang-beton-rencana':
+            this.drawTiangBetonRencana();
+            break;
+        case 'gardu-portal':
+            this.drawGarduPortal();
+            break;
+        default: // Fallback, draw a simple circle
+            this.ctx.fillStyle = '#888'; // A distinct preview color
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, 4, 0, Math.PI * 2);
+            this.ctx.fill();
+            break;
+    }
+
+    // Optionally, you could preview accessories too, if desired
+    // if (this.addGrounding) { this.drawGrounding(); }
+    // if (this.addGuywire) { this.drawGuywire(); }
+
     this.ctx.restore();
 };
