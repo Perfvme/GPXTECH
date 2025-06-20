@@ -28,6 +28,13 @@ ElectricalCADApp.prototype.setupHeaderEventListeners = function() {
     
     // GPX file input
     document.getElementById('gpxFileInput')?.addEventListener('change', (e) => this.handleGPXFile(e));
+    
+    // JSON project file input
+    document.getElementById('loadJsonFileInput')?.addEventListener('change', (e) => this.handleProjectFile(e));
+    
+    // Save/Load project buttons (both in header and toolbar)
+    document.getElementById('saveProjectBtn')?.addEventListener('click', () => this.saveProject());
+    document.getElementById('loadProjectBtn')?.addEventListener('click', () => this.loadProjectFile());
 };
 
 document.addEventListener('DOMContentLoaded', function() {
