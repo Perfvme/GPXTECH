@@ -140,127 +140,243 @@ class ElevationProfileManager {
         }
 
         const profilePoints = [];
+        const poleMarkers = [];
         let cumulativeDistance = 0;
         this.poleIndices = [];
-        let poleMarkers = [];
 
-        if (gpxData && gpxData.tracks && gpxData.tracks.length > 0) {
-            gpxData.tracks.forEach(track => {
-                track.points.forEach((point, index, arr) => {
-                    if (index === 0) {
-                        if (point.elevation !== null && point.elevation !== undefined) {
-                            profilePoints.push({ x: cumulativeDistance, y: point.elevation });
-                            // Always add a pole marker at the start
-                            poleMarkers.push({ x: cumulativeDistance, y: point.elevation });
-                        }
+        // Strategy: Prioritize drawing elements over GPX data for consistency
+        // If we have drawing elements (lines), use them as the primary source
+        // Use GPX data only when no drawing elements exist
+        
+        if (drawingElements && drawingElements.lines && drawingElements.lines.length > 0) {
+            // Primary approach: Use drawing elements (manually drawn lines and poles)
+            console.log('Using drawing elements for elevation profile');
+            
+            // Process each line segment sequentially
+            let currentDistance = 0;
+            const lineEndPositions = []; // Track where each line ends for pole placement
+            
+            drawingElements.lines.forEach((line, lineIndex) => {
+                const startDistance = currentDistance;
+                let startElevation = line.startElevation || 0;
+                let endElevation = line.endElevation || 0;
+                
+                // Calculate line length (prefer chord length for sagged lines)
+                let lineLength = 0;
+                if (typeof line.chordLengthMeters === 'number' && line.chordLengthMeters > 0) {
+                    lineLength = line.chordLengthMeters;
+                } else if (typeof line.distanceMeters === 'number' && line.distanceMeters > 0) {
+                    lineLength = line.distanceMeters;
+                } else {
+                    // Calculate from coordinates if no distance stored
+                    if (this.drawingEngine && this.drawingEngine.coordinateSystem.isRealCoordinates) {
+                        const startUtm = this.drawingEngine.canvasToUTM(line.startX, line.startY);
+                        const endUtm = this.drawingEngine.canvasToUTM(line.endX, line.endY);
+                        lineLength = Math.sqrt(
+                            Math.pow(endUtm.x - startUtm.x, 2) + 
+                            Math.pow(endUtm.y - startUtm.y, 2)
+                        );
                     } else {
-                        const prevPoint = arr[index-1];
-                        if (point.utmX && prevPoint.utmX) {
-                            const segmentDistance = Math.sqrt(
-                                Math.pow(point.utmX - prevPoint.utmX, 2) +
-                                Math.pow(point.utmY - prevPoint.utmY, 2)
-                            );
-                            cumulativeDistance += segmentDistance;
-                            if (point.elevation !== null && point.elevation !== undefined) {
-                                profilePoints.push({ x: cumulativeDistance, y: point.elevation });
-                                // Always add a pole marker at the end of each segment
-                                poleMarkers.push({ x: cumulativeDistance, y: point.elevation });
-                            }
+                        // Fallback to canvas coordinates
+                        lineLength = Math.sqrt(
+                            Math.pow(line.endX - line.startX, 2) + 
+                            Math.pow(line.endY - line.startY, 2)
+                        );
+                    }
+                }
+                
+                const endDistance = startDistance + lineLength;
+                
+                // Generate profile points for this line
+                if (line.sag && line.sag.enabled && this.drawingEngine) {
+                    // Generate sagged line profile
+                    const sagDepth = this.drawingEngine.getAbsoluteSagDepth ? 
+                        this.drawingEngine.getAbsoluteSagDepth(line) : (line.sag.depth || 0);
+                    
+                    // Create 3D points for sag calculation
+                    const startPt = { x: startDistance, y: 0, z: startElevation };
+                    const endPt = { x: endDistance, y: 0, z: endElevation };
+                    
+                    if (this.drawingEngine.generateSaggedPoints) {
+                        const saggedPoints = this.drawingEngine.generateSaggedPoints(startPt, endPt, sagDepth, 20);
+                        saggedPoints.forEach(pt => {
+                            profilePoints.push({ x: pt.x, y: pt.z });
+                        });
+                    } else {
+                        // Fallback: generate simple catenary approximation
+                        const steps = 20;
+                        for (let i = 0; i <= steps; i++) {
+                            const t = i / steps;
+                            const x = startDistance + t * lineLength;
+                            const elevationAtT = startElevation + t * (endElevation - startElevation);
+                            // Simple catenary sag: deepest at middle
+                            const sagAtT = sagDepth * 4 * t * (1 - t);
+                            const y = elevationAtT - sagAtT;
+                            profilePoints.push({ x, y });
                         }
                     }
+                } else {
+                    // Straight line - just add start and end points
+                    if (lineIndex === 0 || profilePoints.length === 0) {
+                        profilePoints.push({ x: startDistance, y: startElevation });
+                    }
+                    profilePoints.push({ x: endDistance, y: endElevation });
+                }
+                
+                // Track line end positions for pole placement
+                lineEndPositions.push({
+                    distance: endDistance,
+                    elevation: endElevation,
+                    lineIndex: lineIndex
                 });
+                
+                currentDistance = endDistance;
             });
-            // Find pole points from drawingElements (poles with trackPointIndex)
-            if (drawingElements && drawingElements.poles && drawingElements.poles.length > 0) {
+            
+            // Add pole markers at line endpoints and specific pole positions
+            if (drawingElements.poles && drawingElements.poles.length > 0) {
                 drawingElements.poles.forEach(pole => {
-                    if (typeof pole.trackPointIndex === 'number' && gpxData.tracks[pole.trackIndex || 0]) {
-                        // Find cumulative distance for this pole
+                    let poleDistance = 0;
+                    let poleElevation = pole.elevation || 0;
+                    
+                    // Determine pole position based on available data
+                    if (typeof pole.lineIndex === 'number' && pole.lineIndex < lineEndPositions.length) {
+                        // Pole is associated with a specific line end
+                        const lineEnd = lineEndPositions[pole.lineIndex];
+                        poleDistance = lineEnd.distance;
+                        if (poleElevation === 0) poleElevation = lineEnd.elevation;
+                    } else if (typeof pole.trackPointIndex === 'number' && gpxData && gpxData.tracks) {
+                        // Pole is associated with a GPX track point - calculate distance
                         let dist = 0;
                         const track = gpxData.tracks[pole.trackIndex || 0];
-                        for (let i = 1; i <= pole.trackPointIndex; i++) {
-                            const pt = track.points[i];
-                            const prevPt = track.points[i-1];
-                            if (pt && prevPt && pt.utmX && prevPt.utmX) {
-                                dist += Math.sqrt(
-                                    Math.pow(pt.utmX - prevPt.utmX, 2) +
-                                    Math.pow(pt.utmY - prevPt.utmY, 2)
-                                );
+                        if (track && track.points) {
+                            for (let i = 1; i <= pole.trackPointIndex && i < track.points.length; i++) {
+                                const pt = track.points[i];
+                                const prevPt = track.points[i-1];
+                                if (pt && prevPt && pt.utmX && prevPt.utmX) {
+                                    dist += Math.sqrt(
+                                        Math.pow(pt.utmX - prevPt.utmX, 2) +
+                                        Math.pow(pt.utmY - prevPt.utmY, 2)
+                                    );
+                                }
+                            }
+                            poleDistance = dist;
+                            const trackPoint = track.points[pole.trackPointIndex];
+                            if (trackPoint && typeof trackPoint.elevation === 'number' && poleElevation === 0) {
+                                poleElevation = trackPoint.elevation;
                             }
                         }
-                        const elev = track.points[pole.trackPointIndex]?.elevation;
-                        if (typeof elev === 'number') {
-                            poleMarkers.push({ x: dist, y: elev });
-                        }
+                    } else {
+                        // Try to position pole based on its coordinates relative to lines
+                        // This is a fallback for manually placed poles
+                        let bestDistance = 0;
+                        let minDistToLine = Infinity;
+                        
+                        drawingElements.lines.forEach((line, lineIndex) => {
+                            // Calculate distance from pole to line
+                            const lineStart = { x: line.startX, y: line.startY };
+                            const lineEnd = { x: line.endX, y: line.endY };
+                            const polePos = { x: pole.x, y: pole.y };
+                            
+                            // Project pole onto line to find closest point
+                            const A = { x: lineEnd.x - lineStart.x, y: lineEnd.y - lineStart.y };
+                            const B = { x: polePos.x - lineStart.x, y: polePos.y - lineStart.y };
+                            const AB = A.x * B.x + A.y * B.y;
+                            const AA = A.x * A.x + A.y * A.y;
+                            
+                            if (AA > 0) {
+                                const t = Math.max(0, Math.min(1, AB / AA));
+                                const closest = {
+                                    x: lineStart.x + t * A.x,
+                                    y: lineStart.y + t * A.y
+                                };
+                                const distToPole = Math.sqrt(
+                                    Math.pow(polePos.x - closest.x, 2) + 
+                                    Math.pow(polePos.y - closest.y, 2)
+                                );
+                                
+                                if (distToPole < minDistToLine) {
+                                    minDistToLine = distToPole;
+                                    // Calculate distance along profile
+                                    let distanceAlongProfile = 0;
+                                    for (let i = 0; i < lineIndex; i++) {
+                                        const prevLine = drawingElements.lines[i];
+                                        distanceAlongProfile += prevLine.chordLengthMeters || prevLine.distanceMeters || 100;
+                                    }
+                                    // Add partial distance along current line
+                                    const currentLineLength = line.chordLengthMeters || line.distanceMeters || 100;
+                                    distanceAlongProfile += t * currentLineLength;
+                                    bestDistance = distanceAlongProfile;
+                                }
+                            }
+                        });
+                        
+                        poleDistance = bestDistance;
                     }
+                    
+                    poleMarkers.push({ x: poleDistance, y: poleElevation });
+                });
+            } else {
+                // No poles defined - add markers at line endpoints
+                lineEndPositions.forEach(pos => {
+                    poleMarkers.push({ x: pos.distance, y: pos.elevation });
                 });
             }
-        } else if (drawingElements && drawingElements.lines && drawingElements.lines.length > 0) {
-            // Use sagged points for each line if sag is enabled
-            let prevEnd = null;
-            drawingElements.lines.forEach(line => {
-                let startX = 0, endX = 0;
-                let startElev = line.startElevation || 0;
-                let endElev = line.endElevation || 0;
-                if (profilePoints.length > 0) {
-                    startX = profilePoints[profilePoints.length - 1].x;
-                }
-                if (typeof line.chordLengthMeters === 'number') {
-                    endX = startX + line.chordLengthMeters;
-                } else if (typeof line.distanceMeters === 'number') {
-                    endX = startX + line.distanceMeters;
-                } else {
-                    endX = startX + 1;
-                }
-                // Generate sagged points if sag enabled
-                let points = [];
-                if (line.sag && line.sag.enabled && typeof line.chordLengthMeters === 'number') {
-                    const sagDepth = this.drawingEngine.getAbsoluteSagDepth(line);
-                    const startPt = { x: startX, y: 0, z: startElev };
-                    const endPt = { x: endX, y: 0, z: endElev };
-                    points = this.drawingEngine.generateSaggedPoints(startPt, endPt, sagDepth, 20);
-                    // Map to profile points: x = horizontal distance, y = sagged elevation
-                    points.forEach(pt => {
-                        profilePoints.push({ x: pt.x, y: pt.z });
+            
+        } else if (gpxData && gpxData.tracks && gpxData.tracks.length > 0) {
+            // Secondary approach: Use GPX data when no drawing elements
+            console.log('Using GPX data for elevation profile');
+            
+            gpxData.tracks.forEach(track => {
+                if (track.points && track.points.length > 0) {
+                    track.points.forEach((point, index) => {
+                        if (index === 0) {
+                            // First point
+                            if (typeof point.elevation === 'number') {
+                                profilePoints.push({ x: cumulativeDistance, y: point.elevation });
+                                poleMarkers.push({ x: cumulativeDistance, y: point.elevation });
+                            }
+                        } else {
+                            // Calculate distance from previous point
+                            const prevPoint = track.points[index - 1];
+                            if (point.utmX && prevPoint.utmX) {
+                                const segmentDistance = Math.sqrt(
+                                    Math.pow(point.utmX - prevPoint.utmX, 2) +
+                                    Math.pow(point.utmY - prevPoint.utmY, 2)
+                                );
+                                cumulativeDistance += segmentDistance;
+                                
+                                if (typeof point.elevation === 'number') {
+                                    profilePoints.push({ x: cumulativeDistance, y: point.elevation });
+                                    poleMarkers.push({ x: cumulativeDistance, y: point.elevation });
+                                }
+                            }
+                        }
                     });
-                } else {
-                    // No sag: just straight line
-                    profilePoints.push({ x: startX, y: startElev });
-                    profilePoints.push({ x: endX, y: endElev });
                 }
-                // Always add a pole marker at the end of the line
-                poleMarkers.push({ x: endX, y: endElev });
             });
-            // Try to find poles at line endpoints
-            if (drawingElements && drawingElements.poles && drawingElements.poles.length > 0) {
-                drawingElements.poles.forEach(pole => {
-                    if (typeof pole.lineIndex === 'number' && drawingElements.lines[pole.lineIndex]) {
-                        const line = drawingElements.lines[pole.lineIndex];
-                        let dist = 0;
-                        for (let i = 0; i < pole.lineIndex; i++) {
-                            dist += drawingElements.lines[i].chordLengthMeters || drawingElements.lines[i].distanceMeters || 0;
-                        }
-                        const elev = (pole.elevation !== undefined) ? pole.elevation : (line.startElevation || line.endElevation);
-                        if (typeof elev === 'number') {
-                            poleMarkers.push({ x: dist, y: elev });
-                        }
-                    }
-                });
-            }
         }
 
+        // Update chart with processed data
         if (profilePoints.length > 0) {
-            this.chart.data.labels = profilePoints.map(p => p.x);
+            this.chart.data.labels = profilePoints.map(p => p.x.toFixed(1));
             this.chart.data.datasets[0].data = profilePoints.map(p => p.y);
             this.chart.data.datasets[1].data = poleMarkers;
+            
+            // Calculate appropriate y-axis range
             const elevations = profilePoints.map(p => p.y);
             const minElevation = Math.min(...elevations);
             const maxElevation = Math.max(...elevations);
-            const padding = (maxElevation - minElevation) * 0.1;
+            const padding = Math.max((maxElevation - minElevation) * 0.1, 5); // Minimum 5m padding
             const center = (maxElevation + minElevation) / 2;
             const halfRange = ((maxElevation - minElevation) / 2 + padding) * this.verticalScale;
+            
             this.chart.options.scales.y.min = Math.floor(center - halfRange);
             this.chart.options.scales.y.max = Math.ceil(center + halfRange);
+            
+            console.log(`Elevation profile updated: ${profilePoints.length} points, ${poleMarkers.length} poles`);
         } else {
+            // No data available
             this.chart.data.labels = [];
             this.chart.data.datasets[0].data = [];
             this.chart.data.datasets[1].data = [];
@@ -268,6 +384,7 @@ class ElevationProfileManager {
             this.chart.options.scales.y.max = undefined;
             console.log("No elevation data to display.");
         }
+        
         this.chart.update();
     }
 

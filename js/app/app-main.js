@@ -258,6 +258,125 @@ class ElectricalCADApp {
         }
     }
 
+    // Unified view switching method for display mode buttons
+    showView(viewType) {
+        // Update display mode button states
+        const displayModeButtons = document.querySelectorAll('.display-mode-btn');
+        displayModeButtons.forEach(btn => btn.classList.remove('active'));
+        
+        // Clear all view flags
+        this.mapManager.isMapView = false;
+        this.elevationProfileManager.isProfileView = false;
+        this.terrainViewManager.isTerrainView = false;
+        
+        // Hide all containers
+        const containers = ['canvasContainer', 'mapContainer', 'elevationProfileContainer', 'terrainViewContainer'];
+        containers.forEach(containerId => {
+            const container = document.getElementById(containerId);
+            if (container) container.style.display = 'none';
+        });
+        
+        // Update header button states to match current view
+        const headerButtons = {
+            map: document.getElementById('toggleMapView'),
+            elevation: document.getElementById('toggleElevationView'),
+            terrain: document.getElementById('toggleTerrainView')
+        };
+        
+        // Reset all header buttons to default state
+        if (headerButtons.map) {
+            headerButtons.map.innerHTML = '<i class="fas fa-map"></i> Map View';
+            headerButtons.map.classList.remove('active');
+        }
+        if (headerButtons.elevation) {
+            headerButtons.elevation.innerHTML = '<i class="fas fa-chart-line"></i> Elevation Profile';
+            headerButtons.elevation.classList.remove('active');
+        }
+        if (headerButtons.terrain) {
+            headerButtons.terrain.innerHTML = '<i class="fas fa-globe-americas"></i> 3D Terrain';
+            headerButtons.terrain.classList.remove('active');
+        }
+        
+        // Hide terrain zoom button
+        const terrainZoomBtn = document.getElementById('terrainZoomAllBtn');
+        if (terrainZoomBtn) terrainZoomBtn.style.display = 'none';
+        
+        switch (viewType) {
+            case 'drawing':
+                this.currentView = 'canvas';
+                document.getElementById('canvasContainer').style.display = 'flex';
+                document.getElementById('viewDrawingBtn').classList.add('active');
+                break;
+                
+            case 'map':
+                this.currentView = 'map';
+                document.getElementById('mapContainer').style.display = 'flex';
+                document.getElementById('viewMapBtn').classList.add('active');
+                this.mapManager.isMapView = true;
+                
+                // Update header button
+                if (headerButtons.map) {
+                    headerButtons.map.innerHTML = '<i class="fas fa-drafting-compass"></i> Canvas View';
+                    headerButtons.map.classList.add('active');
+                }
+                
+                if (!this.mapManager.map) {
+                    this.mapManager.initializeMap();
+                }
+                setTimeout(() => {
+                    this.mapManager.map.invalidateSize();
+                    this.mapManager.updateMapFromDrawing();
+                }, 100);
+                break;
+                
+            case 'elevation':
+                this.currentView = 'elevation';
+                document.getElementById('elevationProfileContainer').style.display = 'flex';
+                document.getElementById('viewElevationBtn').classList.add('active');
+                this.elevationProfileManager.isProfileView = true;
+                
+                // Update header button
+                if (headerButtons.elevation) {
+                    headerButtons.elevation.innerHTML = '<i class="fas fa-drafting-compass"></i> Canvas View';
+                    headerButtons.elevation.classList.add('active');
+                }
+                
+                if (!this.elevationProfileManager.chart) {
+                    this.elevationProfileManager.initializeChart();
+                }
+                this.elevationProfileManager.updateProfileData(this.gpxRawData, this.drawingEngine.elements);
+                setTimeout(() => {
+                    if (this.elevationProfileManager.chart) this.elevationProfileManager.chart.resize();
+                }, 100);
+                break;
+                
+            case 'terrain':
+                this.currentView = 'terrain';
+                document.getElementById('terrainViewContainer').style.display = 'flex';
+                document.getElementById('view3DBtn').classList.add('active');
+                this.terrainViewManager.isTerrainView = true;
+                
+                // Update header button
+                if (headerButtons.terrain) {
+                    headerButtons.terrain.innerHTML = '<i class="fas fa-drafting-compass"></i> Canvas View';
+                    headerButtons.terrain.classList.add('active');
+                }
+                
+                if (!this.terrainViewManager.viewer) {
+                    this.terrainViewManager.initializeTerrainView();
+                } else {
+                    this.terrainViewManager.viewer.resize();
+                }
+                this.terrainViewManager.updateTerrainViewFromDrawing();
+                
+                if (terrainZoomBtn) {
+                    terrainZoomBtn.style.display = '';
+                    terrainZoomBtn.onclick = () => this.terrainViewManager.flyToElements();
+                }
+                break;
+        }
+    }
+
     // Legend event listeners
     setupLegendControls() {
         document.getElementById('legendMinimize').addEventListener('click', () => {
