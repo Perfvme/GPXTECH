@@ -192,3 +192,34 @@ class AddDimensionCommand {
         this.drawingEngine.render();
     }
 }
+
+/**
+ * Pole Label Style Change Command
+ */
+class PoleLabelStyleChangeCommand {
+    constructor(drawingEngine, property, newValue, oldValue) {
+        this.drawingEngine = drawingEngine;
+        this.property = property;
+        this.newValue = newValue;
+        this.oldValue = oldValue;
+    }
+
+    execute() {
+        this.drawingEngine.poleLabelStyle[this.property] = this.newValue;
+        this.drawingEngine.updatePoleLabelPreview();
+        this.drawingEngine.render();
+    }
+
+    undo() {
+        this.drawingEngine.poleLabelStyle[this.property] = this.oldValue;
+        this.drawingEngine.updatePoleLabelPreview();
+        this.drawingEngine.render();
+        
+        // Update properties panel if pole labels are still selected
+        const selectedElements = Array.from(this.drawingEngine.selectedElements);
+        const poleLabels = selectedElements.filter(el => el.type && (el.type.includes('tiang') || el.type.includes('gardu')) && el.name && el.name.trim() !== '');
+        if (poleLabels.length > 0 && poleLabels.length === selectedElements.length) {
+            this.drawingEngine.showPoleLabelStylePanel(poleLabels);
+        }
+    }
+}

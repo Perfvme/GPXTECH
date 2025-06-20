@@ -146,11 +146,31 @@ DrawingEngine.prototype.drawPole = function(pole) {
     }
     
     // Draw pole name (if enabled)
-    if (this.showNameLabels) {
-        this.ctx.fillStyle = '#333';
-        this.ctx.font = '5px Arial';
+    if (this.showNameLabels && pole.name) {
+        const style = this.poleLabelStyle;
+        
+        // Set up font
+        const fontStyle = style.textStyle === 'bold italic' ? 'bold italic' : 
+                         style.textStyle === 'bold' ? 'bold' : 
+                         style.textStyle === 'italic' ? 'italic' : 'normal';
+        this.ctx.font = `${fontStyle} ${style.textSize}px ${style.font}`;
         this.ctx.textAlign = 'center';
-        this.ctx.fillText(pole.name, 0, 12.5);
+        
+        // Draw background if enabled
+        if (style.showBackground) {
+            const textMetrics = this.ctx.measureText(pole.name);
+            const textWidth = textMetrics.width;
+            const textHeight = style.textSize;
+            
+            this.ctx.globalAlpha = style.backgroundOpacity / 100;
+            this.ctx.fillStyle = style.backgroundColor;
+            this.ctx.fillRect(-textWidth/2 - 2, style.textOffset - textHeight/2 - 1, textWidth + 4, textHeight + 2);
+            this.ctx.globalAlpha = 1;
+        }
+        
+        // Draw text
+        this.ctx.fillStyle = style.textColor;
+        this.ctx.fillText(pole.name, 0, style.textOffset);
     }
     
     this.ctx.restore();

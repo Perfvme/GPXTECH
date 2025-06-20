@@ -19,6 +19,15 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
         return;
     }
     
+    // Handle multiple pole labels selection for styling
+    if (Array.isArray(element)) {
+        const poleLabels = element.filter(el => el.type && (el.type.includes('tiang') || el.type.includes('gardu')) && el.name && el.name.trim() !== '');
+        if (poleLabels.length > 0 && poleLabels.length === element.length) {
+            this.showPoleLabelStylePanel(poleLabels);
+            return;
+        }
+    }
+    
     let html = '';
     
     if (element.type && (element.type.includes('tiang') || element.type.includes('gardu'))) {
@@ -312,4 +321,124 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
     `;
     
     panel.innerHTML = html;
+};
+
+/**
+ * Show pole label styling panel for multiple selected pole labels
+ */
+DrawingEngine.prototype.showPoleLabelStylePanel = function(poleLabels) {
+    const panel = document.getElementById('propertiesContent');
+    const style = this.poleLabelStyle;
+    
+    const html = `
+        <div class="element-header">
+            <div class="element-icon pole-icon"><i class="fas fa-tags"></i></div>
+            <div class="element-info">
+                <h4>Pole Label Style</h4>
+                <span class="element-type">${poleLabels.length} pole labels selected</span>
+            </div>
+        </div>
+        
+        <div class="properties-form">
+            <!-- Text Style -->
+            <div class="form-section">
+                <label class="section-label"><i class="fas fa-font"></i> Text Style</label>
+                
+                <div class="form-row">
+                    <label for="pole-label-text-size"><i class="fas fa-text-height"></i> Size</label>
+                    <input type="number" id="pole-label-text-size" min="1" max="50" step="0.5" value="${style.textSize}" 
+                           onchange="window.drawingEngine.updatePoleLabelStyle('textSize', parseFloat(this.value))">
+                </div>
+                
+                <div class="form-row">
+                    <label for="pole-label-font"><i class="fas fa-font"></i> Font</label>
+                    <select id="pole-label-font" onchange="window.drawingEngine.updatePoleLabelStyle('font', this.value)">
+                        <option value="Arial" ${style.font === 'Arial' ? 'selected' : ''}>Arial</option>
+                        <option value="Helvetica" ${style.font === 'Helvetica' ? 'selected' : ''}>Helvetica</option>
+                        <option value="Times New Roman" ${style.font === 'Times New Roman' ? 'selected' : ''}>Times New Roman</option>
+                        <option value="Courier New" ${style.font === 'Courier New' ? 'selected' : ''}>Courier New</option>
+                        <option value="Verdana" ${style.font === 'Verdana' ? 'selected' : ''}>Verdana</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <label for="pole-label-text-style"><i class="fas fa-italic"></i> Style</label>
+                    <select id="pole-label-text-style" onchange="window.drawingEngine.updatePoleLabelStyle('textStyle', this.value)">
+                        <option value="normal" ${style.textStyle === 'normal' ? 'selected' : ''}>Normal</option>
+                        <option value="bold" ${style.textStyle === 'bold' ? 'selected' : ''}>Bold</option>
+                        <option value="italic" ${style.textStyle === 'italic' ? 'selected' : ''}>Italic</option>
+                        <option value="bold italic" ${style.textStyle === 'bold italic' ? 'selected' : ''}>Bold Italic</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <label for="pole-label-text-color"><i class="fas fa-palette"></i> Color</label>
+                    <input type="color" id="pole-label-text-color" value="${style.textColor}" 
+                           onchange="window.drawingEngine.updatePoleLabelStyle('textColor', this.value)">
+                </div>
+                
+                <div class="form-row">
+                    <label for="pole-label-text-offset"><i class="fas fa-arrows-alt-v"></i> Offset</label>
+                    <input type="number" id="pole-label-text-offset" min="0" max="50" step="0.5" value="${style.textOffset}" 
+                           onchange="window.drawingEngine.updatePoleLabelStyle('textOffset', parseFloat(this.value))">
+                </div>
+            </div>
+            
+            <!-- Background Style -->
+            <div class="form-section">
+                <label class="section-label"><i class="fas fa-square"></i> Background</label>
+                
+                <div class="form-row">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="pole-label-show-background" ${style.showBackground ? 'checked' : ''} 
+                               onchange="window.drawingEngine.updatePoleLabelStyle('showBackground', this.checked)">
+                        <span class="checkmark"></span>
+                        <i class="fas fa-square"></i> Show Background
+                    </label>
+                </div>
+                
+                <div class="form-row" ${style.showBackground ? '' : 'style="display: none;"'} id="pole-label-bg-color-row">
+                    <label for="pole-label-bg-color"><i class="fas fa-fill-drip"></i> Background Color</label>
+                    <input type="color" id="pole-label-bg-color" value="${style.backgroundColor}" 
+                           onchange="window.drawingEngine.updatePoleLabelStyle('backgroundColor', this.value)">
+                </div>
+                
+                <div class="form-row" ${style.showBackground ? '' : 'style="display: none;"'} id="pole-label-bg-opacity-row">
+                    <label for="pole-label-bg-opacity"><i class="fas fa-adjust"></i> Background Opacity</label>
+                    <input type="range" id="pole-label-bg-opacity" min="0" max="100" value="${style.backgroundOpacity}" 
+                           oninput="document.getElementById('pole-label-bg-opacity-value').textContent = this.value + '%'"
+                           onchange="window.drawingEngine.updatePoleLabelStyle('backgroundOpacity', parseInt(this.value))">
+                    <span class="range-value" id="pole-label-bg-opacity-value">${style.backgroundOpacity}%</span>
+                </div>
+            </div>
+            
+            <!-- Preview -->
+            <div class="form-section">
+                <label class="section-label"><i class="fas fa-eye"></i> Preview</label>
+                <div class="label-preview">
+                    <canvas id="poleLabelPreview" width="200" height="60" style="border: 1px solid var(--border-color); background: var(--bg-tertiary);"></canvas>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="form-section">
+                <button onclick="window.drawingEngine.resetPoleLabelStyle()" class="reset-btn">
+                    <i class="fas fa-undo"></i>
+                    <span>Reset to Default</span>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    panel.innerHTML = html;
+    
+    // Initialize preview
+    this.updatePoleLabelPreview();
+    
+    // Add event listener for background checkbox to show/hide background options
+    document.getElementById('pole-label-show-background').addEventListener('change', function() {
+        const showBg = this.checked;
+        document.getElementById('pole-label-bg-color-row').style.display = showBg ? '' : 'none';
+        document.getElementById('pole-label-bg-opacity-row').style.display = showBg ? '' : 'none';
+    });
 };

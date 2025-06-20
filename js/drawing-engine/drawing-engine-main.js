@@ -112,6 +112,18 @@ class DrawingEngine {
             }
         };
         
+        // Pole label style system
+        this.poleLabelStyle = {
+            textSize: 5,
+            textColor: '#333333',
+            font: 'Arial',
+            textStyle: 'normal',
+            showBackground: false,
+            backgroundColor: '#ffffff',
+            backgroundOpacity: 80,
+            textOffset: 12.5
+        };
+        
         // Undo/Redo system
         this.commandHistory = [];
         this.currentCommandIndex = -1;
@@ -377,5 +389,89 @@ class DrawingEngine {
         } else {
             console.warn(`Dimension style type '${type}' not found.`);
         }
+    }
+
+    /**
+     * Update pole label style property
+     * @param {string} property - Style property name (e.g., 'textColor', 'textSize')
+     * @param {*} value - New value for the property
+     */
+    updatePoleLabelStyle(property, value) {
+        if (this.poleLabelStyle.hasOwnProperty(property)) {
+            const oldValue = this.poleLabelStyle[property];
+            
+            // Use command system for undo/redo support
+            const command = new PoleLabelStyleChangeCommand(this, property, value, oldValue);
+            this.executeCommand(command);
+        } else {
+            console.warn(`Pole label style property '${property}' not found.`);
+        }
+    }
+
+    /**
+     * Update pole label preview canvas
+     */
+    updatePoleLabelPreview() {
+        const previewCanvas = document.getElementById('poleLabelPreview');
+        if (!previewCanvas) return;
+        
+        const ctx = previewCanvas.getContext('2d');
+        const style = this.poleLabelStyle;
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+        
+        // Set up font
+        const fontStyle = style.textStyle === 'bold italic' ? 'bold italic' : 
+                         style.textStyle === 'bold' ? 'bold' : 
+                         style.textStyle === 'italic' ? 'italic' : 'normal';
+        ctx.font = `${fontStyle} ${style.textSize * 3}px ${style.font}`;
+        ctx.textAlign = 'center';
+        
+        const centerX = previewCanvas.width / 2;
+        const centerY = previewCanvas.height / 2;
+        const sampleText = 'Pole 1';
+        
+        // Draw background if enabled
+        if (style.showBackground) {
+            const textMetrics = ctx.measureText(sampleText);
+            const textWidth = textMetrics.width;
+            const textHeight = style.textSize * 3;
+            
+            ctx.globalAlpha = style.backgroundOpacity / 100;
+            ctx.fillStyle = style.backgroundColor;
+            ctx.fillRect(centerX - textWidth/2 - 2, centerY - textHeight/2 - 1, textWidth + 4, textHeight + 2);
+            ctx.globalAlpha = 1;
+        }
+        
+        // Draw text
+        ctx.fillStyle = style.textColor;
+        ctx.fillText(sampleText, centerX, centerY + (style.textSize * 3) / 3);
+    }
+
+    /**
+     * Reset pole label style to default values
+     */
+    resetPoleLabelStyle() {
+        this.poleLabelStyle = {
+            textSize: 5,
+            textColor: '#333333',
+            font: 'Arial',
+            textStyle: 'normal',
+            showBackground: false,
+            backgroundColor: '#ffffff',
+            backgroundOpacity: 80,
+            textOffset: 12.5
+        };
+        
+        // Update the properties panel if pole labels are selected
+        const selectedElements = Array.from(this.selectedElements);
+        const poleLabels = selectedElements.filter(el => el.type && (el.type.includes('tiang') || el.type.includes('gardu')) && el.name && el.name.trim() !== '');
+        if (poleLabels.length > 0 && poleLabels.length === selectedElements.length) {
+            this.showPoleLabelStylePanel(poleLabels);
+        }
+        
+        // Re-render to apply changes
+        this.render();
     }
 }
