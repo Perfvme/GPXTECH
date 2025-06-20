@@ -715,6 +715,9 @@ class GPXParser {
         
         elements.metadata.totalDistance = Math.round(totalDistance3D * 100) / 100;
         
+        // Auto-generate angular dimensions at connection points
+        this.generateAutoAngularDimensions(elements);
+        
         return elements;
     }
 
@@ -728,6 +731,154 @@ class GPXParser {
      */
     calculateDistance2D(x1, y1, x2, y2) { // Renamed original to calculateDistance2D
         return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    }
+
+    /**
+     * Generate automatic angular dimensions at connection points
+     * @param {Object} elements - Drawing elements object
+     */
+    generateAutoAngularDimensions(elements) {
+        // Process tracks for angular dimensions
+        this.tracks.forEach(track => {
+            if (track.points.length >= 3) {
+                // Create angular dimensions at intermediate points
+                for (let i = 1; i < track.points.length - 1; i++) {
+                    const p1 = track.points[i - 1]; // Previous point
+                    const p2 = track.points[i];     // Vertex point (connection point)
+                    const p3 = track.points[i + 1]; // Next point
+                    
+                    // Calculate angle using 3-point method
+                    const angle = this.calculateAngle3Points(p1, p2, p3);
+                    
+                    // Only create dimension if the angle is meaningful (not 0° or 180°)
+                    if (angle > 1 && angle < 179) {
+                        const angularDimension = {
+                            id: `angular_${track.id}_${i}`,
+                            type: 'angle',
+                            method: '3-point',
+                            points: [
+                                { x: p1.x, y: p1.y },
+                                { x: p2.x, y: p2.y },
+                                { x: p3.x, y: p3.y }
+                            ],
+                            angle: Math.round(angle * 100) / 100, // Round to 2 decimal places
+                            style: {
+                                lineColor: '#666666',
+                                lineWidth: 1,
+                                lineStyle: 'solid',
+                                lineOpacity: 80,
+                                textColor: '#333333',
+                                textSize: 12,
+                                font: 'Arial',
+                                textStyle: 'normal',
+                                textOpacity: 100,
+                                showBackground: true,
+                                backgroundColor: '#ffffff',
+                                backgroundOpacity: 90,
+                                showArrows: false,
+                                showDeflection: false,
+                                arcSize: 25,
+                                textOffset: 15,
+                                precision: 1,
+                                unit: '°',
+                                prefix: '',
+                                suffix: ''
+                            }
+                        };
+                        
+                        elements.dimensions.push(angularDimension);
+                    }
+                }
+            }
+        });
+
+        // Process routes for angular dimensions
+        this.routes.forEach(route => {
+            if (route.points.length >= 3) {
+                // Create angular dimensions at intermediate points
+                for (let i = 1; i < route.points.length - 1; i++) {
+                    const p1 = route.points[i - 1]; // Previous point
+                    const p2 = route.points[i];     // Vertex point (connection point)
+                    const p3 = route.points[i + 1]; // Next point
+                    
+                    // Calculate angle using 3-point method
+                    const angle = this.calculateAngle3Points(p1, p2, p3);
+                    
+                    // Only create dimension if the angle is meaningful (not 0° or 180°)
+                    if (angle > 1 && angle < 179) {
+                        const angularDimension = {
+                            id: `angular_${route.id}_${i}`,
+                            type: 'angle',
+                            method: '3-point',
+                            points: [
+                                { x: p1.x, y: p1.y },
+                                { x: p2.x, y: p2.y },
+                                { x: p3.x, y: p3.y }
+                            ],
+                            angle: Math.round(angle * 100) / 100, // Round to 2 decimal places
+                            style: {
+                                lineColor: '#666666',
+                                lineWidth: 1,
+                                lineStyle: 'solid',
+                                lineOpacity: 80,
+                                textColor: '#333333',
+                                textSize: 12,
+                                font: 'Arial',
+                                textStyle: 'normal',
+                                textOpacity: 100,
+                                showBackground: true,
+                                backgroundColor: '#ffffff',
+                                backgroundOpacity: 90,
+                                showArrows: false,
+                                showDeflection: false,
+                                arcSize: 25,
+                                textOffset: 15,
+                                precision: 1,
+                                unit: '°',
+                                prefix: '',
+                                suffix: ''
+                            }
+                        };
+                        
+                        elements.dimensions.push(angularDimension);
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Calculate angle from 3 points (vertex is middle point)
+     * @param {Object} p1 - First point with x, y coordinates
+     * @param {Object} p2 - Vertex point with x, y coordinates
+     * @param {Object} p3 - Third point with x, y coordinates
+     * @returns {number} Angle in degrees
+     */
+    calculateAngle3Points(p1, p2, p3) {
+        // Create vectors from vertex to the other two points
+        const v1 = { x: p1.x - p2.x, y: p1.y - p2.y };
+        const v2 = { x: p3.x - p2.x, y: p3.y - p2.y };
+        
+        // Calculate dot product
+        const dot = v1.x * v2.x + v1.y * v2.y;
+        
+        // Calculate magnitudes
+        const mag1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
+        const mag2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+        
+        // Handle edge cases (zero-length vectors)
+        if (mag1 === 0 || mag2 === 0) return 0;
+        
+        // Calculate angle using dot product formula
+        const cosAngle = dot / (mag1 * mag2);
+        
+        // Clamp cosAngle to valid range [-1, 1] to handle floating point errors
+        const clampedCosAngle = Math.max(-1, Math.min(1, cosAngle));
+        
+        // Convert from radians to degrees
+        const angle = Math.acos(clampedCosAngle) * 180 / Math.PI;
+        
+        return angle;
     }
 }
 

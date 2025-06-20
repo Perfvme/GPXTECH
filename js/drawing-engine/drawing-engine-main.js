@@ -84,6 +84,7 @@ class DrawingEngine {
                 suffix: '',
                 showBackground: true,
                 showArrows: false,
+                showDeflection: false,
                 backgroundColor: '#ffffff',
                 backgroundOpacity: 80,
                 textOpacity: 100,

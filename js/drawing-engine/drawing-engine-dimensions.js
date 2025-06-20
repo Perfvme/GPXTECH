@@ -137,16 +137,22 @@ DrawingEngine.prototype.formatDimensionText = function(value, style, type) {
     const suffix = style.suffix || '';
     
     if (type === 'angle') {
+        // Calculate deflection angle if enabled (180° - interior angle)
+        let displayValue = value;
+        if (style.showDeflection) {
+            displayValue = 180 - value;
+        }
+        
         switch (unit) {
             case 'rad':
-                formattedValue = (value * Math.PI / 180).toFixed(precision);
+                formattedValue = (displayValue * Math.PI / 180).toFixed(precision);
                 break;
             case 'grad':
-                formattedValue = (value * 10 / 9).toFixed(precision);
+                formattedValue = (displayValue * 10 / 9).toFixed(precision);
                 break;
             case '°':
             default:
-                formattedValue = value.toFixed(precision);
+                formattedValue = displayValue.toFixed(precision);
                 break;
         }
     } else if (type === 'aligned') {
