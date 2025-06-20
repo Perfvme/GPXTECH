@@ -170,6 +170,13 @@ class DrawingEngine {
             this.alignedDimensionState.mode = 'selecting-first';
         }
         
+        // Remove all tool classes
+        this.canvas.classList.remove('tool-select', 'tool-line', 'tool-pole', 'tool-angle', 
+                                    'tool-aligned-dimension', 'tool-pan', 'tool-drag-select');
+        
+        // Add current tool class
+        this.canvas.classList.add(`tool-${tool}`);
+        
         switch (tool) {
             case 'pan':
                 this.canvas.style.cursor = 'grab';

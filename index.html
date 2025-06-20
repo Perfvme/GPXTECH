@@ -79,340 +79,504 @@
         <div class="main-content">
             <!-- Toolbar -->
             <div class="toolbar">
-                <div class="tool-section">
-                    <h3>Drawing Tools</h3>
-                    <div class="tool-grid">
-                        <button id="selectTool" class="tool-btn-icon active" data-tool="select" title="Select">
-                            <i class="fas fa-mouse-pointer"></i>
-                        </button>
-                        <button id="dragSelectTool" class="tool-btn-icon" data-tool="drag-select" title="Drag Select">
-                            <i class="fas fa-vector-square"></i>
-                        </button>
-                        <button id="panTool" class="tool-btn-icon" data-tool="pan" title="Pan">
-                            <i class="fas fa-hand-paper"></i>
-                        </button>
-                        <button id="lineTool" class="tool-btn-icon" data-tool="line" title="Line">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                        <button id="poleTool" class="tool-btn-icon" data-tool="pole" title="Pole">
-                            <i class="fas fa-circle"></i>
-                        </button>
-                        <button id="angleTool" class="tool-btn-icon" data-tool="angle" title="Angular Dimension">
-                            <i class="fas fa-drafting-compass"></i>
-                        </button>
-                        <button id="alignedDimensionTool" class="tool-btn-icon" data-tool="aligned-dimension" title="Aligned Dimension">
-                            <i class="fas fa-ruler-horizontal"></i>
-                        </button>
-                        <button id="undoBtn" class="tool-btn-icon" title="Undo (Ctrl+Z)">
-                            <i class="fas fa-undo"></i>
-                        </button>
-                        <button id="redoBtn" class="tool-btn-icon" title="Redo (Ctrl+Y)">
-                            <i class="fas fa-redo"></i>
-                        </button>
-                    </div>
-                    <div class="tool-options">
-                        <label class="checkbox-item">
-                            <input type="checkbox" id="snapToggle" checked>
-                            <span class="checkmark"></span>
-                            <i class="fas fa-magnet"></i> Snap
-                        </label>
-                        <div class="snap-settings" id="snapSettings">
-                            <div class="snap-header" onclick="toggleSnapDetails()">
-                                <span>Snap Options</span>
-                                <i class="fas fa-chevron-down" id="snapChevron"></i>
+                <!-- Toolbar Tabs -->
+                <div class="toolbar-tabs">
+                    <button class="toolbar-tab active" data-tab="draw">Draw</button>
+                    <button class="toolbar-tab" data-tab="modify">Modify</button>
+                    <button class="toolbar-tab" data-tab="view">View</button>
+                </div>
+
+                <!-- Toolbar Content -->
+                <div class="toolbar-content">
+                    <!-- Draw Panel -->
+                    <div id="draw-panel" class="toolbar-panel active">
+                        <div class="tool-section">
+                            <h3>Drawing Tools <button class="section-help" title="Learn about drawing tools">?</button></h3>
+                            <div class="primary-tools">
+                                <button id="selectTool" class="tool-btn-primary active" data-tool="select" title="Select objects (Esc)">
+                                    <span class="tool-hint">Esc</span>
+                                    <i class="fas fa-mouse-pointer"></i>
+                                    <span>Select</span>
+                                </button>
+                                <button id="lineTool" class="tool-btn-primary" data-tool="line" title="Draw line (L)">
+                                    <span class="tool-hint">L</span>
+                                    <i class="fas fa-minus"></i>
+                                    <span>Line</span>
+                                </button>
+                                <button id="poleTool" class="tool-btn-primary" data-tool="pole" title="Place pole (P)">
+                                    <span class="tool-hint">P</span>
+                                    <i class="fas fa-circle"></i>
+                                    <span>Pole</span>
+                                </button>
+                                <button id="alignedDimensionTool" class="tool-btn-primary" data-tool="aligned-dimension" title="Aligned dimension (D)">
+                                    <span class="tool-hint">D</span>
+                                    <i class="fas fa-ruler-horizontal"></i>
+                                    <span>Dimension</span>
+                                </button>
+                                <button id="angleTool" class="tool-btn-primary" data-tool="angle" title="Angle dimension (A)">
+                                    <span class="tool-hint">A</span>
+                                    <i class="fas fa-drafting-compass"></i>
+                                    <span>Angle</span>
+                                </button>
+                                <button id="panTool" class="tool-btn-primary" data-tool="pan" title="Pan view (Space)">
+                                    <span class="tool-hint">Space</span>
+                                    <i class="fas fa-hand-paper"></i>
+                                    <span>Pan</span>
+                                </button>
                             </div>
-                            <div class="snap-details" id="snapDetails">
-                                <div class="snap-types-compact">
-                                    <label class="snap-type-compact" title="Endpoints - Snap to line ends and pole positions">
-                                        <input type="checkbox" id="snapEndpoints" checked>
-                                        <span class="snap-icon snap-endpoints">■</span>
-                                    </label>
-                                    <label class="snap-type-compact" title="Intersections - Snap to line crossing points">
-                                        <input type="checkbox" id="snapIntersections" checked>
-                                        <span class="snap-icon snap-intersections">✕</span>
-                                    </label>
-                                    <label class="snap-type-compact" title="Midpoints - Snap to center of lines">
-                                        <input type="checkbox" id="snapMidpoints" checked>
-                                        <span class="snap-icon snap-midpoints">▶</span>
-                                    </label>
-                                    <label class="snap-type-compact" title="Grid - Snap to grid intersections">
-                                        <input type="checkbox" id="snapGrid" checked>
-                                        <span class="snap-icon snap-grid">⊞</span>
-                                    </label>
+                        </div>
+
+                        <div class="tool-section">
+                            <h3>Element Types</h3>
+                            <div class="element-type-section">
+                                <h4>Poles</h4>
+                                <div class="symbol-grid-compact">
+                                    <button class="symbol-btn-icon" data-type="tiang-baja-existing" title="Tiang Baja Existing">
+                                        <div class="symbol-icon tiang-baja-existing"></div>
+                                    </button>
+                                    <button class="symbol-btn-icon" data-type="tiang-baja-rencana" title="Tiang Baja Rencana">
+                                        <div class="symbol-icon tiang-baja-rencana"></div>
+                                    </button>
+                                    <button class="symbol-btn-icon" data-type="tiang-beton-existing" title="Tiang Beton Existing">
+                                        <div class="symbol-icon tiang-beton-existing"></div>
+                                    </button>
+                                    <button class="symbol-btn-icon" data-type="tiang-beton-rencana" title="Tiang Beton Rencana">
+                                        <div class="symbol-icon tiang-beton-rencana"></div>
+                                    </button>
+                                    <button class="symbol-btn-icon" data-type="gardu-portal" title="Gardu Portal Rencana">
+                                        <div class="symbol-icon gardu-portal"></div>
+                                    </button>
                                 </div>
-                                <div class="snap-types-compact">
-                                    <label class="snap-type-compact" title="Perpendicular - Snap perpendicular to lines">
-                                        <input type="checkbox" id="snapPerpendicular" checked>
-                                        <span class="snap-icon snap-perpendicular">⊥</span>
-                                    </label>
-                                    <label class="snap-type-compact" title="Parallel - Snap parallel to existing lines">
-                                        <input type="checkbox" id="snapParallel" checked>
-                                        <span class="snap-icon snap-parallel">∥</span>
-                                    </label>
-                                    <label class="snap-type-compact" title="Center - Snap to pole centers">
-                                        <input type="checkbox" id="snapCenter" checked>
-                                        <span class="snap-icon snap-center">●</span>
-                                    </label>
-                                    <div class="snap-distance-compact" title="Snap sensitivity distance">
-                                        <span class="distance-label">📏</span>
-                                        <input type="range" id="snapDistance" min="5" max="30" value="15">
-                                        <span id="snapDistanceValue">15</span>
-                                    </div>
+                                <h4>Lines</h4>
+                                <div class="line-types-compact">
+                                    <button class="line-type-btn-icon" data-type="sutm-rencana" title="SUTM Rencana">
+                                        <div class="line-sample sutm-rencana"></div>
+                                    </button>
+                                    <button class="line-type-btn-icon" data-type="sutm-existing" title="SUTM Existing">
+                                        <div class="line-sample sutm-existing"></div>
+                                    </button>
+                                    <button class="line-type-btn-icon" data-type="sutr-rencana" title="SUTR Rencana">
+                                        <div class="line-sample sutr-rencana"></div>
+                                    </button>
+                                    <button class="line-type-btn-icon" data-type="sutr-existing" title="SUTR Existing">
+                                        <div class="line-sample sutr-existing"></div>
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <div class="tool-section">
-                    <h3>Selection</h3>
-                    <div class="selection-controls-compact">
-                        <button id="selectAll" class="selection-btn-compact" title="Select All">
-                            <i class="fas fa-check-double"></i>
-                        </button>
-                        <button id="clearSelection" class="selection-btn-compact" title="Clear Selection">
-                            <i class="fas fa-times"></i>
-                        </button>
-                        <button id="selectFiltered" class="selection-btn-compact" title="Select Filtered">
-                            <i class="fas fa-filter"></i>
-                        </button>
-                    </div>
-                    <div class="filter-controls-compact">
-                        <select id="filterSelect" class="compact-select">
-                            <option value="all">All</option>
-                            <option value="poles">Poles</option>
-                            <option value="lines">Lines</option>
-                            <option value="tiang-baja">T.Baja</option>
-                            <option value="tiang-beton">T.Beton</option>
-                            <option value="gardu-portal">Portal</option>
-                            <option value="sutm">SUTM</option>
-                            <option value="sutr">SUTR</option>
-                            <option value="dimension-aligned">Dimension Aligned</option>
-                            <option value="dimension-angular">Dimension Angular</option>
-                        </select>
-                    </div>
-                </div>
+                        <div class="tool-section">
+                            <h3>Drawing Options</h3>
+                            <div class="options-compact-grid">
+                                <label class="checkbox-item-icon" title="Add grounding to poles">
+                                    <input type="checkbox" id="addGrounding">
+                                    <i class="fas fa-bolt"></i>
+                                </label>
+                                <label class="checkbox-item-icon" title="Add guy wire to poles">
+                                    <input type="checkbox" id="addGuywire">
+                                    <i class="fas fa-grip-lines"></i>
+                                </label>
+                                <label class="checkbox-item-icon" title="Show element labels">
+                                    <input type="checkbox" id="showNameLabels" checked>
+                                    <i class="fas fa-tag"></i>
+                                </label>
+                            </div>
+                        </div>
 
-                <div class="tool-section">
-                    <h3>Batch Edit</h3>
-                    <div class="batch-controls-compact">
-                        <select id="batchTypeSelect" class="compact-select">
-                            <option value="">Change Type...</option>
-                            <option value="tiang-baja-existing">T.Baja Existing</option>
-                            <option value="tiang-baja-rencana">T.Baja Rencana</option>
-                            <option value="tiang-beton-existing">T.Beton Existing</option>
-                            <option value="tiang-beton-rencana">T.Beton Rencana</option>
-                            <option value="gardu-portal">Portal Rencana</option>
-                            <option value="sutm">SUTM Line</option>
-                            <option value="sutr">SUTR Line</option>
-                        </select>
-                        <button id="batchChangeType" class="batch-btn-compact" title="Apply Type Change">
-                            <i class="fas fa-exchange-alt"></i>
-                        </button>
-                    </div>
-                    <div class="batch-name-controls">
-                        <input type="text" id="batchNameInput" placeholder="New name..." class="compact-input">
-                        <div class="batch-name-options">
-                            <label class="checkbox-item-compact">
-                                <input type="checkbox" id="useNumberedNames" checked>
-                                <span>Numbered</span>
+                        <div class="tool-section">
+                            <h3>Snap Settings</h3>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="snapToggle" checked>
+                                <span class="checkmark"></span>
+                                <i class="fas fa-magnet"></i> Enable Snap
                             </label>
-                            <button id="batchChangeName" class="batch-btn-compact" title="Apply Name Change">
-                                <i class="fas fa-edit"></i>
-                            </button>
+                            <div class="snap-settings" id="snapSettings">
+                                <div class="snap-types-grid">
+                                    <label class="snap-type-item" title="Snap to endpoints">
+                                        <input type="checkbox" id="snapEndpoints" checked>
+                                        <span class="snap-icon-large">■</span>
+                                        <span>End</span>
+                                    </label>
+                                    <label class="snap-type-item" title="Snap to midpoints">
+                                        <input type="checkbox" id="snapMidpoints" checked>
+                                        <span class="snap-icon-large">◆</span>
+                                        <span>Mid</span>
+                                    </label>
+                                    <label class="snap-type-item" title="Snap to intersections">
+                                        <input type="checkbox" id="snapIntersections" checked>
+                                        <span class="snap-icon-large">✕</span>
+                                        <span>Inter</span>
+                                    </label>
+                                    <label class="snap-type-item" title="Snap to grid">
+                                        <input type="checkbox" id="snapGrid" checked>
+                                        <span class="snap-icon-large">⊞</span>
+                                        <span>Grid</span>
+                                    </label>
+                                    <label class="snap-type-item" title="Snap perpendicular">
+                                        <input type="checkbox" id="snapPerpendicular" checked>
+                                        <span class="snap-icon-large">⊥</span>
+                                        <span>Perp</span>
+                                    </label>
+                                    <label class="snap-type-item" title="Snap parallel">
+                                        <input type="checkbox" id="snapParallel" checked>
+                                        <span class="snap-icon-large">∥</span>
+                                        <span>Para</span>
+                                    </label>
+                                    <label class="snap-type-item" title="Snap to centers">
+                                        <input type="checkbox" id="snapCenter" checked>
+                                        <span class="snap-icon-large">⊙</span>
+                                        <span>Center</span>
+                                    </label>
+                                </div>
+                                <div class="snap-distance-control">
+                                    <label>Snap Distance</label>
+                                    <input type="range" id="snapDistance" min="5" max="30" value="15">
+                                    <span id="snapDistanceValue">15px</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="tool-section">
-                    <h3>Batch Dimension Style</h3>
-                    <div class="batch-dimension-style-controls">
-                        <button id="applyDimensionStyleToSelection" class="batch-btn-compact" title="Apply Current Dimension Style to Selected Dimensions">
-                            <i class="fas fa-palette"></i> Apply Style
-                        </button>
-                    </div>
-                </div>
-
-                <div class="tool-section">
-                    <h3>Element Types</h3>
-                    <h4>Poles</h4>
-                    <div class="symbol-grid-compact">
-                        <button class="symbol-btn-icon" data-type="tiang-baja-existing" title="Tiang Baja Existing">
-                            <div class="symbol-icon tiang-baja-existing"></div>
-                        </button>
-                        <button class="symbol-btn-icon" data-type="tiang-baja-rencana" title="Tiang Baja Rencana">
-                            <div class="symbol-icon tiang-baja-rencana"></div>
-                        </button>
-                        <button class="symbol-btn-icon" data-type="tiang-beton-existing" title="Tiang Beton Existing">
-                            <div class="symbol-icon tiang-beton-existing"></div>
-                        </button>
-                        <button class="symbol-btn-icon" data-type="tiang-beton-rencana" title="Tiang Beton Rencana">
-                            <div class="symbol-icon tiang-beton-rencana"></div>
-                        </button>
-                        <button class="symbol-btn-icon" data-type="gardu-portal" title="Gardu Portal Rencana">
-                            <div class="symbol-icon gardu-portal"></div>
-                        </button>
-                    </div>
-                    <h4>Lines</h4>
-                    <div class="line-types-compact">
-                        <button class="line-type-btn-icon" data-type="sutm-rencana" title="SUTM Rencana">
-                            <div class="line-sample sutm-rencana"></div>
-                        </button>
-                        <button class="line-type-btn-icon" data-type="sutm-existing" title="SUTM Existing">
-                            <div class="line-sample sutm-existing"></div>
-                        </button>
-                        <button class="line-type-btn-icon" data-type="sutr-rencana" title="SUTR Rencana">
-                            <div class="line-sample sutr-rencana"></div>
-                        </button>
-                        <button class="line-type-btn-icon" data-type="sutr-existing" title="SUTR Existing">
-                            <div class="line-sample sutr-existing"></div>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="tool-section">
-                    <h3>Options</h3>
-                    <div class="options-compact-grid">
-                        <label class="checkbox-item-icon" title="Grounding">
-                            <input type="checkbox" id="addGrounding">
-                            <i class="fas fa-bolt"></i>
-                        </label>
-                        <label class="checkbox-item-icon" title="Guy Wire">
-                            <input type="checkbox" id="addGuywire">
-                            <i class="fas fa-grip-lines"></i>
-                        </label>
-                        <label class="checkbox-item-icon" title="Labels">
-                            <input type="checkbox" id="showNameLabels" checked>
-                            <i class="fas fa-tag"></i>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="tool-section">
-                    <h3>Dimension Style</h3>
-                    <div class="dimension-controls-new">
-                        <!-- Text -->
-                        <details class="dc-group open">
-                            <summary class="dc-group-header">Text</summary>
-                            <div class="dc-grid">
-                                <div class="dc-control">
-                                    <label for="dimensionTextSize" class="dc-label-sm">Size</label>
-                                    <input type="number" id="dimensionTextSize" value="14" min="8" max="32" step="1" class="dc-input-sm">
-                                </div>
-                                <div class="dc-control">
-                                    <label for="dimensionTextColor" class="dc-label-sm">Color</label>
-                                    <input type="color" id="dimensionTextColor" value="#000000" class="dc-color-picker">
-                                </div>
-                                <div class="dc-control">
-                                    <label for="dimensionFont" class="dc-label-sm">Font</label>
-                                    <select id="dimensionFont" class="dc-select">
-                                        <option value="Arial">Arial</option>
-                                        <option value="Helvetica">Helvetica</option>
-                                        <option value="Times New Roman">Times</option>
-                                        <option value="Courier New">Courier</option>
-                                        <option value="Verdana">Verdana</option>
-                                    </select>
-                                </div>
-                                <div class="dc-control">
-                                    <label for="dimensionTextStyle" class="dc-label-sm">Style</label>
-                                    <select id="dimensionTextStyle" class="dc-select">
-                                        <option value="normal">Normal</option>
-                                        <option value="bold">Bold</option>
-                                        <option value="italic">Italic</option>
-                                        <option value="bold italic">Bold Italic</option>
-                                    </select>
-                                </div>
-                                <div class="dc-control">
-                                    <label for="dimensionTextOffset" class="dc-label-sm">Text Offset</label>
-                                    <input type="number" id="dimensionTextOffset" value="10" min="-50" max="50" step="1" class="dc-input-sm">
-                                </div>
+                    <!-- Modify Panel -->
+                    <div id="modify-panel" class="toolbar-panel">
+                        <div class="tool-section">
+                            <h3>Edit Tools <button class="section-help" title="Learn about editing tools">?</button></h3>
+                            <div class="primary-tools">
+                                <button id="undoBtn" class="tool-btn-primary" title="Undo (Ctrl+Z)">
+                                    <span class="tool-hint">Ctrl+Z</span>
+                                    <i class="fas fa-undo"></i>
+                                    <span>Undo</span>
+                                </button>
+                                <button id="redoBtn" class="tool-btn-primary" title="Redo (Ctrl+Y)">
+                                    <span class="tool-hint">Ctrl+Y</span>
+                                    <i class="fas fa-redo"></i>
+                                    <span>Redo</span>
+                                </button>
+                                <button id="dragSelectTool" class="tool-btn-primary" data-tool="drag-select" title="Drag select multiple">
+                                    <i class="fas fa-vector-square"></i>
+                                    <span>Box Select</span>
+                                </button>
+                                <button id="deleteBtn" class="tool-btn-primary" title="Delete selected (Del)">
+                                    <span class="tool-hint">Del</span>
+                                    <i class="fas fa-trash"></i>
+                                    <span>Delete</span>
+                                </button>
                             </div>
-                        </details>
+                        </div>
 
-                        <!-- Lines -->
-                        <details class="dc-group open">
-                            <summary class="dc-group-header">Lines</summary>
-                            <div class="dc-grid">
-                                <div class="dc-control">
-                                    <label for="dimensionLineColor" class="dc-label-sm">Color</label>
-                                    <input type="color" id="dimensionLineColor" value="#0066cc" class="dc-color-picker">
-                                </div>
-                                <div class="dc-control">
-                                    <label for="dimensionLineOpacity" class="dc-label-sm">Opacity</label>
-                                    <input type="number" id="dimensionLineOpacity" value="100" min="0" max="100" step="1" class="dc-input-sm">
-                                </div>
-                                <div class="dc-control">
-                                    <label for="dimensionLineWidth" class="dc-label-sm">Width</label>
-                                    <input type="number" id="dimensionLineWidth" value="1" min="1" max="5" step="0.5" class="dc-input-sm">
-                                </div>
-                                <div class="dc-control">
-                                    <label for="dimensionLineStyle" class="dc-label-sm">Style</label>
-                                    <select id="dimensionLineStyle" class="dc-select">
-                                        <option value="solid">Solid</option>
-                                        <option value="dashed">Dashed</option>
-                                        <option value="dotted">Dotted</option>
-                                    </select>
-                                </div>
-                                <div class="dc-control dc-control-full">
-                                    <label for="dimensionArcSize" class="dc-label-sm">Arc Size</label>
-                                    <input type="range" id="dimensionArcSize" min="5" max="80" value="30" class="dc-slider">
-                                    <span id="dimensionArcSizeValue">30</span>
-                                </div>
+                        <div class="tool-section">
+                            <h3>Selection</h3>
+                            <div class="selection-controls">
+                                <button id="selectAll" class="selection-btn" title="Select All (Ctrl+A)">
+                                    <i class="fas fa-check-double"></i>
+                                    <span>Select All</span>
+                                </button>
+                                <button id="clearSelection" class="selection-btn" title="Clear Selection">
+                                    <i class="fas fa-times"></i>
+                                    <span>Clear</span>
+                                </button>
+                                <button id="selectFiltered" class="selection-btn" title="Select by Filter">
+                                    <i class="fas fa-filter"></i>
+                                    <span>Select Filtered</span>
+                                </button>
+                                <select id="filterSelect" class="compact-select">
+                                    <option value="all">All Elements</option>
+                                    <option value="pole">All Poles</option>
+                                    <option value="line">All Lines</option>
+                                    <option value="label">All Labels</option>
+                                    <option value="dimension">All Dimensions</option>
+                                    <option value="dimension-aligned">Aligned Dimensions</option>
+                                    <option value="dimension-angular">Angular Dimensions</option>
+                                </select>
                             </div>
-                        </details>
+                        </div>
 
-                        <!-- Format -->
-                        <details class="dc-group open">
-                            <summary class="dc-group-header">Format</summary>
-                            <div class="dc-grid">
-                                <div class="dc-control">
-                                    <label for="dimensionUnit" class="dc-label-sm">Unit</label>
-                                    <select id="dimensionUnit" class="dc-select">
-                                        <option value="°">Degrees (°)</option>
-                                        <option value="rad">Radians</option>
-                                        <option value="grad">Gradians</option>
-                                        <option value="m">Meters (m)</option>
+                        <div class="tool-section">
+                            <h3>Batch Operations</h3>
+                            <div class="batch-controls">
+                                <div class="batch-type-change">
+                                    <label>Change Type</label>
+                                    <select id="batchTypeSelect" class="compact-select">
+                                        <option value="">Select type...</option>
+                                        <option value="tiang-baja-existing">T.Baja Existing</option>
+                                        <option value="tiang-baja-rencana">T.Baja Rencana</option>
+                                        <option value="tiang-beton-existing">T.Beton Existing</option>
+                                        <option value="tiang-beton-rencana">T.Beton Rencana</option>
+                                        <option value="gardu-portal">Portal Rencana</option>
+                                        <option value="sutm">SUTM Line</option>
+                                        <option value="sutr">SUTR Line</option>
                                     </select>
+                                    <button id="batchChangeType" class="batch-btn" title="Apply type change to selected">
+                                        <i class="fas fa-exchange-alt"></i>
+                                        <span>Apply</span>
+                                    </button>
                                 </div>
-                                <div class="dc-control">
-                                    <label for="dimensionPrecision" class="dc-label-sm">Precision</label>
-                                    <input type="number" id="dimensionPrecision" value="1" min="0" max="4" step="1" class="dc-input-sm">
-                                </div>
-                                <div class="dc-control">
-                                    <label for="dimensionPrefix" class="dc-label-sm">Prefix</label>
-                                    <input type="text" id="dimensionPrefix" placeholder="∠" maxlength="3" class="dc-input-sm">
-                                </div>
-                                <div class="dc-control">
-                                    <label for="dimensionSuffix" class="dc-label-sm">Suffix</label>
-                                    <input type="text" id="dimensionSuffix" placeholder="" maxlength="3" class="dc-input-sm">
-                                </div>
-                            </div>
-                        </details>
-
-                        <!-- Display -->
-                        <details class="dc-group open">
-                            <summary class="dc-group-header">Display</summary>
-                            <div class="dc-grid dc-grid-display">
-                                <div class="dc-checkbox-group">
-                                    <label class="dc-checkbox-label">
-                                        <input type="checkbox" id="dimensionShowBackground" checked>
-                                        <span class="dc-checkmark"></span> Text BG
+                                <div class="batch-name-change">
+                                    <label>Rename Selected</label>
+                                    <input type="text" id="batchNameInput" placeholder="Enter new name..." class="compact-input">
+                                    <label class="checkbox-item-compact">
+                                        <input type="checkbox" id="useNumberedNames" checked>
+                                        <span>Auto-number</span>
                                     </label>
-                                    <label class="dc-checkbox-label">
-                                        <input type="checkbox" id="dimensionShowArrows">
-                                        <span class="dc-checkmark"></span> Arrows
-                                    </label>
-                                </div>
-                                <div class="dc-control">
-                                    <label for="dimensionBackgroundColor" class="dc-label-sm">BG Color</label>
-                                    <input type="color" id="dimensionBackgroundColor" value="#ffffff" class="dc-color-picker">
-                                </div>
-                                <div class="dc-control">
-                                    <label for="dimensionBackgroundOpacity" class="dc-label-sm">BG Opacity</label>
-                                    <input type="number" id="dimensionBackgroundOpacity" value="80" min="0" max="100" step="1" class="dc-input-sm">
+                                    <button id="batchChangeName" class="batch-btn" title="Apply name change">
+                                        <i class="fas fa-edit"></i>
+                                        <span>Rename</span>
+                                    </button>
                                 </div>
                             </div>
-                        </details>
+                        </div>
+
+                        <div class="tool-section">
+                            <h3>Dimension Style</h3>
+                            <button id="applyDimensionStyleToSelection" class="batch-btn-full" title="Apply current style to selected dimensions">
+                                <i class="fas fa-palette"></i>
+                                <span>Apply Style to Selected</span>
+                            </button>
+                            <div class="dimension-controls-new">
+                                <!-- Text -->
+                                <details class="dc-group">
+                                    <summary class="dc-group-header">Text</summary>
+                                    <div class="dc-grid">
+                                        <div class="dc-control">
+                                            <label for="dimensionTextSize" class="dc-label-sm">Size</label>
+                                            <input type="number" id="dimensionTextSize" value="14" min="8" max="32" step="1" class="dc-input-sm">
+                                        </div>
+                                        <div class="dc-control">
+                                            <label for="dimensionTextColor" class="dc-label-sm">Color</label>
+                                            <input type="color" id="dimensionTextColor" value="#000000" class="dc-color-picker">
+                                        </div>
+                                        <div class="dc-control">
+                                            <label for="dimensionFont" class="dc-label-sm">Font</label>
+                                            <select id="dimensionFont" class="dc-select">
+                                                <option value="Arial">Arial</option>
+                                                <option value="Helvetica">Helvetica</option>
+                                                <option value="Times New Roman">Times</option>
+                                                <option value="Courier New">Courier</option>
+                                                <option value="Verdana">Verdana</option>
+                                            </select>
+                                        </div>
+                                        <div class="dc-control">
+                                            <label for="dimensionTextStyle" class="dc-label-sm">Style</label>
+                                            <select id="dimensionTextStyle" class="dc-select">
+                                                <option value="normal">Normal</option>
+                                                <option value="bold">Bold</option>
+                                                <option value="italic">Italic</option>
+                                                <option value="bold italic">Bold Italic</option>
+                                            </select>
+                                        </div>
+                                        <div class="dc-control">
+                                            <label for="dimensionTextOffset" class="dc-label-sm">Text Offset</label>
+                                            <input type="number" id="dimensionTextOffset" value="10" min="-50" max="50" step="1" class="dc-input-sm">
+                                        </div>
+                                    </div>
+                                </details>
+
+                                <!-- Lines -->
+                                <details class="dc-group">
+                                    <summary class="dc-group-header">Lines</summary>
+                                    <div class="dc-grid">
+                                        <div class="dc-control">
+                                            <label for="dimensionLineColor" class="dc-label-sm">Color</label>
+                                            <input type="color" id="dimensionLineColor" value="#0066cc" class="dc-color-picker">
+                                        </div>
+                                        <div class="dc-control">
+                                            <label for="dimensionLineOpacity" class="dc-label-sm">Opacity</label>
+                                            <input type="number" id="dimensionLineOpacity" value="100" min="0" max="100" step="1" class="dc-input-sm">
+                                        </div>
+                                        <div class="dc-control">
+                                            <label for="dimensionLineWidth" class="dc-label-sm">Width</label>
+                                            <input type="number" id="dimensionLineWidth" value="1" min="1" max="5" step="0.5" class="dc-input-sm">
+                                        </div>
+                                        <div class="dc-control">
+                                            <label for="dimensionLineStyle" class="dc-label-sm">Style</label>
+                                            <select id="dimensionLineStyle" class="dc-select">
+                                                <option value="solid">Solid</option>
+                                                <option value="dashed">Dashed</option>
+                                                <option value="dotted">Dotted</option>
+                                            </select>
+                                        </div>
+                                        <div class="dc-control dc-control-full">
+                                            <label for="dimensionArcSize" class="dc-label-sm">Arc Size</label>
+                                            <input type="range" id="dimensionArcSize" min="5" max="80" value="30" class="dc-slider">
+                                            <span id="dimensionArcSizeValue">30</span>
+                                        </div>
+                                    </div>
+                                </details>
+
+                                <!-- Format -->
+                                <details class="dc-group">
+                                    <summary class="dc-group-header">Format</summary>
+                                    <div class="dc-grid">
+                                        <div class="dc-control">
+                                            <label for="dimensionUnit" class="dc-label-sm">Unit</label>
+                                            <select id="dimensionUnit" class="dc-select">
+                                                <option value="°">Degrees (°)</option>
+                                                <option value="rad">Radians</option>
+                                                <option value="grad">Gradians</option>
+                                                <option value="m">Meters (m)</option>
+                                            </select>
+                                        </div>
+                                        <div class="dc-control">
+                                            <label for="dimensionPrecision" class="dc-label-sm">Precision</label>
+                                            <input type="number" id="dimensionPrecision" value="1" min="0" max="4" step="1" class="dc-input-sm">
+                                        </div>
+                                        <div class="dc-control">
+                                            <label for="dimensionPrefix" class="dc-label-sm">Prefix</label>
+                                            <input type="text" id="dimensionPrefix" placeholder="∠" maxlength="3" class="dc-input-sm">
+                                        </div>
+                                        <div class="dc-control">
+                                            <label for="dimensionSuffix" class="dc-label-sm">Suffix</label>
+                                            <input type="text" id="dimensionSuffix" placeholder="" maxlength="3" class="dc-input-sm">
+                                        </div>
+                                    </div>
+                                </details>
+
+                                <!-- Display -->
+                                <details class="dc-group">
+                                    <summary class="dc-group-header">Display</summary>
+                                    <div class="dc-grid dc-grid-display">
+                                        <div class="dc-checkbox-group">
+                                            <label class="dc-checkbox-label">
+                                                <input type="checkbox" id="dimensionShowBackground" checked>
+                                                <span class="dc-checkmark"></span> Text BG
+                                            </label>
+                                            <label class="dc-checkbox-label">
+                                                <input type="checkbox" id="dimensionShowArrows">
+                                                <span class="dc-checkmark"></span> Arrows
+                                            </label>
+                                        </div>
+                                        <div class="dc-control">
+                                            <label for="dimensionBackgroundColor" class="dc-label-sm">BG Color</label>
+                                            <input type="color" id="dimensionBackgroundColor" value="#ffffff" class="dc-color-picker">
+                                        </div>
+                                        <div class="dc-control">
+                                            <label for="dimensionBackgroundOpacity" class="dc-label-sm">BG Opacity</label>
+                                            <input type="number" id="dimensionBackgroundOpacity" value="80" min="0" max="100" step="1" class="dc-input-sm">
+                                        </div>
+                                    </div>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- View Panel -->
+                    <div id="view-panel" class="toolbar-panel">
+                        <div class="tool-section">
+                            <h3>View Options <button class="section-help" title="Learn about view options">?</button></h3>
+                            <div class="view-options">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="showGrid" checked>
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-th"></i> Show Grid
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="showRulers">
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-ruler-combined"></i> Show Rulers
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="showCoordinates" checked>
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-crosshairs"></i> Show Coordinates
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="showLabels" checked>
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-tag"></i> Show Labels
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="showDimensionsView" checked>
+                                    <span class="checkmark"></span>
+                                    <i class="fas fa-ruler"></i> Show Dimensions
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="tool-section">
+                            <h3>Import/Export</h3>
+                            <div class="import-export-btns">
+                                <button id="importGPXBtn" class="action-btn-primary" title="Import GPX file">
+                                    <i class="fas fa-file-import"></i>
+                                    <span>Import GPX</span>
+                                </button>
+                                <button id="exportDXFBtn" class="action-btn-primary" title="Export to DXF">
+                                    <i class="fas fa-file-export"></i>
+                                    <span>Export DXF</span>
+                                </button>
+                                <button id="saveProjectBtn" class="action-btn-primary" title="Save project">
+                                    <i class="fas fa-save"></i>
+                                    <span>Save Project</span>
+                                </button>
+                                <button id="loadProjectBtn" class="action-btn-primary" title="Load project">
+                                    <i class="fas fa-folder-open"></i>
+                                    <span>Load Project</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="tool-section">
+                            <h3>Display Modes</h3>
+                            <div class="display-mode-btns">
+                                <button id="viewDrawingBtn" class="display-mode-btn active" title="Drawing view">
+                                    <i class="fas fa-drafting-compass"></i>
+                                    <span>Drawing</span>
+                                </button>
+                                <button id="viewMapBtn" class="display-mode-btn" title="Map view">
+                                    <i class="fas fa-map"></i>
+                                    <span>Map</span>
+                                </button>
+                                <button id="viewElevationBtn" class="display-mode-btn" title="Elevation profile">
+                                    <i class="fas fa-chart-line"></i>
+                                    <span>Elevation</span>
+                                </button>
+                                <button id="view3DBtn" class="display-mode-btn" title="3D terrain view">
+                                    <i class="fas fa-cube"></i>
+                                    <span>3D View</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="tool-section">
+                            <h3>Shortcuts</h3>
+                            <div class="shortcuts-list">
+                                <div class="shortcut-item">
+                                    <span class="shortcut-key">Esc</span>
+                                    <span class="shortcut-desc">Select tool</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="shortcut-key">L</span>
+                                    <span class="shortcut-desc">Line tool</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="shortcut-key">P</span>
+                                    <span class="shortcut-desc">Pole tool</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="shortcut-key">D</span>
+                                    <span class="shortcut-desc">Dimension</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="shortcut-key">Space</span>
+                                    <span class="shortcut-desc">Pan view</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="shortcut-key">Del</span>
+                                    <span class="shortcut-desc">Delete selected</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="shortcut-key">Ctrl+A</span>
+                                    <span class="shortcut-desc">Select all</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="shortcut-key">Ctrl+Z</span>
+                                    <span class="shortcut-desc">Undo</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <span class="shortcut-key">Ctrl+Y</span>
+                                    <span class="shortcut-desc">Redo</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -568,6 +732,91 @@
         </div>
         <div class="status-item">
             <span id="elementCount">Elements: 0 poles, 0 lines</span>
+        </div>
+    </div>
+    
+    <!-- Welcome Screen Overlay -->
+    <div id="welcomeScreen" class="welcome-overlay">
+        <div class="welcome-content">
+            <div class="welcome-header">
+                <h1>Welcome to Electrical CAD</h1>
+                <p>Create professional electrical network diagrams from GPX waypoints</p>
+            </div>
+            
+            <div class="welcome-grid">
+                <div class="welcome-card">
+                    <div class="welcome-icon">
+                        <i class="fas fa-file-import"></i>
+                    </div>
+                    <h3>Import GPX</h3>
+                    <p>Start by importing a GPX file with waypoints</p>
+                    <button class="welcome-btn" onclick="document.getElementById('gpxFileInput').click()">
+                        <i class="fas fa-upload"></i> Import File
+                    </button>
+                </div>
+                
+                <div class="welcome-card">
+                    <div class="welcome-icon">
+                        <i class="fas fa-drafting-compass"></i>
+                    </div>
+                    <h3>Draw Manually</h3>
+                    <p>Or start drawing your network from scratch</p>
+                    <button class="welcome-btn" onclick="window.app.closeWelcomeScreen()">
+                        <i class="fas fa-pencil-ruler"></i> Start Drawing
+                    </button>
+                </div>
+                
+                <div class="welcome-card">
+                    <div class="welcome-icon">
+                        <i class="fas fa-folder-open"></i>
+                    </div>
+                    <h3>Open Project</h3>
+                    <p>Continue working on a saved project</p>
+                    <button class="welcome-btn" onclick="document.getElementById('loadJsonFileInput').click()">
+                        <i class="fas fa-folder-open"></i> Open Project
+                    </button>
+                </div>
+            </div>
+            
+            <div class="welcome-tips">
+                <h3>Quick Tips</h3>
+                <div class="tips-grid">
+                    <div class="tip-item">
+                        <span class="tip-key">L</span>
+                        <span class="tip-desc">Draw lines</span>
+                    </div>
+                    <div class="tip-item">
+                        <span class="tip-key">P</span>
+                        <span class="tip-desc">Place poles</span>
+                    </div>
+                    <div class="tip-item">
+                        <span class="tip-key">D</span>
+                        <span class="tip-desc">Add dimensions</span>
+                    </div>
+                    <div class="tip-item">
+                        <span class="tip-key">Space</span>
+                        <span class="tip-desc">Pan view</span>
+                    </div>
+                    <div class="tip-item">
+                        <span class="tip-key">Esc</span>
+                        <span class="tip-desc">Select tool</span>
+                    </div>
+                    <div class="tip-item">
+                        <span class="tip-key">?</span>
+                        <span class="tip-desc">Show help</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="welcome-footer">
+                <label class="welcome-checkbox">
+                    <input type="checkbox" id="dontShowWelcome">
+                    <span>Don't show this again</span>
+                </label>
+                <button class="welcome-close" onclick="window.app.closeWelcomeScreen()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
         </div>
     </div>
 

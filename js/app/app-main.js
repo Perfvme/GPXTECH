@@ -114,6 +114,9 @@ class ElectricalCADApp {
         // Setup title block modal
         this.setupTitleBlockModal();
         
+        // Welcome screen handling
+        this.initWelcomeScreen();
+        
         console.log('Electrical CAD Application initialized successfully');
     }
 
@@ -252,6 +255,54 @@ class ElectricalCADApp {
             terrainToggleButton.classList.remove('active');
             this.terrainViewManager.isTerrainView = false;
             if (terrainZoomBtn) terrainZoomBtn.style.display = 'none';
+        }
+    }
+
+    // Legend event listeners
+    setupLegendControls() {
+        document.getElementById('legendMinimize').addEventListener('click', () => {
+            const legend = document.getElementById('legend');
+            const content = document.getElementById('legendContent');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                legend.classList.remove('minimized');
+            } else {
+                content.style.display = 'none';
+                legend.classList.add('minimized');
+            }
+        });
+    }
+
+    /**
+     * Initialize welcome screen
+     */
+    initWelcomeScreen() {
+        // Check if user has set to not show welcome screen
+        const dontShow = localStorage.getItem('dontShowWelcome') === 'true';
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        
+        if (!dontShow && welcomeScreen) {
+            welcomeScreen.classList.remove('hidden');
+        } else if (welcomeScreen) {
+            welcomeScreen.classList.add('hidden');
+        }
+        
+        // Handle checkbox
+        const dontShowCheckbox = document.getElementById('dontShowWelcome');
+        if (dontShowCheckbox) {
+            dontShowCheckbox.addEventListener('change', (e) => {
+                localStorage.setItem('dontShowWelcome', e.target.checked);
+            });
+        }
+    }
+    
+    /**
+     * Close welcome screen
+     */
+    closeWelcomeScreen() {
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        if (welcomeScreen) {
+            welcomeScreen.classList.add('hidden');
         }
     }
 }

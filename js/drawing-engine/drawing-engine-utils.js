@@ -294,6 +294,13 @@ DrawingEngine.prototype.selectByFilter = function(filterType) {
         case 'line':
             filteredElements = this.elements.lines;
             break;
+        case 'label':
+            // Select all elements with labels (poles and lines with names)
+            filteredElements = [...this.elements.poles, ...this.elements.lines].filter(el => el.name && el.name.trim() !== '');
+            break;
+        case 'dimension':
+            filteredElements = this.elements.dimensions;
+            break;
         case 'all':
             filteredElements = [...this.elements.poles, ...this.elements.lines, ...this.elements.dimensions];
             break;

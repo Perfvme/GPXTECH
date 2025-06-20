@@ -44,23 +44,24 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
             </div>
             
             <div class="properties-form">
-                <div class="form-row">
-                    <label for="prop-pole-name"><i class="fas fa-tag"></i> Name</label>
-                    <input type="text" id="prop-pole-name" value="${currentElementName}" onchange="window.drawingEngine.updateElementProperty('name', this.value)" placeholder="Enter pole name">
-                </div>
-                
-                <div class="form-row">
-                    <label for="prop-pole-type"><i class="fas fa-cog"></i> Type</label>
-                    <select id="prop-pole-type" onchange="window.drawingEngine.updateElementProperty('type', this.value)">
-                        <option value="tiang-baja-existing" ${element.type === 'tiang-baja-existing' ? 'selected' : ''}>Steel Pole (Existing)</option>
-                        <option value="tiang-baja-rencana" ${element.type === 'tiang-baja-rencana' ? 'selected' : ''}>Steel Pole (Planned)</option>
-                        <option value="tiang-beton-existing" ${element.type === 'tiang-beton-existing' ? 'selected' : ''}>Concrete Pole (Existing)</option>
-                        <option value="tiang-beton-rencana" ${element.type === 'tiang-beton-rencana' ? 'selected' : ''}>Concrete Pole (Planned)</option>
-                        <option value="gardu-portal" ${element.type === 'gardu-portal' ? 'selected' : ''}>Portal Substation</option>
-                    </select>
-                </div>
-                
+                <!-- Essential Properties -->
                 <div class="form-section">
+                    <div class="form-row">
+                        <label for="prop-pole-name"><i class="fas fa-tag"></i> Name</label>
+                        <input type="text" id="prop-pole-name" value="${currentElementName}" onchange="window.drawingEngine.updateElementProperty('name', this.value)" placeholder="Enter pole name">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="prop-pole-type"><i class="fas fa-cog"></i> Type</label>
+                        <select id="prop-pole-type" onchange="window.drawingEngine.updateElementProperty('type', this.value)">
+                            <option value="tiang-baja-existing" ${element.type === 'tiang-baja-existing' ? 'selected' : ''}>Steel Pole (Existing)</option>
+                            <option value="tiang-baja-rencana" ${element.type === 'tiang-baja-rencana' ? 'selected' : ''}>Steel Pole (Planned)</option>
+                            <option value="tiang-beton-existing" ${element.type === 'tiang-beton-existing' ? 'selected' : ''}>Concrete Pole (Existing)</option>
+                            <option value="tiang-beton-rencana" ${element.type === 'tiang-beton-rencana' ? 'selected' : ''}>Concrete Pole (Planned)</option>
+                            <option value="gardu-portal" ${element.type === 'gardu-portal' ? 'selected' : ''}>Portal Substation</option>
+                        </select>
+                    </div>
+                    
                     <label class="section-label"><i class="fas fa-plus-circle"></i> Accessories</label>
                     <div class="checkbox-group">
                         <label class="checkbox-item">
@@ -76,65 +77,72 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
                     </div>
                 </div>
                 
-                <div class="form-section">
-                    <label class="section-label"><i class="fas fa-map-marker-alt"></i> Location</label>
-                    <div class="properties-form-compact">
-                        <div class="form-row">
-                            <label for="prop-canvas-x"><i class="fas fa-ruler-combined"></i> Canvas</label>
-                            <div class="input-group">
-                                <div class="input-group-item">
-                                    <span class="input-label">X:</span>
-                                    <input type="number" step="0.01" value="${element.x}" onchange="window.drawingEngine.updatePoleLocationFromPanel('x', this.value)" class="compact-input">
-                                </div>
-                                <div class="input-group-item">
-                                    <span class="input-label">Y:</span>
-                                    <input type="number" step="0.01" value="${element.y}" onchange="window.drawingEngine.updatePoleLocationFromPanel('y', this.value)" class="compact-input">
+                <!-- Collapsible Advanced Properties -->
+                <details class="advanced-properties">
+                    <summary class="advanced-header">
+                        <i class="fas fa-chevron-right"></i>
+                        <span>Advanced Properties</span>
+                    </summary>
+                    <div class="advanced-content">
+                        <label class="section-label"><i class="fas fa-map-marker-alt"></i> Location Coordinates</label>
+                        <div class="properties-form-compact">
+                            <div class="form-row">
+                                <label for="prop-canvas-x"><i class="fas fa-ruler-combined"></i> Canvas</label>
+                                <div class="input-group">
+                                    <div class="input-group-item">
+                                        <span class="input-label">X:</span>
+                                        <input type="number" step="0.01" value="${element.x}" onchange="window.drawingEngine.updatePoleLocationFromPanel('x', this.value)" class="compact-input">
+                                    </div>
+                                    <div class="input-group-item">
+                                        <span class="input-label">Y:</span>
+                                        <input type="number" step="0.01" value="${element.y}" onchange="window.drawingEngine.updatePoleLocationFromPanel('y', this.value)" class="compact-input">
+                                    </div>
                                 </div>
                             </div>
+                            ${element.utmX !== undefined ? `
+                            <div class="form-row">
+                                <label for="prop-utm-x"><i class="fas fa-globe-europe"></i> UTM</label>
+                                <div class="input-group">
+                                    <div class="input-group-item">
+                                        <input type="number" step="0.01" value="${element.utmX}" onchange="window.drawingEngine.updatePoleLocationFromPanel('utmX', this.value)" class="compact-input">
+                                    </div>
+                                    <div class="input-group-item">
+                                        <span class="input-label">,</span>
+                                        <input type="number" step="0.01" value="${element.utmY}" onchange="window.drawingEngine.updatePoleLocationFromPanel('utmY', this.value)" class="compact-input">
+                                    </div>
+                                    <div class="input-group-item input-group-item-inline">
+                                        <span class="input-label">(Z</span>
+                                        <input type="number" step="1" min="1" max="60" value="${element.utmZone || ''}" onchange="window.drawingEngine.updatePoleLocationFromPanel('utmZone', this.value)" class="compact-input utm-zone-input">
+                                        <span class="input-label">)</span>
+                                    </div>
+                                </div>
+                            </div>` : ''}
+                            ${element.originalLat !== undefined ? `
+                            <div class="form-row">
+                                <label for="prop-gps-lat"><i class="fas fa-location-arrow"></i> GPS</label>
+                                <div class="input-group">
+                                    <div class="input-group-item">
+                                        <input type="number" step="0.000001" value="${element.originalLat}" onchange="window.drawingEngine.updatePoleLocationFromPanel('originalLat', this.value)" class="compact-input">
+                                    </div>
+                                    <div class="input-group-item">
+                                        <span class="input-label">,</span>
+                                        <input type="number" step="0.000001" value="${element.originalLon}" onchange="window.drawingEngine.updatePoleLocationFromPanel('originalLon', this.value)" class="compact-input">
+                                    </div>
+                                </div>
+                            </div>` : ''}
+                            ${element.elevation !== undefined && element.elevation !== null ? `
+                            <div class="form-row">
+                                <label for="prop-elevation"><i class="fas fa-mountain"></i> Elevation</label>
+                                <div class="input-group">
+                                    <div class="input-group-item">
+                                        <input type="number" step="0.01" value="${element.elevation}" onchange="window.drawingEngine.updatePoleLocationFromPanel('elevation', this.value)" class="compact-input">
+                                        <span class="input-label">m</span>
+                                    </div>
+                                </div>
+                            </div>` : ''}
                         </div>
-                        ${element.utmX !== undefined ? `
-                        <div class="form-row">
-                            <label for="prop-utm-x"><i class="fas fa-globe-europe"></i> UTM</label>
-                            <div class="input-group">
-                                <div class="input-group-item">
-                                    <input type="number" step="0.01" value="${element.utmX}" onchange="window.drawingEngine.updatePoleLocationFromPanel('utmX', this.value)" class="compact-input">
-                                </div>
-                                <div class="input-group-item">
-                                    <span class="input-label">,</span>
-                                    <input type="number" step="0.01" value="${element.utmY}" onchange="window.drawingEngine.updatePoleLocationFromPanel('utmY', this.value)" class="compact-input">
-                                </div>
-                                <div class="input-group-item input-group-item-inline">
-                                    <span class="input-label">(Z</span>
-                                    <input type="number" step="1" min="1" max="60" value="${element.utmZone || ''}" onchange="window.drawingEngine.updatePoleLocationFromPanel('utmZone', this.value)" class="compact-input utm-zone-input">
-                                    <span class="input-label">)</span>
-                                </div>
-                            </div>
-                        </div>` : ''}
-                        ${element.originalLat !== undefined ? `
-                        <div class="form-row">
-                            <label for="prop-gps-lat"><i class="fas fa-location-arrow"></i> GPS</label>
-                            <div class="input-group">
-                                <div class="input-group-item">
-                                    <input type="number" step="0.000001" value="${element.originalLat}" onchange="window.drawingEngine.updatePoleLocationFromPanel('originalLat', this.value)" class="compact-input">
-                                </div>
-                                <div class="input-group-item">
-                                    <span class="input-label">,</span>
-                                    <input type="number" step="0.000001" value="${element.originalLon}" onchange="window.drawingEngine.updatePoleLocationFromPanel('originalLon', this.value)" class="compact-input">
-                                </div>
-                            </div>
-                        </div>` : ''}
-                        ${element.elevation !== undefined && element.elevation !== null ? `
-                        <div class="form-row">
-                            <label for="prop-elevation"><i class="fas fa-mountain"></i> Elevation</label>
-                            <div class="input-group">
-                                <div class="input-group-item">
-                                    <input type="number" step="0.01" value="${element.elevation}" onchange="window.drawingEngine.updatePoleLocationFromPanel('elevation', this.value)" class="compact-input">
-                                    <span class="input-label">m</span>
-                                </div>
-                            </div>
-                        </div>` : ''}
                     </div>
-                </div>
+                </details>
             </div>
         `;
     } else if (element.type && (element.type.includes('sutm') || element.type.includes('sutr'))) {
@@ -159,93 +167,102 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
             </div>
             
             <div class="properties-form">
-                <div class="form-row">
-                    <label for="prop-line-name"><i class="fas fa-tag"></i> Name</label>
-                    <input type="text" id="prop-line-name" value="${currentLineName}" onchange="window.drawingEngine.updateElementProperty('name', this.value)" placeholder="Enter line name">
-                </div>
-                
-                <div class="form-row">
-                    <label for="prop-line-type"><i class="fas fa-cog"></i> Type</label>
-                    <select id="prop-line-type" onchange="window.drawingEngine.updateElementProperty('type', this.value)">
-                        <option value="sutm-existing" ${element.type === 'sutm-existing' ? 'selected' : ''}>Medium Voltage (Existing)</option>
-                        <option value="sutm-rencana" ${element.type === 'sutm-rencana' ? 'selected' : ''}>Medium Voltage (Planned)</option>
-                        <option value="sutr-existing" ${element.type === 'sutr-existing' ? 'selected' : ''}>Low Voltage (Existing)</option>
-                        <option value="sutr-rencana" ${element.type === 'sutr-rencana' ? 'selected' : ''}>Low Voltage (Planned)</option>
-                    </select>
-                </div>
-                
+                <!-- Essential Properties -->
                 <div class="form-section">
-                    <label class="section-label"><i class="fas fa-ruler"></i> Measurements (Read-Only)</label>
-                    <div class="measurement-info">
-                        <div class="measure-item">
-                            <span class="measure-label">Canvas Length</span>
-                            <span class="measure-value">${canvasLength} px</span>
-                        </div>
-                        ${element.chordLengthMeters !== undefined ? `
-                        <div class="measure-item primary">
-                            <span class="measure-label">Chord Length</span>
-                            <span class="measure-value">${element.chordLengthMeters} m</span>
-                        </div>
-                        <div class="measure-item">
-                            <span class="measure-label">Actual Cable Length (Sagged)</span>
-                            <span class="measure-value">${element.actualLengthMeters} m</span>
-                        </div>` : ''}
-                        ${element.distanceMeters !== undefined && element.chordLengthMeters === undefined ? `
-                        <div class="measure-item primary">
-                            <span class="measure-label">3D Distance</span>
-                            <span class="measure-value">${element.distanceMeters} m</span>
-                        </div>
-                        <div class="measure-item">
-                            <span class="measure-label">Kilometers</span>
-                            <span class="measure-value">${(element.distanceMeters / 1000).toFixed(3)} km</span>
-                        </div>` : ''}
-                        ${element.startElevation !== undefined && element.startElevation !== null ? `
-                        <div class="measure-item">
-                            <span class="measure-label">Start Elevation</span>
-                            <span class="measure-value">${element.startElevation.toFixed(2)} m</span>
-                        </div>` : ''}
-                        ${element.endElevation !== undefined && element.endElevation !== null ? `
-                        <div class="measure-item">
-                            <span class="measure-label">End Elevation</span>
-                            <span class="measure-value">${element.endElevation.toFixed(2)} m</span>
-                        </div>` : ''}
-                    </div>
-                </div>
-                <div class="form-section">
-                    <label class="section-label"><i class="fas fa-sort-amount-down"></i> Cable Sag</label>
                     <div class="form-row">
-                        <label class="checkbox-item">
-                            <input type="checkbox" id="prop-line-sag-enabled" ${element.sag?.enabled ? 'checked' : ''} onchange="window.drawingEngine.updateElementSagProperty('enabled', this.checked)">
-                            <span class="checkmark"></span> Enable Sag
-                        </label>
+                        <label for="prop-line-name"><i class="fas fa-tag"></i> Name</label>
+                        <input type="text" id="prop-line-name" value="${currentLineName}" onchange="window.drawingEngine.updateElementProperty('name', this.value)" placeholder="Enter line name">
                     </div>
+                    
                     <div class="form-row">
-                        <label for="prop-line-sag-value">Sag Value:</label>
-                        <input type="number" id="prop-line-sag-value" value="${element.sag?.value || 0.01}" step="0.01" ${!element.sag?.enabled ? 'disabled' : ''} onchange="window.drawingEngine.updateElementSagProperty('value', parseFloat(this.value))">
-                    </div>
-                    <div class="form-row">
-                        <label for="prop-line-sag-type">Sag Type:</label>
-                        <select id="prop-line-sag-type" ${!element.sag?.enabled ? 'disabled' : ''} onchange="window.drawingEngine.updateElementSagProperty('type', this.value)">
-                            <option value="percentage" ${element.sag?.type === 'percentage' ? 'selected' : ''}>Percentage of Span</option>
-                            <option value="absolute" ${element.sag?.type === 'absolute' ? 'selected' : ''}>Absolute (meters)</option>
+                        <label for="prop-line-type"><i class="fas fa-cog"></i> Type</label>
+                        <select id="prop-line-type" onchange="window.drawingEngine.updateElementProperty('type', this.value)">
+                            <option value="sutm-existing" ${element.type === 'sutm-existing' ? 'selected' : ''}>Medium Voltage (Existing)</option>
+                            <option value="sutm-rencana" ${element.type === 'sutm-rencana' ? 'selected' : ''}>Medium Voltage (Planned)</option>
+                            <option value="sutr-existing" ${element.type === 'sutr-existing' ? 'selected' : ''}>Low Voltage (Existing)</option>
+                            <option value="sutr-rencana" ${element.type === 'sutr-rencana' ? 'selected' : ''}>Low Voltage (Planned)</option>
                         </select>
                     </div>
+                    
+                    <!-- Show primary measurement prominently -->
+                    ${element.chordLengthMeters !== undefined || element.distanceMeters !== undefined ? `
+                    <div class="primary-measurement">
+                        <label class="section-label"><i class="fas fa-ruler"></i> Length</label>
+                        <div class="measure-item primary">
+                            <span class="measure-label">${element.chordLengthMeters !== undefined ? 'Chord Length' : '3D Distance'}</span>
+                            <span class="measure-value">${element.chordLengthMeters !== undefined ? element.chordLengthMeters : element.distanceMeters} m</span>
+                        </div>
+                    </div>` : ''}
                 </div>
                 
-                ${element.startUtm ? `
-                <div class="form-section">
-                    <label class="section-label"><i class="fas fa-map-marker-alt"></i> Coordinates (Read-Only)</label>
-                    <div class="location-info">
-                        <div class="coord-item">
-                            <span class="coord-label">Start UTM</span>
-                            <span class="coord-value">${Math.round(element.startUtm.x)}, ${Math.round(element.startUtm.y)} (Z${element.startUtm.zone || 'N/A'})</span>
+                <!-- Collapsible Advanced Properties -->
+                <details class="advanced-properties">
+                    <summary class="advanced-header">
+                        <i class="fas fa-chevron-right"></i>
+                        <span>Advanced Properties</span>
+                    </summary>
+                    <div class="advanced-content">
+                        <label class="section-label"><i class="fas fa-sort-amount-down"></i> Cable Sag</label>
+                        <div class="form-row">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="prop-line-sag-enabled" ${element.sag?.enabled ? 'checked' : ''} onchange="window.drawingEngine.updateElementSagProperty('enabled', this.checked)">
+                                <span class="checkmark"></span> Enable Sag
+                            </label>
                         </div>
-                        <div class="coord-item">
-                            <span class="coord-label">End UTM</span>
-                            <span class="coord-value">${Math.round(element.endUtm.x)}, ${Math.round(element.endUtm.y)} (Z${element.endUtm.zone || 'N/A'})</span>
+                        <div class="form-row">
+                            <label for="prop-line-sag-value">Sag Value:</label>
+                            <input type="number" id="prop-line-sag-value" value="${element.sag?.value || 0.01}" step="0.01" ${!element.sag?.enabled ? 'disabled' : ''} onchange="window.drawingEngine.updateElementSagProperty('value', parseFloat(this.value))">
                         </div>
+                        <div class="form-row">
+                            <label for="prop-line-sag-type">Sag Type:</label>
+                            <select id="prop-line-sag-type" ${!element.sag?.enabled ? 'disabled' : ''} onchange="window.drawingEngine.updateElementSagProperty('type', this.value)">
+                                <option value="percentage" ${element.sag?.type === 'percentage' ? 'selected' : ''}>Percentage of Span</option>
+                                <option value="absolute" ${element.sag?.type === 'absolute' ? 'selected' : ''}>Absolute (meters)</option>
+                            </select>
+                        </div>
+                        
+                        <label class="section-label"><i class="fas fa-ruler"></i> All Measurements</label>
+                        <div class="measurement-info">
+                            <div class="measure-item">
+                                <span class="measure-label">Canvas Length</span>
+                                <span class="measure-value">${canvasLength} px</span>
+                            </div>
+                            ${element.chordLengthMeters !== undefined ? `
+                            <div class="measure-item">
+                                <span class="measure-label">Actual Cable Length (Sagged)</span>
+                                <span class="measure-value">${element.actualLengthMeters} m</span>
+                            </div>` : ''}
+                            ${element.distanceMeters !== undefined ? `
+                            <div class="measure-item">
+                                <span class="measure-label">Kilometers</span>
+                                <span class="measure-value">${(element.distanceMeters / 1000).toFixed(3)} km</span>
+                            </div>` : ''}
+                            ${element.startElevation !== undefined && element.startElevation !== null ? `
+                            <div class="measure-item">
+                                <span class="measure-label">Start Elevation</span>
+                                <span class="measure-value">${element.startElevation.toFixed(2)} m</span>
+                            </div>` : ''}
+                            ${element.endElevation !== undefined && element.endElevation !== null ? `
+                            <div class="measure-item">
+                                <span class="measure-label">End Elevation</span>
+                                <span class="measure-value">${element.endElevation.toFixed(2)} m</span>
+                            </div>` : ''}
+                        </div>
+                        
+                        ${element.startUtm ? `
+                        <label class="section-label"><i class="fas fa-map-marker-alt"></i> Coordinates</label>
+                        <div class="location-info">
+                            <div class="coord-item">
+                                <span class="coord-label">Start UTM</span>
+                                <span class="coord-value">${Math.round(element.startUtm.x)}, ${Math.round(element.startUtm.y)} (Z${element.startUtm.zone || 'N/A'})</span>
+                            </div>
+                            <div class="coord-item">
+                                <span class="coord-label">End UTM</span>
+                                <span class="coord-value">${Math.round(element.endUtm.x)}, ${Math.round(element.endUtm.y)} (Z${element.endUtm.zone || 'N/A'})</span>
+                            </div>
+                        </div>` : ''}
                     </div>
-                </div>` : ''}
+                </details>
             </div>
         `;
     } else if (element.type === 'aligned' || element.type === 'angle') {
@@ -275,7 +292,7 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
                 </div>
                  <div class="form-row">
                     <label><i class="fas fa-palette"></i> Style Options</label>
-                    <p style="font-size:12px; color: var(--text-secondary);">Use Dimension Style panel in toolbar to change style. Apply to selection if needed.</p>
+                    <p style="font-size:12px; color: var(--text-secondary); margin: 8px 0;">Use the Dimension Style panel in the Modify tab to change appearance.</p>
                 </div>
             </div>
         `;
@@ -289,7 +306,7 @@ DrawingEngine.prototype.updatePropertiesPanel = function(element) {
         <div class="property-actions">
             <button onclick="window.drawingEngine.deleteSelectedElements()" class="delete-btn">
                 <i class="fas fa-trash-alt"></i>
-                <span>Delete Element</span>
+                <span>Delete</span>
             </button>
         </div>
     `;

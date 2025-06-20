@@ -35,15 +35,31 @@ ElectricalCADApp.prototype.handleKeyboard = function(e) {
                  this.drawingEngine.redo();
                  this.updateUndoRedoButtons();
                  break;
+             case 'a':
+                 e.preventDefault();
+                 // Select all
+                 const allElements = [
+                     ...this.drawingEngine.elements.poles,
+                     ...this.drawingEngine.elements.lines,
+                     ...this.drawingEngine.elements.dimensions
+                 ];
+                 this.drawingEngine.selectedElements = new Set(allElements);
+                 this.drawingEngine.render();
+                 break;
         }
     }
     
     // Tool shortcuts
     switch (e.key.toLowerCase()) {
-        case 'v':
+        case 'escape':
             this.selectToolByType('select');
+            this.drawingEngine.selectedElement = null;
+            this.drawingEngine.selectedElements.clear();
+            this.drawingEngine.updatePropertiesPanel(null);
+            this.drawingEngine.render();
             break;
-        case 'h':
+        case ' ':
+            e.preventDefault();
             this.selectToolByType('pan');
             break;
         case 'l':
@@ -52,17 +68,26 @@ ElectricalCADApp.prototype.handleKeyboard = function(e) {
         case 'p':
             this.selectToolByType('pole');
             break;
+        case 'd':
+            this.selectToolByType('aligned-dimension');
+            break;
         case 'a':
-            this.selectToolByType('angle');
+            if (!e.ctrlKey && !e.metaKey) {
+                this.selectToolByType('angle');
+            }
             break;
         case 'delete':
         case 'backspace':
-            this.drawingEngine.deleteSelected();
+            e.preventDefault();
+            this.drawingEngine.deleteSelectedElements();
             break;
-        case 'escape':
-            this.drawingEngine.selectedElement = null;
-            this.drawingEngine.updatePropertiesPanel(null);
-            this.drawingEngine.render();
+        case '?':
+            e.preventDefault();
+            // Show welcome screen as help
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            if (welcomeScreen) {
+                welcomeScreen.classList.remove('hidden');
+            }
             break;
     }
 };

@@ -17,8 +17,8 @@ ElectricalCADApp.prototype.selectToolByType = function(toolType) {
  * Select a drawing tool
  */
 ElectricalCADApp.prototype.selectTool = function(toolBtn) {
-    // Remove active class from all tool buttons
-    document.querySelectorAll('.tool-btn-icon').forEach(btn => btn.classList.remove('active'));
+    // Remove active class from all tool buttons (supporting both old and new classes)
+    document.querySelectorAll('.tool-btn-icon, .tool-btn-primary').forEach(btn => btn.classList.remove('active'));
     
     // Add active class to selected button
     toolBtn.classList.add('active');
@@ -73,9 +73,19 @@ ElectricalCADApp.prototype.updateUndoRedoButtons = function() {
     
     if (undoBtn) {
         undoBtn.disabled = !this.drawingEngine.canUndo();
+        if (undoBtn.disabled) {
+            undoBtn.classList.add('disabled');
+        } else {
+            undoBtn.classList.remove('disabled');
+        }
     }
     
     if (redoBtn) {
         redoBtn.disabled = !this.drawingEngine.canRedo();
+        if (redoBtn.disabled) {
+            redoBtn.classList.add('disabled');
+        } else {
+            redoBtn.classList.remove('disabled');
+        }
     }
 };

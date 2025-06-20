@@ -4,13 +4,15 @@
  */
 
 ElectricalCADApp.prototype.setupToolEventListeners = function() {
-    // Tool buttons
-    document.querySelectorAll('.tool-btn-icon').forEach(btn => {
-        btn.addEventListener('click', (e) => this.selectTool(e.target.closest('.tool-btn-icon')));
+    // Tool buttons - support both old (.tool-btn-icon) and new (.tool-btn-primary) classes
+    document.querySelectorAll('.tool-btn-icon, .tool-btn-primary').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const toolBtn = e.target.closest('.tool-btn-icon, .tool-btn-primary');
+            if (toolBtn && toolBtn.dataset.tool) {
+                this.selectTool(toolBtn);
+            }
+        });
     });
-    
-    // Add angle tool event listener if it exists
-    document.getElementById('angleTool')?.addEventListener('click', () => this.selectToolByType('angle'));
     
     // Symbol buttons
     document.querySelectorAll('.symbol-btn-icon').forEach(btn => {

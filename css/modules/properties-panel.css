@@ -371,3 +371,100 @@
     background: #0069d9;
     border-color: #0062cc;
 }
+
+/* Advanced Properties Collapsible */
+.advanced-properties {
+    margin-top: 20px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+}
+
+.advanced-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+    list-style: none;
+}
+
+.advanced-header:hover {
+    background: var(--bg-secondary);
+}
+
+.advanced-header i {
+    transition: transform 0.2s ease;
+    font-size: 10px;
+}
+
+details[open] .advanced-header i {
+    transform: rotate(90deg);
+}
+
+.advanced-content {
+    margin-top: 12px;
+    padding: 0;
+}
+
+/* Primary Measurement */
+.primary-measurement {
+    margin-top: 12px;
+}
+
+.primary-measurement .measure-item.primary {
+    font-size: 16px;
+    padding: 12px 16px;
+    background: #e3f2fd;
+    border: 2px solid #3498db;
+}
+
+.primary-measurement .measure-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1976d2;
+}
+
+/* Location Info */
+.location-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.coord-item {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.coord-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+.coord-value {
+    font-size: 12px;
+    color: var(--text-primary);
+    font-family: 'Roboto Mono', monospace;
+}
+
+/* Delete button styling update */
+.delete-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+}
