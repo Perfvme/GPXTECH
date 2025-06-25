@@ -416,3 +416,912 @@ ElectricalCADApp.prototype.exportCanvasAsPDF = async function() {
         this.showNotification('Error exporting canvas as PDF', 'error');
     }
 };
+
+/**
+ * Get split regions based on split markers
+ */
+ElectricalCADApp.prototype.getSplitRegions = function() {
+    const splitMarkers = this.drawingEngine.elements.splitMarkers;
+    if (splitMarkers.length === 0) {
+        this.showNotification('No split markers found. Use the split tool to add split markers first.', 'warning');
+        return null;
+    }
+    
+    // Sort markers by position
+    const verticalMarkers = splitMarkers.filter(m => m.orientation === 'vertical').sort((a, b) => a.position - b.position);
+    const horizontalMarkers = splitMarkers.filter(m => m.orientation === 'horizontal').sort((a, b) => a.position - b.position);
+    
+    // Get canvas bounds
+    const bounds = this.getDrawingBounds();
+    
+    // Create regions
+    const regions = [];
+    
+    // Calculate vertical splits
+    const vSplits = [bounds.minX];
+    verticalMarkers.forEach(marker => vSplits.push(marker.position));
+    vSplits.push(bounds.maxX);
+    
+    // Calculate horizontal splits
+    const hSplits = [bounds.minY];
+    horizontalMarkers.forEach(marker => hSplits.push(marker.position));
+    hSplits.push(bounds.maxY);
+    
+    // Generate regions with overlaps
+    for (let i = 0; i < vSplits.length - 1; i++) {
+        for (let j = 0; j < hSplits.length - 1; j++) {
+            const overlapDist = this.drawingEngine.splitState.overlapDistance;
+            
+            regions.push({
+                x: vSplits[i] - (i > 0 ? overlapDist : 0),
+                y: hSplits[j] - (j > 0 ? overlapDist : 0),
+                width: (vSplits[i + 1] - vSplits[i]) + (i > 0 ? overlapDist : 0) + (i < vSplits.length - 2 ? overlapDist : 0),
+                height: (hSplits[j + 1] - hSplits[j]) + (j > 0 ? overlapDist : 0) + (j < hSplits.length - 2 ? overlapDist : 0),
+                pageNumber: regions.length + 1,
+                row: j,
+                col: i
+            });
+        }
+    }
+    
+    return regions;
+};
+
+/**
+ * Get drawing bounds
+ */
+ElectricalCADApp.prototype.getDrawingBounds = function() {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    
+    // Check poles
+    this.drawingEngine.elements.poles.forEach(pole => {
+        minX = Math.min(minX, pole.x - 20);
+        minY = Math.min(minY, pole.y - 20);
+        maxX = Math.max(maxX, pole.x + 20);
+        maxY = Math.max(maxY, pole.y + 20);
+    });
+    
+    // Check lines
+    this.drawingEngine.elements.lines.forEach(line => {
+        minX = Math.min(minX, line.startX, line.endX);
+        minY = Math.min(minY, line.startY, line.endY);
+        maxX = Math.max(maxX, line.startX, line.endX);
+        maxY = Math.max(maxY, line.startY, line.endY);
+    });
+    
+    // Add padding
+    const padding = 50;
+    return {
+        minX: minX - padding,
+        minY: minY - padding,
+        maxX: maxX + padding,
+        maxY: maxY + padding,
+        width: maxX - minX + 2 * padding,
+        height: maxY - minY + 2 * padding
+    };
+};
+
+/**
+ * Export split drawing as JPG files
+ */
+ElectricalCADApp.prototype.exportSplitDrawingAsJPG = async function() {
+    const regions = this.getSplitRegions();
+    if (!regions) return;
+    
+    this.showNotification(`Exporting ${regions.length} split pages as JPG...`, 'info');
+    
+    // Capture legend once for all pages
+    const legendElement = document.getElementById('legend');
+    let legendImage = null;
+    let legendWasCaptured = false;
+    
+    if (legendElement && !legendElement.classList.contains('minimized')) {
+        try {
+            const legendCanvasCapture = await window.html2canvas(legendElement, {
+                backgroundColor: null,
+                useCORS: true,
+                logging: false,
+                scale: 2
+            });
+            legendImage = new window.Image();
+            legendImage.src = legendCanvasCapture.toDataURL();
+            await new Promise(resolve => { 
+                legendImage.onload = resolve; 
+                legendImage.onerror = resolve; 
+            });
+            legendWasCaptured = legendImage.complete && legendImage.naturalWidth > 0;
+        } catch (e) {
+            console.error("Error capturing legend for split export:", e);
+        }
+    }
+    
+    try {
+        for (const region of regions) {
+            // Create landscape A4 canvas
+            const scaleFactor = 2; // For high quality
+            const a4LandscapeWidth = 1170 * scaleFactor; // A4 landscape width at 96 DPI
+            const a4LandscapeHeight = 827 * scaleFactor; // A4 landscape height at 96 DPI
+            
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = a4LandscapeWidth;
+            tempCanvas.height = a4LandscapeHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // Set white background
+            tempCtx.fillStyle = '#FFFFFF';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Calculate drawing area (center area, leaving space for legend and title block)
+            const margin = 40 * scaleFactor;
+            const legendSpace = 200 * scaleFactor; // Space for legend on left
+            const titleBlockSpace = 180 * scaleFactor; // Space for title block on right
+            const bottomSpace = 120 * scaleFactor; // Space at bottom for legend and title block
+            
+            const drawingAreaX = margin + legendSpace;
+            const drawingAreaY = margin;
+            const drawingAreaWidth = a4LandscapeWidth - (margin * 2) - legendSpace - titleBlockSpace;
+            const drawingAreaHeight = a4LandscapeHeight - (margin * 2) - bottomSpace;
+            
+            // Calculate scale to fit region content in drawing area
+            const contentScale = Math.min(drawingAreaWidth / (region.width * scaleFactor), 
+                                        drawingAreaHeight / (region.height * scaleFactor));
+            
+            const scaledContentWidth = region.width * scaleFactor * contentScale;
+            const scaledContentHeight = region.height * scaleFactor * contentScale;
+            
+            // Center the content in the drawing area
+            const contentX = drawingAreaX + (drawingAreaWidth - scaledContentWidth) / 2;
+            const contentY = drawingAreaY + (drawingAreaHeight - scaledContentHeight) / 2;
+            
+            // Draw the region content
+            tempCtx.save();
+            tempCtx.translate(contentX, contentY);
+            tempCtx.scale(contentScale, contentScale);
+            tempCtx.scale(scaleFactor, scaleFactor);
+            tempCtx.translate(-region.x, -region.y);
+            
+            // Draw grid if enabled
+            if (this.drawingEngine.showGrid) {
+                this.drawGridForExport(tempCtx, region);
+            }
+            
+            // Draw elements in this region
+            this.drawRegionElements(tempCtx, region);
+            
+            // Draw continuation indicators
+            this.drawContinuationIndicators(tempCtx, region, regions);
+            
+            tempCtx.restore();
+            
+            // Add title block if enabled (bottom right)
+            const titleBlockData = this.currentProject.titleBlockData;
+            if (titleBlockData.includeInExport) {
+                const titleBlockWidth = (titleBlockData.titleBlockWidth || 450) * scaleFactor;
+                const titleBlockHeight = (titleBlockData.titleBlockHeight || 200) * scaleFactor;
+                const titleBlockX = a4LandscapeWidth - titleBlockWidth - margin;
+                const titleBlockY = a4LandscapeHeight - titleBlockHeight - margin;
+                
+                tempCtx.save();
+                tempCtx.translate(titleBlockX, titleBlockY);
+                tempCtx.scale(scaleFactor, scaleFactor);
+                this._drawTitleBlockOnCanvas(tempCtx, titleBlockData.titleBlockHeight || 200, titleBlockData.titleBlockWidth || 450, titleBlockData);
+                tempCtx.restore();
+            }
+            
+            // Add legend to each page (bottom left)
+            if (legendWasCaptured && legendImage) {
+                const legendScale = scaleFactor * 0.6; // Appropriate scale for A4
+                const legendWidth = legendImage.width * legendScale;
+                const legendHeight = legendImage.height * legendScale;
+                const legendX = margin;
+                const legendY = a4LandscapeHeight - legendHeight - margin;
+                
+                tempCtx.save();
+                tempCtx.globalAlpha = 0.95;
+                tempCtx.drawImage(legendImage, legendX, legendY, legendWidth, legendHeight);
+                
+                // Add border around legend
+                tempCtx.strokeStyle = '#ddd';
+                tempCtx.lineWidth = 1 * scaleFactor;
+                tempCtx.strokeRect(legendX, legendY, legendWidth, legendHeight);
+                tempCtx.restore();
+            }
+            
+            // Add page information (top right)
+            tempCtx.save();
+            tempCtx.font = `${12 * scaleFactor}px Arial`;
+            tempCtx.fillStyle = '#666';
+            tempCtx.textAlign = 'right';
+            tempCtx.fillText(`Page ${region.pageNumber} of ${regions.length}`, 
+                a4LandscapeWidth - margin, margin + 20 * scaleFactor);
+            tempCtx.restore();
+            
+            // Export as JPG
+            const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.95);
+            const link = document.createElement('a');
+            link.download = `${this.currentProject.name}_page_${region.pageNumber}.jpg`;
+            link.href = dataUrl;
+            link.click();
+        }
+        
+        const titleBlockIncluded = this.currentProject.titleBlockData.includeInExport;
+        const featuresText = legendWasCaptured && titleBlockIncluded ? 'legend and title block' :
+                            legendWasCaptured ? 'legend' :
+                            titleBlockIncluded ? 'title block' : '';
+        const successMessage = featuresText ? 
+            `Successfully exported ${regions.length} JPG files with ${featuresText}` :
+            `Successfully exported ${regions.length} JPG files`;
+        this.showNotification(successMessage, 'success');
+    } catch (error) {
+        console.error('Error exporting split JPG:', error);
+        this.showNotification('Error exporting split JPG files', 'error');
+    }
+};
+
+/**
+ * Export split drawing as PDF
+ */
+ElectricalCADApp.prototype.exportSplitDrawingAsPDF = async function() {
+    if (!window.jspdf) {
+        this.showNotification('jsPDF library not loaded.', 'error');
+        return;
+    }
+    
+    const regions = this.getSplitRegions();
+    if (!regions) return;
+    
+    this.showNotification(`Generating PDF with ${regions.length} pages...`, 'info');
+    
+    // Capture legend once for all pages
+    const legendElement = document.getElementById('legend');
+    let legendImage = null;
+    let legendWasCaptured = false;
+    
+    if (legendElement && !legendElement.classList.contains('minimized')) {
+        try {
+            const legendCanvasCapture = await window.html2canvas(legendElement, {
+                backgroundColor: null,
+                useCORS: true,
+                logging: false,
+                scale: 2
+            });
+            legendImage = new window.Image();
+            legendImage.src = legendCanvasCapture.toDataURL();
+            await new Promise(resolve => { 
+                legendImage.onload = resolve; 
+                legendImage.onerror = resolve; 
+            });
+            legendWasCaptured = legendImage.complete && legendImage.naturalWidth > 0;
+        } catch (e) {
+            console.error("Error capturing legend for split export:", e);
+        }
+    }
+    
+    try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'pt',
+            format: 'a4'
+        });
+        
+        for (let i = 0; i < regions.length; i++) {
+            const region = regions[i];
+            
+            if (i > 0) {
+                pdf.addPage();
+            }
+            
+            // Create landscape A4 canvas
+            const scaleFactor = 2;
+            const a4LandscapeWidth = 1170 * scaleFactor; // A4 landscape width at 96 DPI
+            const a4LandscapeHeight = 827 * scaleFactor; // A4 landscape height at 96 DPI
+            
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = a4LandscapeWidth;
+            tempCanvas.height = a4LandscapeHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // White background
+            tempCtx.fillStyle = '#FFFFFF';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Calculate drawing area (center area, leaving space for legend and title block)
+            const margin = 40 * scaleFactor;
+            const legendSpace = 200 * scaleFactor; // Space for legend on left
+            const titleBlockSpace = 180 * scaleFactor; // Space for title block on right
+            const bottomSpace = 120 * scaleFactor; // Space at bottom for legend and title block
+            
+            const drawingAreaX = margin + legendSpace;
+            const drawingAreaY = margin;
+            const drawingAreaWidth = a4LandscapeWidth - (margin * 2) - legendSpace - titleBlockSpace;
+            const drawingAreaHeight = a4LandscapeHeight - (margin * 2) - bottomSpace;
+            
+            // Calculate scale to fit region content in drawing area
+            const contentScale = Math.min(drawingAreaWidth / (region.width * scaleFactor), 
+                                        drawingAreaHeight / (region.height * scaleFactor));
+            
+            const scaledContentWidth = region.width * scaleFactor * contentScale;
+            const scaledContentHeight = region.height * scaleFactor * contentScale;
+            
+            // Center the content in the drawing area
+            const contentX = drawingAreaX + (drawingAreaWidth - scaledContentWidth) / 2;
+            const contentY = drawingAreaY + (drawingAreaHeight - scaledContentHeight) / 2;
+            
+            // Draw the region content
+            tempCtx.save();
+            tempCtx.translate(contentX, contentY);
+            tempCtx.scale(contentScale, contentScale);
+            tempCtx.scale(scaleFactor, scaleFactor);
+            tempCtx.translate(-region.x, -region.y);
+            
+            // Draw grid if enabled
+            if (this.drawingEngine.showGrid) {
+                this.drawGridForExport(tempCtx, region);
+            }
+            
+            // Draw elements
+            this.drawRegionElements(tempCtx, region);
+            
+            // Draw continuation indicators
+            this.drawContinuationIndicators(tempCtx, region, regions);
+            
+            tempCtx.restore();
+            
+            // Add title block if enabled (bottom right)
+            const titleBlockData = this.currentProject.titleBlockData;
+            if (titleBlockData.includeInExport) {
+                const titleBlockWidth = (titleBlockData.titleBlockWidth || 450) * scaleFactor;
+                const titleBlockHeight = (titleBlockData.titleBlockHeight || 200) * scaleFactor;
+                const titleBlockX = a4LandscapeWidth - titleBlockWidth - margin;
+                const titleBlockY = a4LandscapeHeight - titleBlockHeight - margin;
+                
+                tempCtx.save();
+                tempCtx.translate(titleBlockX, titleBlockY);
+                tempCtx.scale(scaleFactor, scaleFactor);
+                this._drawTitleBlockOnCanvas(tempCtx, titleBlockData.titleBlockHeight || 200, titleBlockData.titleBlockWidth || 450, titleBlockData);
+                tempCtx.restore();
+            }
+            
+            // Add legend to each page (bottom left)
+            if (legendWasCaptured && legendImage) {
+                const legendScale = scaleFactor * 0.4; // Smaller for PDF to save space
+                const legendWidth = legendImage.width * legendScale;
+                const legendHeight = legendImage.height * legendScale;
+                const legendX = margin;
+                const legendY = a4LandscapeHeight - legendHeight - margin;
+                
+                tempCtx.save();
+                tempCtx.globalAlpha = 0.95;
+                tempCtx.drawImage(legendImage, legendX, legendY, legendWidth, legendHeight);
+                
+                // Add border around legend
+                tempCtx.strokeStyle = '#ddd';
+                tempCtx.lineWidth = 1 * scaleFactor;
+                tempCtx.strokeRect(legendX, legendY, legendWidth, legendHeight);
+                tempCtx.restore();
+            }
+            
+            // Add page information (top right)
+            tempCtx.save();
+            tempCtx.font = `${12 * scaleFactor}px Arial`;
+            tempCtx.fillStyle = '#666';
+            tempCtx.textAlign = 'right';
+            tempCtx.fillText(`Page ${region.pageNumber} of ${regions.length}`, 
+                a4LandscapeWidth - margin, margin + 20 * scaleFactor);
+            tempCtx.restore();
+            
+            // Add to PDF - full page since we're using A4 canvas
+            const imgData = tempCanvas.toDataURL('image/png');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            
+            // Add page number in PDF (in addition to the one on canvas)
+            pdf.setFontSize(10);
+            pdf.text(`Page ${region.pageNumber} of ${regions.length}`, pdfWidth / 2, pdfHeight - 10, { align: 'center' });
+        }
+        
+        const filename = `${this.currentProject.name}_split.pdf`;
+        pdf.save(filename);
+        const titleBlockIncluded = this.currentProject.titleBlockData.includeInExport;
+        const featuresText = legendWasCaptured && titleBlockIncluded ? 'legend and title block' :
+                            legendWasCaptured ? 'legend' :
+                            titleBlockIncluded ? 'title block' : '';
+        const successMessage = featuresText ? 
+            `Split drawing exported as PDF with ${featuresText}.` :
+            'Split drawing exported as PDF.';
+        this.showNotification(successMessage, 'success');
+    } catch (error) {
+        console.error('Error exporting split PDF:', error);
+        this.showNotification('Error exporting split PDF', 'error');
+    }
+};
+
+/**
+ * Draw elements within a region
+ */
+ElectricalCADApp.prototype.drawRegionElements = function(ctx, region) {
+    // Apply drawing engine transformations
+    ctx.strokeStyle = '#000';
+    ctx.fillStyle = '#000';
+    ctx.lineWidth = 1;
+    
+    // Draw lines
+    this.drawingEngine.elements.lines.forEach(line => {
+        // Check if line intersects with region
+        if (this.lineIntersectsRegion(line, region)) {
+            this.drawLineForExport(ctx, line);
+        }
+    });
+    
+    // Draw poles
+    this.drawingEngine.elements.poles.forEach(pole => {
+        // Check if pole is in region
+        if (pole.x >= region.x && pole.x <= region.x + region.width &&
+            pole.y >= region.y && pole.y <= region.y + region.height) {
+            ctx.save();
+            ctx.translate(pole.x, pole.y);
+            
+            // Draw pole symbol
+            this.drawPoleForExport(ctx, pole.type);
+            
+            // Draw accessories and labels
+            if (pole.hasGrounding) {
+                this.drawGroundingForExport(ctx);
+            }
+            if (pole.hasGuywire) {
+                this.drawGuywireForExport(ctx);
+            }
+            
+            if (this.drawingEngine.showNameLabels && pole.name) {
+                const style = this.drawingEngine.poleLabelStyle;
+                
+                // Set up font matching main drawing engine
+                const fontStyle = style.textStyle === 'bold italic' ? 'bold italic' : 
+                                 style.textStyle === 'bold' ? 'bold' : 
+                                 style.textStyle === 'italic' ? 'italic' : 'normal';
+                ctx.font = `${fontStyle} ${style.textSize}px ${style.font}`;
+                ctx.textAlign = 'center';
+                
+                // Draw background if enabled
+                if (style.showBackground) {
+                    const textMetrics = ctx.measureText(pole.name);
+                    const textWidth = textMetrics.width;
+                    const textHeight = style.textSize;
+                    
+                    ctx.globalAlpha = style.backgroundOpacity / 100;
+                    ctx.fillStyle = style.backgroundColor;
+                    ctx.fillRect(-textWidth/2 - 2, style.textOffset - textHeight/2 - 1, textWidth + 4, textHeight + 2);
+                    ctx.globalAlpha = 1;
+                }
+                
+                // Draw text
+                ctx.fillStyle = style.textColor;
+                ctx.fillText(pole.name, 0, style.textOffset);
+            }
+            
+            ctx.restore();
+        }
+    });
+    
+    // Draw dimensions
+    if (this.drawingEngine.showDimensions) {
+        this.drawingEngine.elements.dimensions.forEach(dimension => {
+            // Simple check - improve this based on dimension type
+            const inRegion = dimension.points.some(point => 
+                point.x >= region.x && point.x <= region.x + region.width &&
+                point.y >= region.y && point.y <= region.y + region.height
+            );
+            if (inRegion) {
+                this.drawDimensionForExport(ctx, dimension);
+            }
+        });
+    }
+};
+
+/**
+ * Draw continuation indicators
+ */
+ElectricalCADApp.prototype.drawContinuationIndicators = function(ctx, region, allRegions) {
+    ctx.save();
+    ctx.strokeStyle = '#888';
+    ctx.fillStyle = '#888';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    
+    const overlapDist = this.drawingEngine.splitState.overlapDistance;
+    const arrowSize = 10;
+    
+    // Check if there are adjacent regions
+    const hasLeft = region.col > 0;
+    const hasRight = allRegions.some(r => r.col === region.col + 1 && r.row === region.row);
+    const hasTop = region.row > 0;
+    const hasBottom = allRegions.some(r => r.row === region.row + 1 && r.col === region.col);
+    
+    // Draw continuation indicators
+    if (hasLeft) {
+        ctx.beginPath();
+        ctx.moveTo(region.x + overlapDist, region.y);
+        ctx.lineTo(region.x + overlapDist, region.y + region.height);
+        ctx.stroke();
+        
+        // Arrow
+        ctx.beginPath();
+        ctx.moveTo(region.x + overlapDist, region.y + region.height / 2);
+        ctx.lineTo(region.x + overlapDist - arrowSize, region.y + region.height / 2 - arrowSize);
+        ctx.moveTo(region.x + overlapDist, region.y + region.height / 2);
+        ctx.lineTo(region.x + overlapDist - arrowSize, region.y + region.height / 2 + arrowSize);
+        ctx.stroke();
+        
+        ctx.fillText('← Continued from left', region.x + overlapDist + 50, region.y + 20);
+    }
+    
+    if (hasRight) {
+        ctx.beginPath();
+        ctx.moveTo(region.x + region.width - overlapDist, region.y);
+        ctx.lineTo(region.x + region.width - overlapDist, region.y + region.height);
+        ctx.stroke();
+        
+        // Arrow
+        ctx.beginPath();
+        ctx.moveTo(region.x + region.width - overlapDist, region.y + region.height / 2);
+        ctx.lineTo(region.x + region.width - overlapDist + arrowSize, region.y + region.height / 2 - arrowSize);
+        ctx.moveTo(region.x + region.width - overlapDist, region.y + region.height / 2);
+        ctx.lineTo(region.x + region.width - overlapDist + arrowSize, region.y + region.height / 2 + arrowSize);
+        ctx.stroke();
+        
+        ctx.fillText('Continues to right →', region.x + region.width - overlapDist - 50, region.y + 20);
+    }
+    
+    if (hasTop) {
+        ctx.beginPath();
+        ctx.moveTo(region.x, region.y + overlapDist);
+        ctx.lineTo(region.x + region.width, region.y + overlapDist);
+        ctx.stroke();
+        
+        // Arrow
+        ctx.beginPath();
+        ctx.moveTo(region.x + region.width / 2, region.y + overlapDist);
+        ctx.lineTo(region.x + region.width / 2 - arrowSize, region.y + overlapDist - arrowSize);
+        ctx.moveTo(region.x + region.width / 2, region.y + overlapDist);
+        ctx.lineTo(region.x + region.width / 2 + arrowSize, region.y + overlapDist - arrowSize);
+        ctx.stroke();
+        
+        ctx.save();
+        ctx.textAlign = 'left';
+        ctx.fillText('↑ Continued from above', region.x + 20, region.y + overlapDist + 20);
+        ctx.restore();
+    }
+    
+    if (hasBottom) {
+        ctx.beginPath();
+        ctx.moveTo(region.x, region.y + region.height - overlapDist);
+        ctx.lineTo(region.x + region.width, region.y + region.height - overlapDist);
+        ctx.stroke();
+        
+        // Arrow
+        ctx.beginPath();
+        ctx.moveTo(region.x + region.width / 2, region.y + region.height - overlapDist);
+        ctx.lineTo(region.x + region.width / 2 - arrowSize, region.y + region.height - overlapDist + arrowSize);
+        ctx.moveTo(region.x + region.width / 2, region.y + region.height - overlapDist);
+        ctx.lineTo(region.x + region.width / 2 + arrowSize, region.y + region.height - overlapDist + arrowSize);
+        ctx.stroke();
+        
+        ctx.save();
+        ctx.textAlign = 'left';
+        ctx.fillText('↓ Continues below', region.x + 20, region.y + region.height - overlapDist - 10);
+        ctx.restore();
+    }
+    
+    ctx.restore();
+};
+
+/**
+ * Check if line intersects with region
+ */
+ElectricalCADApp.prototype.lineIntersectsRegion = function(line, region) {
+    // Simple bounding box check - could be improved with actual line intersection
+    const lineMinX = Math.min(line.startX, line.endX);
+    const lineMaxX = Math.max(line.startX, line.endX);
+    const lineMinY = Math.min(line.startY, line.endY);
+    const lineMaxY = Math.max(line.startY, line.endY);
+    
+    return !(lineMaxX < region.x || lineMinX > region.x + region.width ||
+             lineMaxY < region.y || lineMinY > region.y + region.height);
+};
+
+/**
+ * Get pole method name from type
+ */
+ElectricalCADApp.prototype.getPoleMethodName = function(type) {
+    const typeMap = {
+        'tiang-baja-existing': 'TiangBajaExisting',
+        'tiang-baja-rencana': 'TiangBajaRencana',
+        'tiang-beton-existing': 'TiangBetonExisting',
+        'tiang-beton-rencana': 'TiangBetonRencana',
+        'gardu-portal': 'GarduPortal'
+    };
+    return typeMap[type] || '';
+};
+
+/**
+ * Draw line for export without dependencies on drawing engine state
+ */
+ElectricalCADApp.prototype.drawLineForExport = function(ctx, line) {
+    ctx.save();
+    
+    // Set line style based on type to match main drawing engine
+    switch (line.type) {
+        case 'sutm-rencana':
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 0.6;
+            ctx.setLineDash([5, 5]);
+            break;
+        case 'sutm-existing':
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 0.6;
+            ctx.setLineDash([]);
+            break;
+        case 'sutr-rencana':
+            ctx.strokeStyle = '#0000ff';
+            ctx.lineWidth = 0.6;
+            ctx.setLineDash([5, 5]);
+            break;
+        case 'sutr-existing':
+            ctx.strokeStyle = '#0000ff';
+            ctx.lineWidth = 0.6;
+            ctx.setLineDash([]);
+            break;
+        default:
+            // Fallback to custom style or defaults
+            ctx.strokeStyle = line.style?.color || '#000';
+            ctx.lineWidth = line.style?.thickness || 1;
+            if (line.style?.dashed) {
+                ctx.setLineDash([5, 5]);
+            }
+            break;
+    }
+    
+    ctx.beginPath();
+    ctx.moveTo(line.startX, line.startY);
+    ctx.lineTo(line.endX, line.endY);
+    ctx.stroke();
+    ctx.restore();
+};
+
+/**
+ * Draw pole for export
+ */
+ElectricalCADApp.prototype.drawPoleForExport = function(ctx, poleType) {
+    ctx.save();
+    ctx.strokeStyle = '#000';
+    ctx.fillStyle = '#000';
+    ctx.lineWidth = 1;
+    
+    switch(poleType) {
+        case 'wooden':
+        case 'tiang-beton-existing':
+        case 'tiang-beton-rencana':
+            this.drawWoodenPoleExport(ctx);
+            break;
+        case 'concrete':
+            this.drawConcretePoleExport(ctx);
+            break;
+        case 'steel':
+        case 'tiang-baja-existing':
+        case 'tiang-baja-rencana':
+            this.drawSteelPoleExport(ctx);
+            break;
+        case 'lattice':
+        case 'gardu-portal':
+            this.drawLatticeTowerExport(ctx);
+            break;
+        default:
+            this.drawWoodenPoleExport(ctx);
+    }
+    ctx.restore();
+};
+
+/**
+ * Export drawing methods for poles - matching main drawing engine symbols
+ */
+ElectricalCADApp.prototype.drawWoodenPoleExport = function(ctx) {
+    // For tiang-beton-existing and tiang-beton-rencana
+    ctx.strokeStyle = '#000';
+    ctx.fillStyle = '#fff';
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    
+    // Inner black dot for beton types
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(0, 0, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+};
+
+ElectricalCADApp.prototype.drawConcretePoleExport = function(ctx) {
+    // Alternative concrete pole style
+    ctx.fillStyle = '#000';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, 4, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Inner white dot
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(0, 0, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+};
+
+ElectricalCADApp.prototype.drawSteelPoleExport = function(ctx) {
+    // For tiang-baja-existing and tiang-baja-rencana
+    ctx.fillStyle = '#000';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, 4, 0, Math.PI * 2);
+    ctx.fill();
+};
+
+ElectricalCADApp.prototype.drawLatticeTowerExport = function(ctx) {
+    // For gardu-portal
+    ctx.strokeStyle = '#000';
+    ctx.fillStyle = '#fff';
+    ctx.lineWidth = 0.6;
+    ctx.fillRect(-4, -4, 8, 8);
+    ctx.strokeRect(-4, -4, 8, 8);
+    
+    // Lightning bolt symbol
+    ctx.fillStyle = '#000';
+    ctx.font = '6px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('⚡', 0, 0);
+};
+
+/**
+ * Draw grounding for export - matching main drawing engine style
+ */
+ElectricalCADApp.prototype.drawGroundingForExport = function(ctx) {
+    ctx.save();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    // Vertical line down
+    ctx.moveTo(0, 4);
+    ctx.lineTo(0, 9);
+    // Horizontal lines (grounding symbol)
+    ctx.moveTo(-3, 9);
+    ctx.lineTo(3, 9);
+    ctx.moveTo(-2, 10);
+    ctx.lineTo(2, 10);
+    ctx.moveTo(-1, 11);
+    ctx.lineTo(1, 11);
+    ctx.stroke();
+    ctx.restore();
+};
+
+/**
+ * Draw guywire for export - matching main drawing engine style
+ */
+ElectricalCADApp.prototype.drawGuywireForExport = function(ctx) {
+    ctx.save();
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 0.3;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    // Diagonal lines representing guy wires
+    ctx.moveTo(0, 0);
+    ctx.lineTo(7.5, 7.5);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-7.5, 7.5);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+};
+
+/**
+ * Draw dimension for export
+ */
+ElectricalCADApp.prototype.drawDimensionForExport = function(ctx, dimension) {
+    ctx.save();
+    ctx.strokeStyle = '#0066cc';
+    ctx.fillStyle = '#0066cc';
+    ctx.lineWidth = 1;
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'center';
+    
+    if (dimension.type === 'linear') {
+        const start = dimension.points[0];
+        const end = dimension.points[1];
+        
+        // Draw dimension line
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+        
+        // Draw arrows
+        this.drawArrowForExport(ctx, start.x, start.y, end.x, end.y);
+        this.drawArrowForExport(ctx, end.x, end.y, start.x, start.y);
+        
+        // Draw text
+        const midX = (start.x + end.x) / 2;
+        const midY = (start.y + end.y) / 2;
+        const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
+        ctx.fillText(distance.toFixed(1) + 'm', midX, midY - 5);
+    }
+    
+    ctx.restore();
+};
+
+/**
+ * Draw arrow for dimension export
+ */
+ElectricalCADApp.prototype.drawArrowForExport = function(ctx, fromX, fromY, toX, toY) {
+    const angle = Math.atan2(toY - fromY, toX - fromX);
+    const arrowLength = 5;
+    const arrowAngle = Math.PI / 6;
+    
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(
+        fromX + arrowLength * Math.cos(angle - arrowAngle),
+        fromY + arrowLength * Math.sin(angle - arrowAngle)
+    );
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(
+        fromX + arrowLength * Math.cos(angle + arrowAngle),
+        fromY + arrowLength * Math.sin(angle + arrowAngle)
+    );
+    ctx.stroke();
+};
+
+/**
+ * Draw grid for export (within region bounds)
+ */
+ElectricalCADApp.prototype.drawGridForExport = function(ctx, region) {
+    ctx.save();
+    
+    // Use the same grid size as the main drawing engine
+    const gridSize = this.drawingEngine.gridSize || 10; // Default to 10 if not set
+    
+    // Calculate grid bounds within the region
+    const startX = Math.floor(region.x / gridSize) * gridSize;
+    const startY = Math.floor(region.y / gridSize) * gridSize;
+    const endX = Math.ceil((region.x + region.width) / gridSize) * gridSize;
+    const endY = Math.ceil((region.y + region.height) / gridSize) * gridSize;
+    
+    // Set grid style to match main drawing
+    ctx.strokeStyle = '#f0f0f0';
+    ctx.lineWidth = 0.15;
+    ctx.beginPath();
+    
+    // Draw vertical grid lines
+    for (let x = startX; x <= endX; x += gridSize) {
+        if (x >= region.x && x <= region.x + region.width) {
+            ctx.moveTo(x, Math.max(startY, region.y));
+            ctx.lineTo(x, Math.min(endY, region.y + region.height));
+        }
+    }
+    
+    // Draw horizontal grid lines
+    for (let y = startY; y <= endY; y += gridSize) {
+        if (y >= region.y && y <= region.y + region.height) {
+            ctx.moveTo(Math.max(startX, region.x), y);
+            ctx.lineTo(Math.min(endX, region.x + region.width), y);
+        }
+    }
+    
+    ctx.stroke();
+    ctx.restore();
+};

@@ -10,7 +10,8 @@ class DrawingEngine {
         this.elements = {
             poles: [],
             lines: [],
-            dimensions: []
+            dimensions: [],
+            splitMarkers: []
         };
         this.metadata = {
             metersPerPixel: 1,
@@ -158,6 +159,14 @@ class DrawingEngine {
         this.lastSnapUpdate = 0;
         this.snapUpdateThrottle = 16; // ~60fps
         
+        // Split tool state
+        this.splitState = {
+            mode: 'none', // 'none', 'placing-horizontal', 'placing-vertical'
+            previewMarker: null,
+            orientation: 'vertical', // 'vertical' or 'horizontal'
+            overlapDistance: 50 // pixels of overlap for continuation
+        };
+        
         this.setupEventListeners();
         this.render();
     }
@@ -183,9 +192,16 @@ class DrawingEngine {
             this.alignedDimensionState.mode = 'selecting-first';
         }
         
+        // Reset split tool state when switching tools
+        if (tool !== 'split') {
+            this.resetSplitTool();
+        } else {
+            this.splitState.mode = 'placing-' + this.splitState.orientation;
+        }
+        
         // Remove all tool classes
         this.canvas.classList.remove('tool-select', 'tool-line', 'tool-pole', 'tool-angle', 
-                                    'tool-aligned-dimension', 'tool-pan', 'tool-drag-select');
+                                    'tool-aligned-dimension', 'tool-pan', 'tool-drag-select', 'tool-split');
         
         // Add current tool class
         this.canvas.classList.add(`tool-${tool}`);
@@ -288,6 +304,14 @@ class DrawingEngine {
             points: [],
             previewDistance: null
         };
+    }
+
+    /**
+     * Reset split tool state
+     */
+    resetSplitTool() {
+        this.splitState.mode = 'none';
+        this.splitState.previewMarker = null;
     }
 
     /**

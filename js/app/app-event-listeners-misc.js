@@ -126,4 +126,40 @@ ElectricalCADApp.prototype.setupMiscEventListeners = function() {
             this.drawingEngine.render();
         });
     }
+    
+    // Split controls
+    const splitOverlapDistance = document.getElementById('splitOverlapDistance');
+    if (splitOverlapDistance) {
+        splitOverlapDistance.addEventListener('change', (e) => {
+            this.drawingEngine.splitState.overlapDistance = parseInt(e.target.value) || 50;
+            // Update existing markers with new overlap distance
+            this.drawingEngine.elements.splitMarkers.forEach(marker => {
+                marker.overlapDistance = this.drawingEngine.splitState.overlapDistance;
+            });
+            this.drawingEngine.render();
+        });
+    }
+    
+    const clearSplitMarkers = document.getElementById('clearSplitMarkers');
+    if (clearSplitMarkers) {
+        clearSplitMarkers.addEventListener('click', () => {
+            this.drawingEngine.elements.splitMarkers = [];
+            this.drawingEngine.render();
+            this.showNotification('All split markers cleared', 'success');
+        });
+    }
+    
+    const exportSplitPDF = document.getElementById('exportSplitPDF');
+    if (exportSplitPDF) {
+        exportSplitPDF.addEventListener('click', () => {
+            this.exportSplitDrawingAsPDF();
+        });
+    }
+    
+    const exportSplitJPG = document.getElementById('exportSplitJPG');
+    if (exportSplitJPG) {
+        exportSplitJPG.addEventListener('click', () => {
+            this.exportSplitDrawingAsJPG();
+        });
+    }
 };

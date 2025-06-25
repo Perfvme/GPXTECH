@@ -116,8 +116,13 @@
                                 </button>
                                 <button id="angleTool" class="tool-btn-primary" data-tool="angle" title="Angle dimension (A)">
                                     <span class="tool-hint">A</span>
-                                    <i class="fas fa-drafting-compass"></i>
+                                    <i class="fas fa-angle-right"></i>
                                     <span>Angle</span>
+                                </button>
+                                <button id="splitTool" class="tool-btn-primary" data-tool="split" title="Split drawing (S)">
+                                    <span class="tool-hint">S</span>
+                                    <i class="fas fa-cut"></i>
+                                    <span>Split</span>
                                 </button>
                                 <button id="panTool" class="tool-btn-primary" data-tool="pan" title="Pan view (Space)">
                                     <span class="tool-hint">Space</span>
@@ -505,20 +510,43 @@
                                     <i class="fas fa-file-import"></i>
                                     <span>Import GPX</span>
                                 </button>
-                                <button id="exportDXFBtn" class="action-btn-primary" title="Export to DXF">
-                                    <i class="fas fa-file-export"></i>
-                                    <span>Export DXF</span>
-                                </button>
-                                <button id="saveProjectBtn" class="action-btn-primary" title="Save project">
-                                    <i class="fas fa-save"></i>
-                                    <span>Save Project</span>
-                                </button>
-                                <button id="loadProjectBtn" class="action-btn-primary" title="Load project">
-                                    <i class="fas fa-folder-open"></i>
-                                    <span>Load Project</span>
-                                </button>
-                            </div>
-                        </div>
+                                                <button id="exportDXFBtn" class="action-btn-primary" title="Export to DXF">
+                    <i class="fas fa-file-export"></i>
+                    <span>Export DXF</span>
+                </button>
+                <button id="saveProjectBtn" class="action-btn-primary" title="Save project">
+                    <i class="fas fa-save"></i>
+                    <span>Save Project</span>
+                </button>
+                <button id="loadProjectBtn" class="action-btn-primary" title="Load project">
+                    <i class="fas fa-folder-open"></i>
+                    <span>Load Project</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="tool-section">
+            <h3>Split Drawing</h3>
+            <div class="split-controls">
+                <div class="split-settings">
+                    <label for="splitOverlapDistance">Overlap Distance</label>
+                    <input type="number" id="splitOverlapDistance" value="50" min="0" max="200" step="10" class="compact-input">
+                    <span>pixels</span>
+                </div>
+                <button id="clearSplitMarkers" class="action-btn-primary" title="Clear all split markers">
+                    <i class="fas fa-times-circle"></i>
+                    <span>Clear All Splits</span>
+                </button>
+                <button id="exportSplitPDF" class="action-btn-primary" title="Export split pages to PDF">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>Export Split PDF</span>
+                </button>
+                <button id="exportSplitJPG" class="action-btn-primary" title="Export split pages to JPG">
+                    <i class="fas fa-file-image"></i>
+                    <span>Export Split JPG</span>
+                </button>
+            </div>
+        </div>
 
                         <div class="tool-section">
                             <h3>Display Modes</h3>
@@ -557,14 +585,18 @@
                                     <span class="shortcut-key">P</span>
                                     <span class="shortcut-desc">Pole tool</span>
                                 </div>
-                                <div class="shortcut-item">
-                                    <span class="shortcut-key">D</span>
-                                    <span class="shortcut-desc">Dimension</span>
-                                </div>
-                                <div class="shortcut-item">
-                                    <span class="shortcut-key">Space</span>
-                                    <span class="shortcut-desc">Pan view</span>
-                                </div>
+                                                <div class="shortcut-item">
+                    <span class="shortcut-key">D</span>
+                    <span class="shortcut-desc">Dimension</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">S</span>
+                    <span class="shortcut-desc">Split tool</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">Space</span>
+                    <span class="shortcut-desc">Pan view</span>
+                </div>
                                 <div class="shortcut-item">
                                     <span class="shortcut-key">Del</span>
                                     <span class="shortcut-desc">Delete selected</span>

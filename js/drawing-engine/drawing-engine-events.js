@@ -22,6 +22,17 @@ DrawingEngine.prototype.setupEventListeners = function() {
             this.cancelLine();
         } else if (e.key === 'Delete') {
             this.deleteSelectedElements();
+        } else if (this.currentTool === 'split') {
+            // Handle split tool keyboard shortcuts
+            if (e.key.toLowerCase() === 'v') {
+                this.splitState.orientation = 'vertical';
+                this.splitState.mode = 'placing-vertical';
+                this.showAngleInstructions('Split mode: VERTICAL. Click to place split markers.');
+            } else if (e.key.toLowerCase() === 'h') {
+                this.splitState.orientation = 'horizontal';
+                this.splitState.mode = 'placing-horizontal';
+                this.showAngleInstructions('Split mode: HORIZONTAL. Click to place split markers.');
+            }
         }
     });
 };
@@ -65,6 +76,9 @@ DrawingEngine.prototype.handleMouseDown = function(e) {
         case 'aligned-dimension':
             this.handleAlignedDimensionClick(x, y);
             break;
+        case 'split':
+            this.handleSplitToolClick(x, y);
+            break;
     }
 };
 
@@ -94,6 +108,8 @@ DrawingEngine.prototype.handleMouseMove = function(e) {
         this.updateAnglePreview(x, y);
     } else if (this.currentTool === 'aligned-dimension') {
         this.updateAlignedDimensionPreview(x, y);
+    } else if (this.currentTool === 'split') {
+        this.updateSplitPreview(x, y);
     }
 };
 
@@ -286,4 +302,46 @@ DrawingEngine.prototype.updateAlignedDimensionPreview = function(x, y) {
         };
     }
     this.render();
+};
+
+/**
+ * Handle clicks for the split tool
+ */
+DrawingEngine.prototype.handleSplitToolClick = function(x, y) {
+    // Add split marker at click position
+    const splitMarker = {
+        id: 'split_' + Date.now(),
+        type: 'split',
+        orientation: this.splitState.orientation,
+        position: this.splitState.orientation === 'vertical' ? x : y,
+        overlapDistance: this.splitState.overlapDistance
+    };
+    
+    // Check if there's already a split marker very close to this position
+    const existingMarker = this.elements.splitMarkers.find(marker => {
+        if (marker.orientation !== splitMarker.orientation) return false;
+        return Math.abs(marker.position - splitMarker.position) < 10;
+    });
+    
+    if (!existingMarker) {
+        this.elements.splitMarkers.push(splitMarker);
+        this.render();
+        
+        // Show feedback
+        const markerCount = this.elements.splitMarkers.filter(m => m.orientation === splitMarker.orientation).length;
+        this.showAngleInstructions(`${splitMarker.orientation} split marker ${markerCount} placed. Press V for vertical, H for horizontal splits.`);
+    }
+};
+
+/**
+ * Update split tool preview
+ */
+DrawingEngine.prototype.updateSplitPreview = function(x, y) {
+    if (this.splitState.mode.includes('placing')) {
+        this.splitState.previewMarker = {
+            orientation: this.splitState.orientation,
+            position: this.splitState.orientation === 'vertical' ? x : y
+        };
+        this.render();
+    }
 };

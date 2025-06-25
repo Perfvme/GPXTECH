@@ -111,6 +111,10 @@
     cursor: crosshair;
 }
 
+#drawingCanvas.tool-split {
+    cursor: crosshair;
+}
+
 /* Hover states */
 #drawingCanvas.hover-pole {
     cursor: pointer;

@@ -36,7 +36,11 @@ DrawingEngine.prototype.exportData = function() {
  * Import drawing data
  */
 DrawingEngine.prototype.importData = function(data) {
-    this.elements = data.elements || { poles: [], lines: [], dimensions: [] };
+    this.elements = data.elements || { poles: [], lines: [], dimensions: [], splitMarkers: [] };
+    // Ensure splitMarkers array exists
+    if (!this.elements.splitMarkers) {
+        this.elements.splitMarkers = [];
+    }
     // Ensure all lines have sag, chordLengthMeters, actualLengthMeters
     this.elements.lines.forEach(line => {
         if (!line.sag) line.sag = { value: 0.01, type: 'percentage', enabled: false };
@@ -72,7 +76,7 @@ DrawingEngine.prototype.importData = function(data) {
  * Clear all elements
  */
 DrawingEngine.prototype.clear = function() {
-    this.elements = { poles: [], lines: [], dimensions: [] };
+    this.elements = { poles: [], lines: [], dimensions: [], splitMarkers: [] };
     this.selectedElement = null;
     this.selectedElements = new Set(); // For multiple selection
     this.dragSelection = {
@@ -93,7 +97,8 @@ DrawingEngine.prototype.loadFromGPX = function(elements) {
     this.elements = {
         poles: elements.poles || [],
         lines: elements.lines || [],
-        dimensions: elements.dimensions || []
+        dimensions: elements.dimensions || [],
+        splitMarkers: elements.splitMarkers || []
     };
     // Ensure all lines have sag, chordLengthMeters, actualLengthMeters
     this.elements.lines.forEach(line => {

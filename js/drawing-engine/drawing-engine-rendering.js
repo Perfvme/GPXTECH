@@ -68,6 +68,14 @@ DrawingEngine.prototype.render = function() {
         this.drawDragSelection();
     }
     
+    // Draw split markers
+    this.elements.splitMarkers.forEach(marker => this.drawSplitMarker(marker));
+    
+    // Draw split preview
+    if (this.splitState.previewMarker) {
+        this.drawSplitMarker(this.splitState.previewMarker, true);
+    }
+    
     // Restore context
     this.ctx.restore();
 };
@@ -572,5 +580,88 @@ DrawingEngine.prototype.drawDimension = function(dimension) {
             console.warn("Unknown dimension type:", dimension.type);
             break;
     }
+    this.ctx.restore();
+};
+
+/**
+ * Draw split marker
+ */
+DrawingEngine.prototype.drawSplitMarker = function(marker, isPreview = false) {
+    this.ctx.save();
+    
+    // Get canvas dimensions
+    const canvasWidth = this.canvas.width / this.zoom;
+    const canvasHeight = this.canvas.height / this.zoom;
+    const startX = -this.panX / this.zoom;
+    const startY = -this.panY / this.zoom;
+    
+    // Set style
+    if (isPreview) {
+        this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([10, 5]);
+    } else {
+        this.ctx.strokeStyle = '#ff0000';
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([15, 10]);
+    }
+    
+    // Draw the split line
+    this.ctx.beginPath();
+    if (marker.orientation === 'vertical') {
+        this.ctx.moveTo(marker.position, startY);
+        this.ctx.lineTo(marker.position, startY + canvasHeight);
+    } else {
+        this.ctx.moveTo(startX, marker.position);
+        this.ctx.lineTo(startX + canvasWidth, marker.position);
+    }
+    this.ctx.stroke();
+    
+    // Draw overlap zone indicators
+    if (!isPreview && marker.overlapDistance) {
+        this.ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+        if (marker.orientation === 'vertical') {
+            // Left overlap zone
+            this.ctx.fillRect(marker.position - marker.overlapDistance, startY, 
+                            marker.overlapDistance, canvasHeight);
+            // Right overlap zone
+            this.ctx.fillRect(marker.position, startY, 
+                            marker.overlapDistance, canvasHeight);
+        } else {
+            // Top overlap zone
+            this.ctx.fillRect(startX, marker.position - marker.overlapDistance, 
+                            canvasWidth, marker.overlapDistance);
+            // Bottom overlap zone
+            this.ctx.fillRect(startX, marker.position, 
+                            canvasWidth, marker.overlapDistance);
+        }
+    }
+    
+    // Draw label
+    if (!isPreview) {
+        this.ctx.setLineDash([]);
+        this.ctx.fillStyle = '#ff0000';
+        this.ctx.font = 'bold 12px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        
+        const labelText = `Split ${marker.orientation === 'vertical' ? 'V' : 'H'}`;
+        const labelX = marker.orientation === 'vertical' ? marker.position : startX + canvasWidth / 2;
+        const labelY = marker.orientation === 'horizontal' ? marker.position : startY + 20;
+        
+        // Draw background for label
+        const metrics = this.ctx.measureText(labelText);
+        const labelPadding = 4;
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        this.ctx.fillRect(labelX - metrics.width/2 - labelPadding, 
+                         labelY - 8 - labelPadding, 
+                         metrics.width + labelPadding * 2, 
+                         16 + labelPadding * 2);
+        
+        // Draw label text
+        this.ctx.fillStyle = '#ff0000';
+        this.ctx.fillText(labelText, labelX, labelY);
+    }
+    
     this.ctx.restore();
 };

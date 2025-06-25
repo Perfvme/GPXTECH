@@ -76,6 +76,11 @@ ElectricalCADApp.prototype.handleKeyboard = function(e) {
                 this.selectToolByType('angle');
             }
             break;
+        case 's':
+            if (!e.ctrlKey && !e.metaKey) {
+                this.selectToolByType('split');
+            }
+            break;
         case 'delete':
         case 'backspace':
             e.preventDefault();
